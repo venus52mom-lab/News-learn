@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4f1ea">
+<title>每日新聞 · 語言學習</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f1ea; --paper:#fbfaf6; --ink:#2f2d29; --soft:#5f5b53; --mute:#8f897d; --line:#e4dfd3;
+  /* 分類色（低飽和） */
+  --tw:#6f8f7a;  --tw-bg:#e8eee9;
+  --world:#6f84a0; --world-bg:#e7ebf1;
+  --fin:#a68c5f; --fin-bg:#f1ebdf;
+  /* 語言色（低飽和） */
+  --en:#5f7a8c; --ja:#a47b7b; --fr:#8a7fa3; --ko:#6d9393; --es:#b0806a; --th:#8b9466;
+  --hard:#efe2c4; --hard-line:#c4a46a;
+  --c:var(--tw); --cbg:var(--tw-bg); --l:var(--en);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1c1b19; --paper:#252421; --ink:#e8e4da; --soft:#c2bcb0; --mute:#8d877b; --line:#36342f;
+  --tw-bg:#26302a; --world-bg:#262b33; --fin-bg:#302b22; --hard:#3d3524; --hard-line:#9c8455;
+}}
+body[data-cat=world]{--c:var(--world);--cbg:var(--world-bg)}
+body[data-cat=fin]{--c:var(--fin);--cbg:var(--fin-bg)}
+body[data-lang=ja]{--l:var(--ja)} body[data-lang=fr]{--l:var(--fr)} body[data-lang=ko]{--l:var(--ko)}
+body[data-lang=es]{--l:var(--es)} body[data-lang=th]{--l:var(--th)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "Noto Sans TC",-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;padding-top:14px}
+h1{font-family:"Noto Serif TC",serif;font-weight:700;font-size:21px;margin:0;letter-spacing:.04em}
+h1 small{display:block;font-family:"Noto Sans TC",sans-serif;font-weight:400;font-size:11px;color:var(--mute);letter-spacing:.18em;text-transform:uppercase}
+#date{font-size:12px;color:var(--mute);text-align:right;line-height:1.4}
+.cats{display:flex;gap:0;margin-top:12px}
+.cats button{flex:1;border:none;background:none;padding:8px 0 9px;font-size:15px;color:var(--mute);cursor:pointer;border-bottom:2px solid transparent;transition:.2s}
+.cats button[data-cat=tw].on{color:var(--tw);border-color:var(--tw)}
+.cats button[data-cat=world].on{color:var(--world);border-color:var(--world)}
+.cats button[data-cat=fin].on{color:var(--fin);border-color:var(--fin)}
+.cats button .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:2px}
+.langs{display:flex;gap:6px;overflow-x:auto;padding:10px 0 10px;scrollbar-width:none}
+.langs::-webkit-scrollbar{display:none}
+.langs button{flex:none;border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:999px;padding:4px 13px;font-size:13px;cursor:pointer;transition:.2s}
+.langs button.on{color:#fff;border-color:transparent}
+main{padding-top:14px;padding-bottom:100px}
+.bar{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--mute);margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.bar label{display:flex;gap:5px;align-items:center;cursor:pointer}
+.bar input{accent-color:var(--c)}
+.bar .rf{border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:8px;padding:3px 10px;font-size:12.5px;cursor:pointer}
+.legend{font-size:12.5px;color:var(--soft);background:var(--cbg);border-radius:10px;padding:8px 12px;margin-bottom:14px}
+.legend mark{background:var(--hard);color:inherit;border-bottom:1.5px solid var(--hard-line);padding:0 3px;border-radius:2px}
+.card{background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:4px 12px 12px 4px;padding:14px 16px 12px;margin-bottom:12px}
+.meta{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--mute);letter-spacing:.03em}
+.num{font-family:"Noto Serif TC",serif;color:var(--c);font-weight:700;margin-right:8px}
+.zh{font-family:"Noto Serif TC",serif;font-weight:500;font-size:16.5px;line-height:1.6;color:var(--ink);margin:6px 0 8px}
+.tr{font-size:17.5px;line-height:1.75;color:var(--ink);border-top:1px dashed var(--line);padding-top:8px;position:relative}
+.tag{display:inline-block;font-size:10.5px;letter-spacing:.08em;color:var(--l);border:1px solid var(--l);border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:3px;opacity:.85}
+.rm{font-size:13px;color:var(--mute);font-style:italic;margin-top:3px;line-height:1.5}
+.w{cursor:pointer;border-radius:2px;transition:background .15s}
+.w:hover{background:var(--cbg)}
+.w.hard{background:var(--hard);border-bottom:1.5px solid var(--hard-line);padding:0 2px}
+.acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.acts button,.acts a{font-size:12.5px;border:1px solid var(--line);background:none;color:var(--soft);border-radius:8px;padding:3px 11px;text-decoration:none;cursor:pointer}
+.acts button:hover,.acts a:hover{border-color:var(--c);color:var(--c)}
+.skel{display:inline-block;height:14px;width:70%;border-radius:4px;background:linear-gradient(90deg,var(--line),var(--bg),var(--line));background-size:200% 100%;animation:sh 1.4s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.msg{text-align:center;color:var(--soft);padding:36px 14px;line-height:1.9;font-size:14.5px}
+.msg b{color:var(--ink)}
+.msg .tip{display:block;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;font-size:13.5px;color:var(--soft)}
+.hidden{display:none!important}
+.shade{position:fixed;inset:0;background:rgba(30,28,25,.25);z-index:15}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--paper);border-top:3px solid var(--l);border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.12);padding:16px 18px 26px;max-height:72vh;overflow:auto;max-width:720px;margin:0 auto}
+.sheet .hd{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sheet .big{font-family:"Noto Serif TC",serif;font-size:24px;font-weight:700}
+.sheet .x{border:none;background:none;font-size:24px;color:var(--mute);cursor:pointer;line-height:1}
+.mean{font-size:18px;margin-top:4px}
+.pos{margin-top:6px;font-size:14px;color:var(--soft)}
+.pos b{display:inline-block;min-width:3.2em;font-weight:500;color:var(--l)}
+.sbtn{border:1px solid var(--l);color:var(--l);background:none;border-radius:8px;padding:4px 12px;font-size:13.5px;cursor:pointer}
+.ex{font-size:13px;color:var(--mute);margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+#vocabBtn{position:fixed;right:16px;bottom:18px;z-index:10;background:var(--ink);color:var(--bg);border:none;border-radius:999px;padding:10px 18px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer}
+#vocab{border-top-color:var(--ink)}
+.vi{border-bottom:1px solid var(--line);padding:10px 0;display:flex;justify-content:space-between;gap:10px}
+.vi .lg{font-size:10.5px;border-radius:4px;padding:0 5px;color:#fff;margin-left:6px;vertical-align:2px}
+.vi small{color:var(--mute)}
+</style>
+</head>
+<body data-cat="tw" data-lang="en">
+<header><div class="wrap">
+  <div class="top">
+    <h1><small>Daily News · Language</small>每日新聞學語言</h1>
+    <div id="date"></div>
+  </div>
+  <nav class="cats" id="cats"></nav>
+  <nav class="langs" id="langs"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="bar">
+    <label><input type="checkbox" id="showZh" checked> 顯示中文原文</label>
+    <span id="status"></span>
+    <button class="rf" id="refresh">↻ 重新抓取</button>
+  </div>
+  <div id="list">
+    <div class="msg"><b>如果你一直看到這段文字</b><br>代表目前的開啟方式不能執行網頁程式（例如手機的「檔案預覽」、LINE 或 Email 內建預覽）。
+      <span class="tip">✅ 請用 <b>Chrome / Safari 瀏覽器</b>開啟，或把檔案上傳到 tiiny.host、Netlify Drop 之類的免費空間，取得網址後用手機瀏覽器打開。</span></div>
+  </div>
+</main>
+
+<button id="vocabBtn">📒 單字本 <span id="vcount"></span></button>
+<div id="shade" class="shade hidden"></div>
+<div id="pop" class="sheet hidden"></div>
+<div id="vocab" class="sheet hidden"></div>
+
+<script>
+/* ====== 新聞來源：每個分類有多個來源，第一個失敗就換下一個 ====== */
+const GN = t => `https://news.google.com/rss/headlines/section/topic/${t}?hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+const CATS = {
+  tw:   {name:'台灣', color:'var(--tw)', sources:[
+          {url:GN('NATION'), name:''},
+          {url:'https://news.ltn.com.tw/rss/life.xml', name:'自由時報'},
+          {url:'https://news.ltn.com.tw/rss/all.xml',  name:'自由時報'},
+          {url:'https://tw.news.yahoo.com/rss/',       name:'Yahoo新聞'} ]},
+  world:{name:'國際', color:'var(--world)', sources:[
+          {url:GN('WORLD'), name:''},
+          {url:'https://news.ltn.com.tw/rss/world.xml', name:'自由時報'},
+          {url:'https://tw.news.yahoo.com/rss/world',   name:'Yahoo新聞'} ]},
+  fin:  {name:'財經', color:'var(--fin)', sources:[
+          {url:GN('BUSINESS'), name:''},
+          {url:'https://news.ltn.com.tw/rss/business.xml', name:'自由時報'},
+          {url:'https://tw.stock.yahoo.com/rss?category=news', name:'Yahoo股市'} ]}
+};
+const LANGS = {
+  en:{name:'English',  short:'EN', tts:'en-US', words:true},
+  ja:{name:'日本語',    short:'JA', tts:'ja-JP'},
+  fr:{name:'Français', short:'FR', tts:'fr-FR', words:true},
+  ko:{name:'한국어',    short:'KO', tts:'ko-KR', words:true},
+  es:{name:'Español',  short:'ES', tts:'es-ES', words:true},
+  th:{name:'ไทย',      short:'TH', tts:'th-TH'}
+};
+const PER_CAT = 12;
+const COMMON = new Set(`about above accept access accident account across action active actually added addition address admit adult affect after again against agency agree ahead allow almost alone along already alright although always among amount animal another answer anyone anything appear apply approach april area argue around arrive article artist asked attack attempt attention august author autumn available avoid award aware awful baby back balance based basic beach beautiful became because become before began begin behind being believe below beside best better between beyond bigger billion birth black blood board body border bottom brain branch bread break bring broad brother brought budget build building built business button buyer called camera campaign cancer capital career carry catch cause center central century certain chair chance change charge cheap check chicken child children china chinese choice choose church citizen city civil claim class clean clear climate close clothes coach coast coffee cold college color comes coming common community company compare complete computer concern condition consider continue control corner correct cost could council country county couple course court cover create credit crime crisis cross crowd culture current customer cycle daily damage dance danger dark daughter death debate decade decide decision deep defense degree demand department describe design detail develop development device difference different difficult dinner direct director discover discuss disease doctor dollar double doubt draft drama dream dress drink drive driver during early earth easily eastern economic economy education effect effort eight either election electric element else email emergency employee energy enjoy enough enter entire environment equal error escape especially establish estimate evening event every everyone everything evidence exactly example exchange exist expect expensive experience expert explain export express extra family famous farmer father favorite feature february federal feeling field fight figure final finally finance financial finger finish first floor flower follow food foreign forest forget former forward found free fresh friday friend front fruit full funny future garden general giant girl given glass global goal going golden government great green ground group growth guess guest guide habit half hand happen happy hard health healthy heard heart heavy hello help higher highway himself history holiday home hope hospital hotel hour house however huge human hundred husband idea image impact import important improve include including income increase indeed industry inflation information inside instead interest international internet interview island issue itself january japan japanese job join joint journey judge july june junior keep kitchen know knowledge korea labor land language large later latest laugh launch lawyer leader learn least leave legal less letter level life light likely limit line list listen little live local long look lose loss lower lucky lunch machine magazine main major make manager many march market marriage material matter maybe meaning measure media medical meeting member memory mental message method middle might military million minister minute model modern moment monday money month more morning most mother mountain move movie music must myself nation national natural nature near nearly need network never news next night nobody normal north northern nothing notice novel number nurse object october offer office officer official often older online only open operation opinion order other others outside over owner paper parent party passenger patient pattern peace people percent perfect perhaps period person phone photo picture piece place plan plant player please point police policy political politics poor popular population position positive possible power practice prepare present president pressure pretty prevent price private probably problem process produce product production program project property protect prove provide public pull purpose push quality quarter question quick quickly quite race radio raise range rate rather reach read ready real really reason receive recent recently record reduce region relation release remain remember remove report research resident resource respond rest result return review rich right rise risk river road rock role room round rule safe safety sale same saturday save school science score season second section security seem sell send senior sense series serious serve service seven several share short should shoulder show side sign signal similar simple since single sister situation skill sleep small smile social society soft soldier some someone something sometimes south southern space speak special speech speed spend sport spring staff stage stand standard start state station stay step still stock stone stop store story street strong student study style subject success such sudden suddenly suffer sugar summer sunday supply support sure system table taiwan taiwanese take talk teacher team technology television tell temperature tend term test thank that their them themselves then theory there these thing think third this those though thought thousand three through thursday ticket time today together tomorrow tonight total touch tour toward town trade traffic train training travel treat tree trial trip trouble truck true trust truth try tuesday turn twice type typhoon under understand union unit united university until upon usually value various very victim video view village visit voice vote wait walk wall want watch water weather website wednesday week weekend weight welcome well west western what whatever when where whether which while white whole whose wide wife will window winner winter with within without woman women wonder word work worker world worry would write writer wrong yesterday young yourself youth across agreed announced asked called company companies country countries expected increased major month months people percent prices rates reported reports said says shares stocks still stores students taiwan tariff tariffs think trump using workers years year`.split(/\s+/));
+
+/* ====== 工具 ====== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const today = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei'}).format(new Date());
+const timeout = (p, ms) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error('timeout')), ms))]);
+const any = ps => new Promise((res, rej) => { let n = ps.length; if(!n) rej(); ps.forEach(p => p.then(res, () => { if(--n === 0) rej(new Error('all failed')); })); });
+async function pool(tasks, n){ let i = 0; const run = async () => { while(i < tasks.length){ const k = i++; try{ await tasks[k](); }catch(e){} } }; await Promise.all(Array.from({length:n}, run)); }
+const langColor = l => getComputedStyle(document.documentElement).getPropertyValue('--' + l).trim();
+
+let cache = store.get('nl_cache2', null);
+if(!cache || cache.date !== today) cache = {date:today, feeds:{}, tr:{}};
+const saveCache = () => store.set('nl_cache2', cache);
+let state = { cat: store.get('nl_cat','tw'), lang: store.get('nl_lang','en'), showZh: store.get('nl_zh', true) };
+if(!CATS[state.cat]) state.cat = 'tw';
+if(!LANGS[state.lang]) state.lang = 'en';
+let renderToken = 0;
+
+/* ====== 抓 RSS：多個免費轉接站同時嘗試，誰先成功用誰 ====== */
+function parseXml(txt){
+  const d = new DOMParser().parseFromString(txt, 'text/xml');
+  const items = [...d.querySelectorAll('item')].map(i => ({
+    title: i.querySelector('title')?.textContent || '',
+    link:  i.querySelector('link')?.textContent || '',
+    date:  i.querySelector('pubDate')?.textContent || ''
+  })).filter(x => x.title);
+  if(!items.length) throw new Error('empty');
+  return items;
+}
+const getText = async u => { const r = await fetch(u); if(!r.ok) throw new Error(r.status); return r.text(); };
+function fetchFeed(url){
+  const e = encodeURIComponent(url);
+  const ways = [
+    (async () => { const j = await (await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + e)).json();
+                   if(j.status !== 'ok' || !j.items?.length) throw 0;
+                   return j.items.map(i => ({title:i.title, link:i.link, date:i.pubDate})); })(),
+    (async () => { const j = await (await fetch('https://api.allorigins.win/get?url=' + e)).json(); return parseXml(j.contents); })(),
+    (async () => parseXml(await getText('https://api.allorigins.win/raw?url=' + e)))(),
+    (async () => parseXml(await getText('https://corsproxy.io/?url=' + e)))(),
+    (async () => parseXml(await getText('https://api.codetabs.com/v1/proxy?quest=' + e)))(),
+    (async () => parseXml(await getText('https://cors.eu.org/' + url)))(),
+    (async () => parseXml(await getText(url)))()
+  ];
+  return timeout(any(ways), 15000);
+}
+function cleanItems(items, srcName){
+  const seen = new Set(), out = [];
+  for(const it of items){
+    let title = (it.title || '').replace(/\s+/g, ' ').trim(), source = srcName;
+    if(!srcName){ const k = title.lastIndexOf(' - '); if(k > 0){ source = title.slice(k + 3); title = title.slice(0, k); } }
+    if(!title || seen.has(title)) continue;
+    seen.add(title); out.push({title, source, link:it.link, date:it.date});
+    if(out.length >= PER_CAT) break;
+  }
+  return out;
+}
+async function loadCat(cat){
+  for(const s of CATS[cat].sources){
+    try{ const items = cleanItems(await fetchFeed(s.url), s.name); if(items.length) return items; }catch(e){}
+  }
+  throw new Error('no feed');
+}
+
+/* ====== 免費翻譯 ====== */
+async function translate(text, tl){
+  const key = tl + '|' + text;
+  if(cache.tr[key]) return cache.tr[key];
+  let res;
+  try{
+    const u = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-TW&tl=${tl}&dt=t&dt=rm&q=${encodeURIComponent(text)}`;
+    const d = await timeout(fetch(u).then(r => r.json()), 10000);
+    const segs = d[0] || [];
+    const t = segs.filter(s => s[0]).map(s => s[0]).join('');
+    const rmSeg = segs.find(s => !s[0] && s[2]);
+    if(!t) throw 0;
+    res = {t, rm: rmSeg ? rmSeg[2] : ''};
+  }catch(e){
+    const d = await timeout(fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=zh-TW|${tl}`).then(r => r.json()), 10000);
+    if(!d.responseData?.translatedText) throw new Error('tr');
+    res = {t: d.responseData.translatedText, rm:''};
+  }
+  cache.tr[key] = res; saveCache();
+  return res;
+}
+async function lookup(word, sl){
+  try{
+    const u = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=zh-TW&hl=zh-TW&dt=t&dt=bd&q=${encodeURIComponent(word)}`;
+    const d = await timeout(fetch(u).then(r => r.json()), 10000);
+    return { main:(d[0] || []).filter(s => s[0]).map(s => s[0]).join(''),
+             dict:(d[1] || []).map(p => ({pos:p[0], terms:(p[1] || []).slice(0, 6)})) };
+  }catch(e){
+    try{
+      const d = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=${sl}|zh-TW`).then(r => r.json());
+      return {main: d.responseData.translatedText, dict: []};
+    }catch(e2){ return {main:'（查詢失敗，請稍後再試）', dict:[]}; }
+  }
+}
+
+/* ====== 難字 ====== */
+function isHard(w, lang){
+  if(lang !== 'en' || /^[A-Z]/.test(w)) return false;
+  const lw = w.toLowerCase().replace(/[’']s$/, '');
+  if(lw.length <= 4) return false;
+  const forms = [lw, lw.replace(/s$/,''), lw.replace(/es$/,''), lw.replace(/ies$/,'y'), lw.replace(/ed$/,''), lw.replace(/d$/,''),
+                 lw.replace(/ing$/,''), lw.replace(/ing$/,'e'), lw.replace(/ly$/,''), lw.replace(/er$/,''), lw.replace(/ers$/,'')];
+  return !forms.some(f => COMMON.has(f) || (f.length <= 4 && f !== lw));
+}
+function wordify(text, lang){
+  if(!LANGS[lang].words) return esc(text);
+  return text.split(/([\p{L}][\p{L}'’\-]*)/u).map((p, i) =>
+    i % 2 ? `<span class="w${isHard(p, lang) ? ' hard' : ''}" data-w="${esc(p)}">${esc(p)}</span>` : esc(p)).join('');
+}
+
+/* ====== 朗讀 ====== */
+function speak(text, lang, rate = 1){
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = LANGS[lang].tts; u.rate = rate;
+    const v = speechSynthesis.getVoices().find(v => v.lang.replace('_','-').toLowerCase().startsWith(LANGS[lang].tts.slice(0, 2)));
+    if(v) u.voice = v;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ====== 畫面 ====== */
+function renderNav(){
+  document.body.dataset.cat = state.cat; document.body.dataset.lang = state.lang;
+  $('#cats').innerHTML = Object.entries(CATS).map(([k, c]) =>
+    `<button data-cat="${k}" class="${k === state.cat ? 'on' : ''}"><span class="dot" style="background:${c.color}"></span>${c.name}</button>`).join('');
+  $('#langs').innerHTML = Object.entries(LANGS).map(([k, l]) =>
+    `<button data-lang="${k}" class="${k === state.lang ? 'on' : ''}" style="${k === state.lang ? 'background:var(--' + k + ')' : ''}">${l.name}</button>`).join('');
+  $('#showZh').checked = state.showZh;
+}
+function fmtTime(d){
+  const t = new Date(d); if(isNaN(t)) return '';
+  return t.toLocaleString('zh-TW', {timeZone:'Asia/Taipei', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false});
+}
+async function render(force = false){
+  const token = ++renderToken, {cat, lang} = state, list = $('#list');
+  $('#status').textContent = '';
+  if(force){ delete cache.feeds[cat]; saveCache(); }
+  let items = cache.feeds[cat];
+  if(!items){
+    list.innerHTML = Array.from({length:4}, () => `<div class="card"><div class="skel" style="width:30%"></div><div style="height:10px"></div><div class="skel"></div><div style="height:8px"></div><div class="skel" style="width:90%"></div></div>`).join('');
+    $('#status').textContent = '抓取新聞中…';
+    try{ items = await loadCat(cat); cache.feeds[cat] = items; saveCache(); }
+    catch(e){
+      if(token !== renderToken) return;
+      $('#status').textContent = '';
+      list.innerHTML = `<div class="msg"><b>暫時抓不到新聞</b><br>所有免費新聞管道都沒有回應。
+        <span class="tip">1. 確認手機或電腦有連上網路，再按右上「↻ 重新抓取」。<br>
+        2. 公司或學校網路有時會擋這些網站，換成手機網路試試。<br>
+        3. 如果是從檔案預覽打開，請改用 Chrome / Safari 開啟。</span></div>`;
+      return;
+    }
+  }
+  if(token !== renderToken) return;
+  const legend = lang === 'en' ? `<mark>標底線的字</mark> 是比較難的單字。點任何一個字，都能看中文解釋、聽發音。`
+               : LANGS[lang].words ? `點任何一個字，都能看中文解釋、聽發音。`
+               : `斜體字是羅馬拼音，按 🔊 可以聽整句發音。`;
+  list.innerHTML = `<div class="legend">${legend}</div>` + items.map((it, i) => `
+    <article class="card" data-i="${i}">
+      <div class="meta"><span><span class="num">${String(i + 1).padStart(2, '0')}</span>${esc(it.source)}</span><span>${fmtTime(it.date)}</span></div>
+      <div class="zh ${state.showZh ? '' : 'hidden'}">${esc(it.title)}</div>
+      <div class="tr"><span class="tag">${LANGS[lang].short}</span><span class="tx"><span class="skel"></span></span></div>
+      <div class="rm"></div>
+      <div class="acts">
+        <button data-say="1">🔊 朗讀</button><button data-say="0.6">🐢 慢速</button>
+        <a href="${esc(it.link)}" target="_blank" rel="noopener">原文 ↗</a>
+      </div>
+    </article>`).join('');
+  $('#status').textContent = '翻譯中…';
+  await pool(items.map((it, i) => async () => {
+    let r; try{ r = await translate(it.title, lang); }catch(e){ r = {t:'（翻譯暫時失敗，按「↻ 重新抓取」再試）', rm:''}; }
+    if(token !== renderToken) return;
+    const card = list.querySelector(`.card[data-i="${i}"]`); if(!card) return;
+    card.dataset.text = r.t;
+    card.querySelector('.tx').innerHTML = wordify(r.t, lang);
+    card.querySelector('.rm').textContent = r.rm || '';
+  }), 4);
+  if(token === renderToken) $('#status').textContent = `${items.length} 則 · ${today}`;
+}
+
+/* ====== 查字 ====== */
+function openSheet(el){ $('#shade').classList.remove('hidden'); el.classList.remove('hidden'); }
+function closeSheets(){ document.querySelectorAll('.sheet').forEach(s => s.classList.add('hidden')); $('#shade').classList.add('hidden'); }
+async function openWord(word, ctx){
+  const lang = state.lang, pop = $('#pop');
+  openSheet(pop);
+  pop.innerHTML = `<div class="hd"><span class="big">${esc(word)}</span><button class="x" data-close>×</button></div><div class="skel" style="margin-top:10px"></div>`;
+  const r = await lookup(word, lang);
+  const meaning = r.main + (r.dict.length ? '；' + r.dict.map(p => p.pos + ' ' + p.terms.slice(0, 3).join('、')).join('；') : '');
+  const saved = store.get('nl_vocab', []).some(v => v.w.toLowerCase() === word.toLowerCase() && v.lang === lang);
+  pop.innerHTML = `
+    <div class="hd"><span class="big">${esc(word)}</span><button class="x" data-close>×</button></div>
+    <div class="mean">${esc(r.main)}</div>
+    ${r.dict.map(p => `<div class="pos"><b>${esc(p.pos)}</b>${esc(p.terms.join('、'))}</div>`).join('')}
+    <div class="acts" style="margin-top:14px">
+      <button id="pSay">🔊 發音</button><button id="pSlow">🐢 慢速</button>
+      <button class="sbtn" id="pSave">${saved ? '✓ 已在單字本' : '☆ 加入單字本'}</button>
+    </div>
+    <div class="ex">例句　${esc(ctx)}</div>`;
+  $('#pSay').onclick = () => speak(word, lang, 0.9);
+  $('#pSlow').onclick = () => speak(word, lang, 0.5);
+  $('#pSave').onclick = () => {
+    const v = store.get('nl_vocab', []);
+    if(!v.some(x => x.w.toLowerCase() === word.toLowerCase() && x.lang === lang)){ v.unshift({w:word, lang, m:meaning, ctx, d:today}); store.set('nl_vocab', v); }
+    $('#pSave').textContent = '✓ 已在單字本'; updateCount();
+  };
+}
+
+/* ====== 單字本 ====== */
+function updateCount(){ const n = store.get('nl_vocab', []).length; $('#vcount').textContent = n ? `· ${n}` : ''; }
+function openVocab(){
+  const v = store.get('nl_vocab', []), el = $('#vocab');
+  openSheet(el);
+  el.innerHTML = `<div class="hd"><span class="big">📒 我的單字本</span><button class="x" data-close>×</button></div>
+    ${v.length ? '' : '<div class="msg">還沒有單字。<br>點新聞裡的字，再按「☆ 加入單字本」。</div>'}
+    ${v.map((x, i) => `<div class="vi"><div><b>${esc(x.w)}</b><span class="lg" style="background:var(--${x.lang})">${LANGS[x.lang]?.short || x.lang}</span> <small>${x.d}</small><br>${esc(x.m)}<br><small>${esc(x.ctx)}</small></div>
+      <div style="display:flex;flex-direction:column;gap:5px"><button class="sbtn" data-vsay="${i}">🔊</button><button class="sbtn" data-vdel="${i}">刪除</button></div></div>`).join('')}
+    ${v.length ? '<div class="acts" style="margin-top:12px"><button id="vCopy">複製全部單字</button></div>' : ''}`;
+  const c = $('#vCopy');
+  if(c) c.onclick = async () => { try{ await navigator.clipboard.writeText(v.map(x => `${x.w}\t${x.m}`).join('\n')); c.textContent = '已複製 ✓'; }catch(e){ c.textContent = '無法複製'; } };
+}
+
+/* ====== 事件 ====== */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-cat],[data-lang],[data-close],[data-say],.w,[data-vdel],[data-vsay],#shade');
+  if(!t) return;
+  if(t.id === 'shade' || t.dataset.close !== undefined) closeSheets();
+  else if(t.dataset.cat){ state.cat = t.dataset.cat; store.set('nl_cat', state.cat); renderNav(); render(); window.scrollTo({top:0}); }
+  else if(t.dataset.lang){ state.lang = t.dataset.lang; store.set('nl_lang', state.lang); renderNav(); render(); }
+  else if(t.dataset.say){ const c = t.closest('.card'); if(c.dataset.text) speak(c.dataset.text, state.lang, +t.dataset.say); }
+  else if(t.classList.contains('w')){ openWord(t.dataset.w, t.closest('.card').dataset.text || ''); }
+  else if(t.dataset.vdel !== undefined){ const v = store.get('nl_vocab', []); v.splice(+t.dataset.vdel, 1); store.set('nl_vocab', v); updateCount(); openVocab(); }
+  else if(t.dataset.vsay !== undefined){ const x = store.get('nl_vocab', [])[+t.dataset.vsay]; if(x) speak(x.w, x.lang, 0.8); }
+});
+$('#showZh').onchange = e => { state.showZh = e.target.checked; store.set('nl_zh', state.showZh); document.querySelectorAll('.zh').forEach(z => z.classList.toggle('hidden', !state.showZh)); };
+$('#refresh').onclick = () => render(true);
+$('#vocabBtn').onclick = openVocab;
+try{ speechSynthesis.getVoices(); }catch(e){}
+
+const wk = new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei', weekday:'long'}).format(new Date());
+$('#date').innerHTML = `${today.replace(/-/g, '.')}<br>${wk}`;
+renderNav(); updateCount(); render();
+</script>
+</body>
+</html>
