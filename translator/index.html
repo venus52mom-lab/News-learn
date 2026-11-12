@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1e21">
+<title>即時聽譯</title>
+<style>
+  :root{
+    --bg:#1c1e21; --panel:#222529; --text:#cfcac1; --sub:#9aa39b; --muted:#80858a;
+    --accent:#8ea597; --warn:#b89a86; --line:#30343a; --btn:#2a2e33; --fs:20px;
+  }
+  :root[data-theme="light"]{
+    --bg:#ece9e3; --panel:#f5f3ee; --text:#3a3c3e; --sub:#5f6b63; --muted:#8c8e8f;
+    --accent:#6f8a7c; --warn:#9c7a66; --line:#dcd8cf; --btn:#e4e0d8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"PingFang TC","Noto Sans TC",sans-serif;-webkit-tap-highlight-color:transparent}
+  body{display:flex;flex-direction:column;height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  header{display:flex;gap:6px;align-items:center;padding:8px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  button,select{font:inherit;font-size:15px;color:var(--text);background:var(--btn);border:1px solid var(--line);
+    border-radius:10px;padding:8px 10px;min-height:40px}
+  select{max-width:38vw}
+  #toggle{min-width:84px;font-weight:600}
+  #toggle.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .arrow{color:var(--muted)}
+  .spacer{flex:1}
+  #status{width:100%;font-size:12px;color:var(--muted);min-height:16px;padding:0 2px}
+  main{flex:1;display:flex;flex-direction:column;min-height:0}
+  section{flex:1;display:flex;flex-direction:column;min-height:0}
+  section+section{border-top:1px solid var(--line)}
+  .label{font-size:12px;color:var(--muted);padding:6px 12px 0;letter-spacing:.04em}
+  .pane{flex:1;overflow-y:auto;padding:4px 12px 12px;font-size:var(--fs);line-height:1.55;overscroll-behavior:contain}
+  #trg .pane{color:var(--sub)}
+  .pane p{margin:0 0 .45em}
+  .pane .interim{color:var(--muted)}
+  .pane .pending{color:var(--muted)}
+  .pane .err{color:var(--warn);font-size:.8em}
+  .empty{color:var(--muted);font-size:15px;line-height:1.6}
+  /* 設定面板 */
+  #sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:9}
+  #sheet.show{display:flex}
+  .card{background:var(--panel);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+    max-height:85dvh;overflow-y:auto;border-top:1px solid var(--line)}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+  .row small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .seg button{padding:6px 10px;min-height:34px}
+  .seg button.sel{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
+  input[type=range]{accent-color:var(--accent);width:140px}
+  .tips{font-size:13px;color:var(--muted);line-height:1.6;margin:12px 0 4px;padding-left:18px}
+  .card h3{margin:0 0 4px;font-size:16px}
+</style>
+</head>
+<body>
+<header>
+  <button id="toggle">● 開始</button>
+  <select id="srcSel" aria-label="原始語言"></select>
+  <span class="arrow">→</span>
+  <select id="trgSel" aria-label="翻譯語言"></select>
+  <span class="spacer"></span>
+  <button id="gear" aria-label="設定">⚙</button>
+  <div id="status">按「開始」並允許麥克風</div>
+</header>
+<main>
+  <section id="src"><div class="label" id="srcLabel">原文</div><div class="pane" id="srcPane">
+    <div class="empty">把手機放在講者附近，按「開始」。<br>上面顯示聽到的原文，下面顯示翻譯。</div></div></section>
+  <section id="trg"><div class="label" id="trgLabel">譯文</div><div class="pane" id="trgPane"></div></section>
+</main>
+
+<div id="sheet"><div class="card">
+  <h3>設定</h3>
+  <div class="row"><div>主題</div><div class="seg" id="themeSeg">
+    <button data-v="dark">深色</button><button data-v="light">淺色</button><button data-v="auto">跟隨系統</button></div></div>
+  <div class="row"><div>文字大小</div><input type="range" id="fs" min="14" max="34" step="1"></div>
+  <div class="row"><div>保持螢幕開啟<small>瀏覽器關螢幕後會停止收音，建議開啟並調暗亮度</small></div><input type="checkbox" id="wake"></div>
+  <div class="row"><div>即時顯示辨識中文字<small>關閉後只顯示完整句子，更省電</small></div><input type="checkbox" id="interim"></div>
+  <div class="row"><div>裝置端語音辨識<small>Chrome 新版支援時才有效，可離線、不傳到雲端</small></div><input type="checkbox" id="local"></div>
+  <div class="row"><div>清除所有文字</div><button id="clear">清除</button></div>
+  <ul class="tips">
+    <li>深色主題＋低亮度最省電（OLED 螢幕尤其明顯）。</li>
+    <li>翻譯優先用瀏覽器內建的離線翻譯；不支援時才用免費的 Google 翻譯網路介面，都不用 AI token。</li>
+    <li>「自動偵測」依辨識到的文字判斷語言，準確度有限；不準時請直接選原始語言。</li>
+    <li>網頁無法在關螢幕或切到其他 App 後繼續收音，這是手機瀏覽器的限制。</li>
+  </ul>
+  <button id="closeSheet" style="width:100%;margin-top:8px">完成</button>
+</div></div>
+
+<script>
+(() => {
+'use strict';
+// ---------- 語言清單 ----------
+// 辨識用語言 (Web Speech API locale)
+const SRC = [
+  ['auto','自動偵測'],['en-US','英文 (美)'],['en-GB','英文 (英)'],['ja-JP','日文'],['ko-KR','韓文'],
+  ['zh-TW','中文 (台灣)'],['zh-CN','中文 (普通話)'],['yue-Hant-HK','粵語'],['fr-FR','法文'],['de-DE','德文'],
+  ['es-ES','西班牙文'],['it-IT','義大利文'],['pt-BR','葡萄牙文'],['ru-RU','俄文'],['vi-VN','越南文'],
+  ['th-TH','泰文'],['id-ID','印尼文'],['ms-MY','馬來文'],['ar-SA','阿拉伯文'],['hi-IN','印地文'],['tr-TR','土耳其文'],['nl-NL','荷蘭文']
+];
+// 翻譯目標語言 (Google 代碼)
+const TRG = [
+  ['zh-TW','繁體中文'],['zh-CN','簡體中文'],['en','英文'],['ja','日文'],['ko','韓文'],['fr','法文'],['de','德文'],
+  ['es','西班牙文'],['it','義大利文'],['pt','葡萄牙文'],['ru','俄文'],['vi','越南文'],['th','泰文'],['id','印尼文'],['ms','馬來文'],['ar','阿拉伯文'],['hi','印地文'],['tr','土耳其文'],['nl','荷蘭文']
+];
+// 偵測到的語言 → 辨識 locale
+const DETECT2LOCALE = {en:'en-US',ja:'ja-JP',ko:'ko-KR',zh:'zh-TW','zh-TW':'zh-TW','zh-CN':'zh-CN','zh-Hant':'zh-TW','zh-Hans':'zh-CN',
+  yue:'yue-Hant-HK',fr:'fr-FR',de:'de-DE',es:'es-ES',it:'it-IT',pt:'pt-BR',ru:'ru-RU',vi:'vi-VN',th:'th-TH',id:'id-ID',ms:'ms-MY',ar:'ar-SA',hi:'hi-IN',tr:'tr-TR',nl:'nl-NL'};
+const nameOf = (list, code) => (list.find(x => x[0] === code) || [code, code])[1];
+const base = c => (c || '').toLowerCase().split('-')[0].replace('cmn','zh').replace('yue','zh');
+// locale → 翻譯 API 的來源碼
+const srcCodeForTranslate = loc => {
+  if (!loc) return 'auto';
+  if (loc.startsWith('zh-TW') || loc.startsWith('yue')) return 'zh-TW';
+  if (loc.startsWith('zh')) return 'zh-CN';
+  return base(loc);
+};
+// Chrome 內建 Translator 用 BCP47
+const bcp = c => c === 'zh-TW' ? 'zh-Hant' : c === 'zh-CN' ? 'zh' : c;
+
+// ---------- 設定 ----------
+const DEF = {src:'auto', trg:'zh-TW', theme:'dark', fs:20, wake:true, interim:true, local:false, guess:'en-US'};
+let S = {...DEF};
+try { Object.assign(S, JSON.parse(localStorage.getItem('lt.settings') || '{}')); } catch(e) {}
+const save = () => { try { localStorage.setItem('lt.settings', JSON.stringify(S)); } catch(e) {} };
+
+const $ = id => document.getElementById(id);
+const srcSel = $('srcSel'), trgSel = $('trgSel'), srcPane = $('srcPane'), trgPane = $('trgPane'),
+      statusEl = $('status'), toggleBtn = $('toggle');
+SRC.forEach(([v,n]) => srcSel.add(new Option(n, v)));
+TRG.forEach(([v,n]) => trgSel.add(new Option(n, v)));
+srcSel.value = S.src; trgSel.value = S.trg;
+
+function applyTheme(){
+  const t = S.theme === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : S.theme;
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name=theme-color]').content = t === 'light' ? '#ece9e3' : '#1c1e21';
+  document.querySelectorAll('#themeSeg button').forEach(b => b.classList.toggle('sel', b.dataset.v === S.theme));
+}
+function applyFs(){ document.documentElement.style.setProperty('--fs', S.fs + 'px'); }
+applyTheme(); applyFs();
+matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => S.theme === 'auto' && applyTheme());
+
+const setStatus = t => { statusEl.textContent = t; };
+function updateLabels(){
+  const cur = S.src === 'auto' ? `自動偵測：${nameOf(SRC, S.guess)}` : nameOf(SRC, S.src);
+  $('srcLabel').textContent = `原文 · ${cur}`;
+  $('trgLabel').textContent = `譯文 · ${nameOf(TRG, S.trg)}`;
+}
+updateLabels();
+
+// ---------- 顯示：超過畫面後才刪舊文字 ----------
+const stick = new WeakMap(); // 使用者是否停在底部
+[srcPane, trgPane].forEach(p => {
+  stick.set(p, true);
+  p.addEventListener('scroll', () => stick.set(p, p.scrollHeight - p.scrollTop - p.clientHeight < 40), {passive:true});
+});
+function clearEmpty(){ const e = srcPane.querySelector('.empty'); if (e) e.remove(); }
+function trim(p){
+  // 保留約兩個畫面高度的內容，完全捲出畫面很久的舊段落才刪掉
+  const limit = p.clientHeight * 2.2;
+  while (p.scrollHeight > limit && p.children.length > 2) {
+    const first = p.firstElementChild;
+    if (first.classList.contains('interim')) break;
+    const id = first.dataset.id;
+    first.remove();
+    // 兩邊同步刪除同一段，避免對不上
+    if (id) { const twin = (p === srcPane ? trgPane : srcPane).querySelector(`[data-id="${id}"]`);
+      if (twin && twin.offsetTop + twin.offsetHeight < (twin.parentNode.scrollTop)) twin.remove(); }
+  }
+}
+function toBottom(p){ if (stick.get(p)) p.scrollTop = p.scrollHeight; }
+
+let interimEl = null, interimText = '', interimTimer = 0;
+function showInterim(t){
+  interimText = t;
+  if (interimTimer) return;            // 節流：最多每 300ms 更新一次畫面
+  interimTimer = setTimeout(() => {
+    interimTimer = 0;
+    if (!interimText) { if (interimEl) { interimEl.remove(); interimEl = null; } return; }
+    if (!interimEl) { clearEmpty(); interimEl = document.createElement('p'); interimEl.className = 'interim'; srcPane.appendChild(interimEl); }
+    interimEl.textContent = interimText;
+    toBottom(srcPane);
+  }, 300);
+}
+
+let seq = 0;
+function addFinal(text){
+  clearEmpty();
+  const id = String(++seq);
+  const ps = document.createElement('p'); ps.dataset.id = id; ps.textContent = text;
+  if (interimEl) srcPane.insertBefore(ps, interimEl); else srcPane.appendChild(ps);
+  const pt = document.createElement('p'); pt.dataset.id = id; pt.className = 'pending'; pt.textContent = '…';
+  trgPane.appendChild(pt);
+  trim(srcPane); trim(trgPane); toBottom(srcPane); toBottom(trgPane);
+  return pt;
+}
+
+// ---------- 翻譯：內建離線翻譯 → 免費網路翻譯 ----------
+const cache = new Map();
+const translators = new Map();
+async function getBuiltin(src, trg){
+  if (!('Translator' in self) || src === 'auto') return null;
+  const key = src + '>' + trg;
+  if (translators.has(key)) return translators.get(key);
+  let t = null;
+  try {
+    const a = await Translator.availability({sourceLanguage: bcp(src), targetLanguage: bcp(trg)});
+    if (a === 'available' || a === 'downloadable' || a === 'downloading') {
+      t = await Translator.create({sourceLanguage: bcp(src), targetLanguage: bcp(trg)});
+    }
+  } catch(e) { t = null; }
+  translators.set(key, t);
+  return t;
+}
+async function detectLang(text){
+  if ('LanguageDetector' in self) {
+    try {
+      if (!detectLang.d) detectLang.d = await LanguageDetector.create();
+      const r = (await detectLang.d.detect(text))[0];
+      if (r && r.confidence > 0.6) return r.detectedLanguage;
+    } catch(e) {}
+  }
+  return null;
+}
+async function translate(text, src, trg){
+  const k = src + '|' + trg + '|' + text;
+  if (cache.has(k)) return cache.get(k);
+  let out = null, detected = null;
+  if (src !== 'auto' && base(src) === base(trg) && src === trg) out = {text, detected: src};
+  if (!out) {
+    const bt = await getBuiltin(src, trg);
+    if (bt) { try { out = {text: await bt.translate(text), detected: src, via:'local'}; } catch(e) {} }
+  }
+  if (!out) {
+    try {
+      const u = 'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=' + encodeURIComponent(src) +
+                '&tl=' + encodeURIComponent(trg) + '&q=' + encodeURIComponent(text);
+      const r = await fetch(u); if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      out = {text: (d[0] || []).map(x => x[0]).join(''), detected: d[2] || null, via:'web'};
+    } catch(e) {}
+  }
+  if (!out && src !== 'auto') {
+    try {
+      const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + src + '|' + trg);
+      const d = await r.json();
+      out = {text: d.responseData.translatedText, detected: src, via:'web'};
+    } catch(e) {}
+  }
+  if (out) { cache.set(k, out); if (cache.size > 300) cache.delete(cache.keys().next().value); }
+  return out;
+}
+
+// ---------- 自動偵測語言 ----------
+let mismatch = 0;
+function considerSwitch(detected){
+  if (S.src !== 'auto' || !detected) return;
+  const loc = DETECT2LOCALE[detected] || DETECT2LOCALE[base(detected)];
+  if (!loc) return;
+  if (base(loc) === base(S.guess)) { mismatch = 0; return; }
+  if (++mismatch >= 2) {      // 連續兩句判斷為其他語言才切換，避免亂跳
+    mismatch = 0; S.guess = loc; save(); updateLabels();
+    setStatus('偵測到 ' + nameOf(SRC, loc) + '，已切換辨識語言');
+    restartRec();
+  }
+}
+
+async function handleFinal(text){
+  text = text.trim(); if (!text) return;
+  const el = addFinal(text);
+  const recLoc = S.src === 'auto' ? S.guess : S.src;
+  let src = srcCodeForTranslate(recLoc);
+  if (S.src === 'auto') { const d = await detectLang(text); if (d) { considerSwitch(d); src = srcCodeForTranslate(DETECT2LOCALE[d] || d); } else src = 'auto'; }
+  const r = await translate(text, src, S.trg);
+  if (r) {
+    el.className = ''; el.textContent = r.text;
+    if (S.src === 'auto' && src === 'auto') considerSwitch(r.detected);
+  } else { el.className = 'err'; el.textContent = '（翻譯失敗，請檢查網路）'; }
+  toBottom(trgPane);
+}
+
+// ---------- 語音辨識 ----------
+const SR = self.SpeechRecognition || self.webkitSpeechRecognition;
+let rec = null, running = false, finalCount = 0, backoff = 300, restartTimer = 0;
+
+function makeRec(){
+  const r = new SR();
+  r.lang = S.src === 'auto' ? S.guess : S.src;
+  r.continuous = true;
+  r.interimResults = !!S.interim;
+  r.maxAlternatives = 1;
+  if (S.local && 'processLocally' in r) { try { r.processLocally = true; } catch(e) {} }
+  finalCount = 0;
+  r.onresult = e => {
+    backoff = 300;
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const res = e.results[i];
+      if (res.isFinal) {
+        if (i >= finalCount) { finalCount = i + 1; handleFinal(res[0].transcript); }
+      } else interim += res[0].transcript;
+    }
+    if (S.interim) showInterim(interim);
+  };
+  r.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      setStatus('麥克風權限被拒絕，請在瀏覽器網址列的設定中允許麥克風'); stop(); return;
+    }
+    if (e.error === 'language-not-supported') { setStatus('這個瀏覽器不支援此語言的辨識'); stop(); return; }
+    if (e.error === 'network') { setStatus('網路中斷，稍後自動重試…'); backoff = Math.min(backoff * 2, 8000); }
+    else if (e.error !== 'no-speech' && e.error !== 'aborted') setStatus('辨識錯誤：' + e.error + '，自動重試中');
+  };
+  r.onend = () => {
+    showInterim('');
+    if (!running) return;
+    clearTimeout(restartTimer);
+    restartTimer = setTimeout(() => { if (running && !document.hidden) startRec(); }, backoff);
+  };
+  return r;
+}
+async function startRec(){
+  const loc = S.src === 'auto' ? S.guess : S.src;
+  if (S.local && SR.available) {
+    try {
+      const a = await SR.available({langs:[loc], processLocally:true});
+      if (a === 'downloadable' && SR.install) { setStatus('下載裝置端辨識模型中…'); await SR.install({langs:[loc], processLocally:true}); }
+      else if (a === 'unavailable') setStatus('此語言沒有裝置端辨識，改用雲端辨識');
+    } catch(e) {}
+  }
+  try { rec = makeRec(); rec.start(); setStatus('聆聽中 · ' + nameOf(SRC, loc)); }
+  catch(e) { setStatus('無法啟動辨識：' + e.message); }
+}
+function restartRec(){ if (!running) return; try { rec && rec.abort(); } catch(e) {} }
+
+async function start(){
+  if (!SR) { setStatus('這個瀏覽器不支援語音辨識，請改用 Android 的 Chrome 或 iPhone 的 Safari'); return; }
+  running = true; backoff = 300;
+  toggleBtn.textContent = '■ 停止'; toggleBtn.classList.add('on');
+  // 在使用者點擊時先準備好離線翻譯（下載模型需要點擊動作）
+  const recLoc = S.src === 'auto' ? S.guess : S.src;
+  getBuiltin(srcCodeForTranslate(recLoc), S.trg);
+  if (S.wake) wakeOn();
+  startRec();
+}
+function stop(){
+  running = false; clearTimeout(restartTimer);
+  try { rec && rec.abort(); } catch(e) {}
+  rec = null; showInterim('');
+  toggleBtn.textContent = '● 開始'; toggleBtn.classList.remove('on');
+  wakeOff();
+  if (!/拒絕|不支援/.test(statusEl.textContent)) setStatus('已停止');
+}
+toggleBtn.onclick = () => running ? stop() : start();
+
+// ---------- 螢幕常亮 ----------
+let wakeLock = null;
+async function wakeOn(){ try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(e) {} }
+function wakeOff(){ try { wakeLock && wakeLock.release(); } catch(e) {} wakeLock = null; }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (running) { if (S.wake) wakeOn(); if (!rec) startRec(); else restartRec(); }
+});
+
+// ---------- 控制項 ----------
+srcSel.onchange = () => { S.src = srcSel.value; mismatch = 0; save(); updateLabels(); restartRec(); };
+trgSel.onchange = () => { S.trg = trgSel.value; save(); updateLabels(); };
+$('gear').onclick = () => $('sheet').classList.add('show');
+$('closeSheet').onclick = () => $('sheet').classList.remove('show');
+$('sheet').onclick = e => { if (e.target.id === 'sheet') $('sheet').classList.remove('show'); };
+document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => { S.theme = b.dataset.v; save(); applyTheme(); });
+const fs = $('fs'); fs.value = S.fs; fs.oninput = () => { S.fs = +fs.value; applyFs(); }; fs.onchange = save;
+const wake = $('wake'); wake.checked = S.wake; wake.onchange = () => { S.wake = wake.checked; save(); if (running) S.wake ? wakeOn() : wakeOff(); };
+const interim = $('interim'); interim.checked = S.interim; interim.onchange = () => { S.interim = interim.checked; save(); restartRec(); };
+const local = $('local'); local.checked = S.local; local.onchange = () => { S.local = local.checked; save(); restartRec(); };
+if (!SR || !('processLocally' in (SR.prototype || {}))) { local.disabled = true; local.parentElement.querySelector('small').textContent = '這個瀏覽器不支援裝置端辨識'; }
+$('clear').onclick = () => { srcPane.innerHTML = ''; trgPane.innerHTML = ''; interimEl = null; $('sheet').classList.remove('show'); };
+
+if (!SR) setStatus('這個瀏覽器不支援語音辨識，請改用 Android 的 Chrome 或 iPhone 的 Safari');
+})();
+</script>
+</body>
+</html>
