@@ -68,7 +68,6 @@ main{padding-top:14px;padding-bottom:100px}
 .meta{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--mute);letter-spacing:.03em}
 .num{font-family:"Noto Serif TC",serif;color:var(--c);font-weight:700;margin-right:8px}
 .zh{font-family:"Noto Serif TC",serif;font-weight:500;font-size:16.5px;line-height:1.6;color:var(--ink);margin:6px 0 8px}
-.zhb{font-family:"Noto Sans TC",sans-serif;font-size:15px;color:var(--soft);border-top:1px dashed var(--line);padding-top:7px;margin:8px 0 0}
 .tr{font-size:17.5px;line-height:1.75;color:var(--ink);border-top:1px dashed var(--line);padding-top:8px;position:relative}
 .tag{display:inline-block;font-size:10.5px;letter-spacing:.08em;color:var(--l);border:1px solid var(--l);border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:3px;opacity:.85}
 .rm{font-size:13px;color:var(--mute);font-style:italic;margin-top:3px;line-height:1.5}
@@ -99,13 +98,31 @@ main{padding-top:14px;padding-bottom:100px}
 .vi{border-bottom:1px solid var(--line);padding:10px 0;display:flex;justify-content:space-between;gap:10px}
 .vi .lg{font-size:10.5px;border-radius:4px;padding:0 5px;color:#fff;margin-left:6px;vertical-align:2px}
 .vi small{color:var(--mute)}
+.ghb{border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:999px;padding:1px 9px;font-size:11px;cursor:pointer;margin-top:3px}
+.ents{margin-top:10px;background:var(--cbg);border-radius:10px;padding:10px 12px}
+.ent-h{font-size:12.5px;color:var(--c);font-weight:500;margin-bottom:4px}
+.ent-h small{color:var(--mute);font-weight:400;margin-left:6px}
+.ent{padding:8px 0;border-top:1px dashed var(--line)}
+.ent:first-of-type{border-top:none}
+.ent-t{font-size:15px}.ent-t b{color:var(--ink)}
+.ent-full{font-size:12.5px;color:var(--soft);margin-top:1px}
+.ent-d{font-size:13.5px;color:var(--soft);line-height:1.65;margin-top:4px}
+.ent-l{display:flex;gap:14px;margin-top:4px;font-size:12.5px}
+.ent-l a,.gh-n a{color:var(--c)}
+.ent-n{font-size:12.5px;color:var(--mute);margin-top:4px}
+#gh{border-top-color:var(--world)}
+.gh-sec{padding:12px 0;border-bottom:1px solid var(--line)}
+.gh-t{font-weight:500;font-size:15px}.gh-t small{color:var(--mute);font-weight:400;margin-left:6px;font-size:12px}
+.gh-n{font-size:13.5px;color:var(--soft);margin-top:5px;line-height:1.65}
+.meter{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
+.meter span{display:block;height:100%;background:var(--tw);min-width:3px;border-radius:99px}
 </style>
 </head>
 <body data-cat="tw" data-lang="en">
 <header><div class="wrap">
   <div class="top">
     <h1><small>Daily News · Language</small>每日新聞學語言</h1>
-    <div id="date"></div>
+    <div style="text-align:right"><div id="date"></div><button id="ghBtn" class="ghb">📊 GitHub 用量</button></div>
   </div>
   <div class="mode" id="mode">
     <button data-mode="tw">🇹🇼 台灣新聞<small>中文 → 翻成外語</small></button>
@@ -118,6 +135,7 @@ main{padding-top:14px;padding-bottom:100px}
 <main class="wrap">
   <div class="bar">
     <label><input type="checkbox" id="showZh" checked> <span id="zhLabel">顯示中文原文</span></label>
+    <select id="region" class="hidden"></select>
     <select id="count"><option value="10">10 則</option><option value="15">15 則</option><option value="20">20 則</option></select>
     <span id="status"></span>
     <button class="rf" id="refresh">↻ 重新抓取</button>
@@ -132,15 +150,25 @@ main{padding-top:14px;padding-bottom:100px}
 <div id="shade" class="shade hidden"></div>
 <div id="pop" class="sheet hidden"></div>
 <div id="vocab" class="sheet hidden"></div>
+<div id="gh" class="sheet hidden"></div>
 
 <script>
 /* ====== 語言設定（含各國 Google 新聞版本與備用來源） ====== */
+const REPO = 'venus52mom-lab/News-learn';
+const BBC = s => `https://feeds.bbci.co.uk/news/${s}rss.xml`;
+const NPR = id => `https://feeds.npr.org/${id}/rss.xml`;
+const EN_REGIONS = {
+  us:{country:'🇺🇸 美國', tts:'en-US', gn:'hl=en-US&gl=US&ceid=US:en',
+      extra:{local:[NPR(1001)], world:[NPR(1004)], fin:[NPR(1006)], tech:[NPR(1019)], health:[NPR(1128)]}},
+  uk:{country:'🇬🇧 英國', tts:'en-GB', gn:'hl=en-GB&gl=GB&ceid=GB:en',
+      extra:{local:[BBC('uk/')], world:[BBC('world/')], fin:[BBC('business/')], tech:[BBC('technology/')], health:[BBC('health/')]}},
+  au:{country:'🇦🇺 澳洲', tts:'en-AU', gn:'hl=en-AU&gl=AU&ceid=AU:en',
+      extra:{local:['https://www.abc.net.au/news/feed/51120/rss.xml']}},
+  nz:{country:'🇳🇿 紐西蘭', tts:'en-NZ', gn:'hl=en-NZ&gl=NZ&ceid=NZ:en',
+      extra:{local:['https://www.rnz.co.nz/rss/national.xml'], world:['https://www.rnz.co.nz/rss/world.xml'], fin:['https://www.rnz.co.nz/rss/business.xml']}}
+};
 const LANGS = {
-  en:{name:'English',  short:'EN', tts:'en-US', words:true, country:'🇺🇸 美國',
-      gn:'hl=en-US&gl=US&ceid=US:en', life:'lifestyle OR food OR travel OR consumer',
-      extra:{world:['https://feeds.bbci.co.uk/news/world/rss.xml'], fin:['https://feeds.bbci.co.uk/news/business/rss.xml'],
-             tech:['https://feeds.bbci.co.uk/news/technology/rss.xml'], health:['https://feeds.bbci.co.uk/news/health/rss.xml'],
-             local:['https://feeds.bbci.co.uk/news/rss.xml']}},
+  en:{name:'English',  short:'EN', tts:'en-US', words:true, regions:EN_REGIONS, life:'lifestyle OR food OR travel OR consumer'},
   ja:{name:'日本語',    short:'JA', tts:'ja-JP', country:'🇯🇵 日本',
       gn:'hl=ja&gl=JP&ceid=JP:ja', life:'暮らし OR 生活',
       extra:{local:['https://www3.nhk.or.jp/rss/news/cat1.xml'], world:['https://www3.nhk.or.jp/rss/news/cat6.xml'],
@@ -182,9 +210,14 @@ function sourcesFor(mode, cat, lang){
     const ex = TW_EXTRA[cat] || [];
     return cat === 'life' ? [ex[0], g, ...ex.slice(1)] : [g, ...ex];
   }
-  const L = LANGS[lang];
+  const L = cfg(lang);
   const g = cat === 'life' ? gnSearch(L.life, L.gn) : gnTopic(CATS[cat].topic, L.gn);
   return [g, ...((L.extra || {})[cat] || [])];
+}
+/* 某語言目前的設定（英文會合併所選國家） */
+function cfg(lang){
+  const L = LANGS[lang];
+  return L.regions ? {...L, ...L.regions[state.region] } : L;
 }
 const COMMON = new Set(`about above accept access accident account across action active actually added addition address admit adult affect after again against agency agree ahead allow almost alone along already alright although always among amount animal another answer anyone anything appear apply approach april area argue around arrive article artist asked attack attempt attention august author autumn available avoid award aware awful baby back balance based basic beach beautiful became because become before began begin behind being believe below beside best better between beyond bigger billion birth black blood board body border bottom brain branch bread break bring broad brother brought budget build building built business button buyer called camera campaign cancer capital career carry catch cause center central century certain chair chance change charge cheap check chicken child children china chinese choice choose church citizen city civil claim class clean clear climate close clothes coach coast coffee cold college color comes coming common community company compare complete computer concern condition consider continue control corner correct cost could council country county couple course court cover create credit crime crisis cross crowd culture current customer cycle daily damage dance danger dark daughter death debate decade decide decision deep defense degree demand department describe design detail develop development device difference different difficult dinner direct director discover discuss disease doctor dollar double doubt draft drama dream dress drink drive driver during early earth easily eastern economic economy education effect effort eight either election electric element else email emergency employee energy enjoy enough enter entire environment equal error escape especially establish estimate evening event every everyone everything evidence exactly example exchange exist expect expensive experience expert explain export express extra family famous farmer father favorite feature february federal feeling field fight figure final finally finance financial finger finish first floor flower follow food foreign forest forget former forward found free fresh friday friend front fruit full funny future garden general giant girl given glass global goal going golden government great green ground group growth guess guest guide habit half hand happen happy hard health healthy heard heart heavy hello help higher highway himself history holiday home hope hospital hotel hour house however huge human hundred husband idea image impact import important improve include including income increase indeed industry inflation information inside instead interest international internet interview island issue itself january japan japanese job join joint journey judge july june junior keep kitchen know knowledge korea labor land language large later latest laugh launch lawyer leader learn least leave legal less letter level life light likely limit line list listen little live local long look lose loss lower lucky lunch machine magazine main major make manager many march market marriage material matter maybe meaning measure media medical meeting member memory mental message method middle might military million minister minute model modern moment monday money month more morning most mother mountain move movie music must myself nation national natural nature near nearly need network never news next night nobody normal north northern nothing notice novel number nurse object october offer office officer official often older online only open operation opinion order other others outside over owner paper parent party passenger patient pattern peace people percent perfect perhaps period person phone photo picture piece place plan plant player please point police policy political politics poor popular population position positive possible power practice prepare present president pressure pretty prevent price private probably problem process produce product production program project property protect prove provide public pull purpose push quality quarter question quick quickly quite race radio raise range rate rather reach read ready real really reason receive recent recently record reduce region relation release remain remember remove report research resident resource respond rest result return review rich right rise risk river road rock role room round rule safe safety sale same saturday save school science score season second section security seem sell send senior sense series serious serve service seven several share short should shoulder show side sign signal similar simple since single sister situation skill sleep small smile social society soft soldier some someone something sometimes south southern space speak special speech speed spend sport spring staff stage stand standard start state station stay step still stock stone stop store story street strong student study style subject success such sudden suddenly suffer sugar summer sunday supply support sure system table taiwan taiwanese take talk teacher team technology television tell temperature tend term test thank that their them themselves then theory there these thing think third this those though thought thousand three through thursday ticket time today together tomorrow tonight total touch tour toward town trade traffic train training travel treat tree trial trip trouble truck true trust truth try tuesday turn twice type typhoon under understand union unit united university until upon usually value various very victim video view village visit voice vote wait walk wall want watch water weather website wednesday week weekend weight welcome well west western what whatever when where whether which while white whole whose wide wife will window winner winter with within without woman women wonder word work worker world worry would write writer wrong yesterday young yourself youth across agreed announced asked called company companies country countries expected increased major month months people percent prices rates reported reports said says shares stocks still stores students taiwan tariff tariffs think trump using workers years year`.split(/\s+/));
 
@@ -204,7 +237,8 @@ let cache = store.get('nl_cache3', null);
 if(!cache || cache.date !== today) cache = {date:today, feeds:{}, tr:{}};
 const saveCache = () => { try{ localStorage.setItem('nl_cache3', JSON.stringify(cache)); }catch(e){ cache.tr = {}; store.set('nl_cache3', cache); } };
 let state = { mode: store.get('nl_mode','tw'), cat: store.get('nl_cat2','local'), lang: store.get('nl_lang','en'),
-              showZh: store.get('nl_zh', true), count: store.get('nl_count', 20) };
+              showZh: store.get('nl_zh', true), count: store.get('nl_count', 20), region: store.get('nl_region', 'us') };
+if(!EN_REGIONS[state.region]) state.region = 'us';
 if(!CATS[state.cat]) state.cat = 'local';
 if(!LANGS[state.lang]) state.lang = 'en';
 let renderToken = 0;
@@ -311,15 +345,17 @@ function speak(text, lang, rate = 1){
   try{
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = LANGS[lang].tts; u.rate = rate;
-    const v = speechSynthesis.getVoices().find(v => v.lang.replace('_','-').toLowerCase().startsWith(LANGS[lang].tts.slice(0, 2)));
+    const tts = cfg(lang).tts;
+    u.lang = tts; u.rate = rate;
+    const vs = speechSynthesis.getVoices(), norm = x => x.lang.replace('_','-').toLowerCase();
+    const v = vs.find(v => norm(v) === tts.toLowerCase()) || vs.find(v => norm(v).startsWith(tts.slice(0, 2)));
     if(v) u.voice = v;
     speechSynthesis.speak(u);
   }catch(e){}
 }
 
 /* ====== 畫面 ====== */
-const catName = k => k === 'local' ? (state.mode === 'tw' ? '🇹🇼 台灣' : LANGS[state.lang].country) : CATS[k].name;
+const catName = k => k === 'local' ? (state.mode === 'tw' ? '🇹🇼 台灣' : cfg(state.lang).country) : CATS[k].name;
 function renderNav(){
   document.body.dataset.cat = state.cat; document.body.dataset.lang = state.lang;
   document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.mode === state.mode));
@@ -329,6 +365,10 @@ function renderNav(){
   $('#showZh').checked = state.showZh;
   $('#zhLabel').textContent = state.mode === 'tw' ? '顯示中文原文' : '顯示中文翻譯';
   $('#count').value = String(state.count);
+  const rs = $('#region');
+  rs.classList.toggle('hidden', state.lang !== 'en');
+  rs.innerHTML = Object.entries(EN_REGIONS).map(([k, r]) => `<option value="${k}">${r.country}</option>`).join('');
+  rs.value = state.region;
 }
 function fmtTime(d){
   const t = new Date(d); if(isNaN(t)) return '';
@@ -336,7 +376,7 @@ function fmtTime(d){
 }
 async function render(force = false){
   const token = ++renderToken, {mode, cat, lang, count} = state, list = $('#list');
-  const fkey = mode === 'tw' ? `tw|${cat}` : `${lang}|${cat}`;
+  const fkey = mode === 'tw' ? `tw|${cat}` : `${lang}${lang === 'en' ? '-' + state.region : ''}|${cat}`;
   $('#status').textContent = '';
   if(force){ delete cache.feeds[fkey]; saveCache(); }
   let items = cache.feeds[fkey];
@@ -357,12 +397,12 @@ async function render(force = false){
   if(token !== renderToken) return;
   items = items.slice(0, count);
   const native = mode === 'native';
-  const legend = (native ? `📰 這些是${LANGS[lang].country.split(' ')[1]}當地媒體的原文標題，下方附中文翻譯。<br>` : `📰 台灣新聞，翻譯成 ${LANGS[lang].name}。<br>`) +
+  const legend = (native ? `📰 這些是${cfg(lang).country.split(' ')[1]}當地媒體的原文標題，下方附中文翻譯。<br>` : `📰 台灣新聞，翻譯成 ${LANGS[lang].name}。<br>`) +
     (lang === 'en' ? `<mark>標底線的字</mark> 是比較難的單字。點任何一個字，都能看中文解釋、聽發音。`
      : LANGS[lang].words ? `點任何一個字，都能看中文解釋、聽發音。` : `斜體字是羅馬拼音，按 🔊 可以聽整句發音。`);
   const tag = `<span class="tag">${LANGS[lang].short}</span>`;
   list.innerHTML = `<div class="legend">${legend}</div>` + items.map((it, i) => `
-    <article class="card" data-i="${i}" ${native ? `data-text="${esc(it.title)}"` : ''}>
+    <article class="card" data-i="${i}" data-orig="${esc(it.title)}" ${native ? `data-text="${esc(it.title)}"` : ''}>
       <div class="meta"><span><span class="num">${String(i + 1).padStart(2, '0')}</span>${esc(it.source)}</span><span>${fmtTime(it.date)}</span></div>
       ${native
         ? `<div class="tr" style="border-top:none;padding-top:4px">${tag}<span class="tx">${wordify(it.title, lang)}</span></div>
@@ -371,8 +411,9 @@ async function render(force = false){
         : `<div class="zh ${state.showZh ? '' : 'hidden'}">${esc(it.title)}</div>
            <div class="tr">${tag}<span class="tx"><span class="skel"></span></span></div>
            <div class="rm"></div>`}
+      <div class="ents hidden"></div>
       <div class="acts">
-        <button data-say="1">🔊 朗讀</button><button data-say="0.6">🐢 慢速</button>
+        <button data-say="1">🔊 朗讀</button><button data-say="0.6">🐢 慢速</button><button data-ent="1">🔍 名詞解釋</button>
         <a href="${esc(it.link)}" target="_blank" rel="noopener">原文 ↗</a>
       </div>
     </article>`).join('');
@@ -424,6 +465,154 @@ async function openWord(word, ctx){
   };
 }
 
+/* ====== 名詞解釋：免費查維基百科（不用 AI） ====== */
+const STOP = new Set('a an the of and or for to in on at by with from as is are was were be been after before over amid into than new says said say will would can could may might its it his her their our this that these those how why what who when where not no but up down out off more most first last just now about against under while during'.split(' '));
+const NOT_ENT = new Set(['US','UK','TV','OK','AM','PM','I','A']);
+function findEntities(text){
+  const toks = text.split(/\s+/).filter(Boolean);
+  const words = toks.map(t => t.replace(/^[^\p{L}\p{N}]+/u, '').replace(/[^\p{L}\p{N}.]+$/u, '').replace(/[’']s$/, '').replace(/\.$/, ''));
+  const caps = words.filter(w => /^[A-Z]/.test(w)).length;
+  const titleCase = caps / (words.length || 1) > 0.6;
+  const isAcr = w => /^[A-Z][A-Z0-9&]{1,6}$/.test((w || '').replace(/\./g, ''));
+  const isEnt = (w, i) => {
+    if(!w) return false;
+    if(isAcr(w)) return true;
+    if(!/^[A-Z][a-z]/.test(w)) return false;
+    const l = w.toLowerCase();
+    if(STOP.has(l)) return false;
+    if((titleCase || i === 0) && COMMON.has(l)) return false;
+    return true;
+  };
+  const out = []; let cur = [];
+  const flush = () => { if(cur.length){ out.push(cur.join(' ')); cur = []; } };
+  toks.forEach((t, i) => {
+    const w = words[i];
+    if(/^["“‘(]/.test(t)) flush();
+    if(isEnt(w, i)) cur.push(w);
+    else if(cur.length && ['of','de','the','and','for','on'].includes(w) && isEnt(words[i + 1], i + 1)) cur.push(w);
+    else flush();
+    if(/[,:;?!"”)]$/.test(t)) flush();
+  });
+  flush();
+  return [...new Set(out)].filter(e => !NOT_ENT.has(e) && e.length > 1).slice(0, 6);
+}
+
+const WIKI = 'https://en.wikipedia.org/w/api.php?format=json&origin=*&';
+const WIKI_PROPS = 'action=query&redirects=1&prop=pageprops|langlinks|extracts&ppprop=disambiguation&lllang=zh&exintro=1&explaintext=1&exsentences=4';
+const entCache = {};
+async function wikiPage(title){
+  const d = await timeout(fetch(WIKI + WIKI_PROPS + '&titles=' + encodeURIComponent(title)).then(r => r.json()), 10000);
+  const p = Object.values(d.query?.pages || {})[0];
+  if(!p || p.missing !== undefined || p.pageprops?.disambiguation !== undefined) return null;
+  return p;
+}
+const toTW = async t => { if(!t) return ''; try{ return (await translate(t, 'zh-CN', 'zh-TW')).t; }catch(e){ return t; } };
+async function explainEntity(ent, headline){
+  const key = ent + '|' + headline;
+  if(entCache[key]) return entCache[key];
+  // 1. 直接查（自動跟隨縮寫的轉址，例如 NATO → 北大西洋公約組織）
+  let p = await wikiPage(ent).catch(() => null);
+  // 2. 縮寫有多種意思時，用標題裡其他字當線索去搜尋，找出「在這則新聞裡」的意思
+  if(!p){
+    const ctx = headline.split(/\s+/).map(w => w.replace(/[^\p{L}]/gu, ''))
+      .filter(w => w.length > 4 && !ent.includes(w) && !STOP.has(w.toLowerCase())).slice(0, 3).join(' ');
+    const s = await timeout(fetch(WIKI + 'action=query&list=search&srlimit=5&srsearch=' + encodeURIComponent(ent + ' ' + ctx)).then(r => r.json()), 10000).catch(() => null);
+    for(const h of (s?.query?.search || [])){
+      if(/disambiguation/i.test(h.title)) continue;
+      p = await wikiPage(h.title).catch(() => null);
+      if(p) break;
+    }
+  }
+  if(!p) return entCache[key] = {ent, none:true};
+  const zhTitleRaw = p.langlinks?.[0]?.['*'] || '';
+  let zhText = '';
+  if(zhTitleRaw){
+    try{
+      const d = await timeout(fetch('https://zh.wikipedia.org/w/api.php?format=json&origin=*&action=query&prop=extracts&exintro=1&explaintext=1&exsentences=4&titles=' + encodeURIComponent(zhTitleRaw)).then(r => r.json()), 10000);
+      zhText = Object.values(d.query?.pages || {})[0]?.extract || '';
+    }catch(e){}
+  }
+  const [zhTitle, zhBody] = await Promise.all([toTW(zhTitleRaw), zhText ? toTW(zhText) : (p.extract ? translate(p.extract.slice(0, 700), 'en', 'zh-TW').then(r => r.t).catch(() => '') : '')]);
+  return entCache[key] = {
+    ent, en:p.title, zh:zhTitle, text:zhBody,
+    isAcr: /^[A-Z][A-Z0-9&.]{1,7}$/.test(ent) && p.title.replace(/\s/g, '') !== ent,
+    url: zhTitleRaw ? 'https://zh.wikipedia.org/zh-tw/' + encodeURIComponent(zhTitleRaw) : 'https://en.wikipedia.org/wiki/' + encodeURIComponent(p.title),
+    news: 'https://news.google.com/search?q=' + encodeURIComponent(p.title) + '&hl=zh-TW&gl=TW&ceid=TW:zh-Hant'
+  };
+}
+async function englishOf(card){
+  const orig = card.dataset.orig, {mode, lang} = state;
+  if(mode === 'native') return lang === 'en' ? orig : (await translate(orig, lang, 'en')).t;
+  return lang === 'en' && card.dataset.text ? card.dataset.text : (await translate(orig, 'zh-TW', 'en')).t;
+}
+async function toggleEnts(card){
+  const box = card.querySelector('.ents');
+  if(!box.classList.contains('hidden')){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  if(box.dataset.done) return;
+  box.innerHTML = `<div class="ent-h">🔍 名詞解釋</div><div class="skel"></div>`;
+  let en = '';
+  try{ en = await englishOf(card); }catch(e){}
+  const ents = findEntities(en);
+  if(!ents.length){ box.innerHTML = `<div class="ent-h">🔍 名詞解釋</div><div class="ent-n">這則標題沒有找到需要解釋的專有名詞或縮寫。</div>`; box.dataset.done = 1; return; }
+  const res = await Promise.all(ents.map(e => explainEntity(e, en).catch(() => ({ent:e, none:true}))));
+  const found = res.filter(r => !r.none);
+  box.innerHTML = `<div class="ent-h">🔍 名詞解釋 <small>資料來源：維基百科</small></div>` +
+    (found.length ? found.map(r => `
+      <div class="ent">
+        <div class="ent-t"><b>${esc(r.ent)}</b>${r.zh ? `　${esc(r.zh)}` : ''}</div>
+        ${r.isAcr ? `<div class="ent-full">全稱：${esc(r.en)}</div>` : (r.en !== r.ent ? `<div class="ent-full">英文：${esc(r.en)}</div>` : '')}
+        <div class="ent-d">${esc(r.text || '（維基百科沒有摘要）')}</div>
+        <div class="ent-l"><a href="${r.url}" target="_blank" rel="noopener">維基百科全文 ↗</a><a href="${r.news}" target="_blank" rel="noopener">相關新聞 ↗</a></div>
+      </div>`).join('') : '') +
+    (res.length > found.length ? `<div class="ent-n">查不到：${res.filter(r => r.none).map(r => esc(r.ent)).join('、')}</div>` : '');
+  box.dataset.done = 1;
+}
+
+/* ====== GitHub 用量 ====== */
+async function openGitHub(){
+  const el = $('#gh'); openSheet(el);
+  const pageKB = Math.round(new Blob([document.documentElement.outerHTML]).size / 1024);
+  let localKB = 0;
+  try{ for(let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); localKB += (k.length + (localStorage.getItem(k) || '').length) * 2; } }catch(e){}
+  localKB = Math.round(localKB / 1024);
+  const vocabN = store.get('nl_vocab', []).length;
+  el.innerHTML = `<div class="hd"><span class="big">📊 GitHub 用量</span><button class="x" data-close>×</button></div><div class="skel" style="margin-top:10px"></div>`;
+  let repo = null;
+  try{ repo = await timeout(fetch('https://api.github.com/repos/' + REPO).then(r => r.ok ? r.json() : null), 10000); }catch(e){}
+  const sizeKB = repo?.size ?? null;               // GitHub 回報的是 KB
+  const pct = sizeKB != null ? Math.max(0.01, sizeKB / (1024 * 1024) * 100) : null;
+  const opens = Math.round(100 * 1024 * 1024 / Math.max(pageKB, 1));
+  const bar = p => `<div class="meter"><span style="width:${Math.min(100, p)}%"></span></div>`;
+  el.innerHTML = `
+    <div class="hd"><span class="big">📊 GitHub 用量</span><button class="x" data-close>×</button></div>
+    <div class="gh-sec">
+      <div class="gh-t">儲存空間 <small>上限 1 GB</small></div>
+      ${sizeKB != null ? `${bar(pct)}<div class="gh-n">已用 <b>${sizeKB < 1024 ? sizeKB + ' KB' : (sizeKB / 1024).toFixed(1) + ' MB'}</b>（約 ${pct.toFixed(2)}%）${pct < 50 ? ' · ✅ 很安全' : pct < 90 ? ' · ⚠️ 留意' : ' · ❌ 快滿了'}</div>`
+                       : `<div class="gh-n">暫時讀不到（GitHub 每小時限查 60 次，稍後再試）</div>`}
+    </div>
+    <div class="gh-sec">
+      <div class="gh-t">網路流量 <small>上限每月約 100 GB</small></div>
+      <div class="gh-n">這個網頁約 <b>${pageKB} KB</b>，每月大約可以打開 <b>${opens.toLocaleString()} 次</b>，自己用完全不會超過。</div>
+      <div class="gh-n" style="color:var(--mute)">新聞和翻譯是你的手機直接向新聞網站、翻譯網站拿的，不經過 GitHub，也不算 GitHub 流量。GitHub 不公開 Pages 的實際流量數字；想看有多少人來訪，可以登入後看 <a href="https://github.com/${REPO}/graphs/traffic" target="_blank" rel="noopener">流量統計 ↗</a>。</div>
+    </div>
+    <div class="gh-sec">
+      <div class="gh-t">資料存在哪裡？</div>
+      <div class="gh-n">GitHub 上<b>只有這一個網頁檔</b>。你看過的新聞、翻譯、單字本都<b>不會</b>存到 GitHub，所以不會讓它變滿。</div>
+      <div class="gh-n">今天的新聞暫存和單字本只存在<b>這支手機的瀏覽器</b>裡（目前約 ${localKB} KB）。新聞暫存每天自動清空；單字本有 ${vocabN} 個字。</div>
+      <div class="acts" style="margin-top:8px"><button data-clear="cache">清除今天的新聞暫存</button><button data-clear="vocab">清空單字本</button></div>
+    </div>
+    ${repo ? `<div class="gh-n" style="color:var(--mute);margin-top:8px">最後更新：${fmtTime(repo.pushed_at)} · <a href="${repo.html_url}" target="_blank" rel="noopener">GitHub 專案 ↗</a></div>` : ''}`;
+}
+let clearArm = '';
+function clearLocal(what){
+  const btn = document.querySelector(`[data-clear="${what}"]`);
+  if(clearArm !== what){ clearArm = what; btn.textContent = '再按一次確認'; return; }
+  clearArm = '';
+  if(what === 'cache'){ cache = {date:today, feeds:{}, tr:{}}; saveCache(); btn.textContent = '已清除 ✓'; }
+  else { store.set('nl_vocab', []); updateCount(); btn.textContent = '已清空 ✓'; }
+}
+
 /* ====== 單字本 ====== */
 function updateCount(){ const n = store.get('nl_vocab', []).length; $('#vcount').textContent = n ? `· ${n}` : ''; }
 function openVocab(){
@@ -440,9 +629,12 @@ function openVocab(){
 
 /* ====== 事件 ====== */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-mode],[data-cat],[data-lang],[data-close],[data-say],.w,[data-vdel],[data-vsay],#shade');
+  const t = e.target.closest('[data-ent],#ghBtn,[data-clear],[data-mode],[data-cat],[data-lang],[data-close],[data-say],.w,[data-vdel],[data-vsay],#shade');
   if(!t) return;
   if(t.id === 'shade' || t.dataset.close !== undefined) closeSheets();
+  else if(t.dataset.ent){ toggleEnts(t.closest('.card')); }
+  else if(t.id === 'ghBtn'){ openGitHub(); }
+  else if(t.dataset.clear){ clearLocal(t.dataset.clear); }
   else if(t.dataset.mode){ state.mode = t.dataset.mode; store.set('nl_mode', state.mode); renderNav(); render(); }
   else if(t.dataset.cat){ state.cat = t.dataset.cat; store.set('nl_cat2', state.cat); renderNav(); render(); window.scrollTo({top:0}); }
   else if(t.dataset.lang){ state.lang = t.dataset.lang; store.set('nl_lang', state.lang); renderNav(); render(); }
@@ -452,6 +644,7 @@ document.addEventListener('click', e => {
   else if(t.dataset.vsay !== undefined){ const x = store.get('nl_vocab', [])[+t.dataset.vsay]; if(x) speak(x.w, x.lang, 0.8); }
 });
 $('#showZh').onchange = e => { state.showZh = e.target.checked; store.set('nl_zh', state.showZh); document.querySelectorAll('.zh').forEach(z => z.classList.toggle('hidden', !state.showZh)); };
+$('#region').onchange = e => { state.region = e.target.value; store.set('nl_region', state.region); renderNav(); render(); };
 $('#count').onchange = e => { state.count = +e.target.value; store.set('nl_count', state.count); render(); };
 $('#refresh').onclick = () => render(true);
 $('#vocabBtn').onclick = openVocab;
