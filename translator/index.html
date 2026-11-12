@@ -322,25 +322,54 @@ async function doTranslate(el, text, src, fbSrc){
 // ---------- 語音辨識 ----------
 const SR = self.SpeechRecognition || self.webkitSpeechRecognition;
 let rec = null, running = false, finalCount = 0, backoff = 300, restartTimer = 0;
+let committed = 0, liveInterim = '', pauseTimer = 0;
+const MAX_SEG = 90, PAUSE_MS = 1300;
+function cutPoint(t){
+  const m = [...t.slice(0, MAX_SEG + 20).matchAll(/[.!?。！？,，、;；:：]\s*|\s+/g)];
+  const good = m.filter(x => x.index + x[0].length >= 30);
+  return good.length ? good[good.length - 1].index + good[good.length - 1][0].length : Math.min(t.length, MAX_SEG);
+}
+function flushInterim(){
+  const pending = liveInterim.slice(committed);
+  if (pending.trim()) { handleFinal(pending); committed = liveInterim.length; }
+}
 
 function makeRec(){
   const r = new SR();
   r.lang = S.src === 'auto' ? S.guess : S.src;
   r.continuous = true;
-  r.interimResults = !!S.interim;
+  r.interimResults = true;   // 一律取得中間結果才能自動分段；設定只控制是否顯示
   r.maxAlternatives = 1;
   if (S.local && 'processLocally' in r) { try { r.processLocally = true; } catch(e) {} }
-  finalCount = 0;
+  finalCount = 0; committed = 0; liveInterim = '';
   r.onresult = e => {
     backoff = 300;
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const res = e.results[i];
       if (res.isFinal) {
-        if (i >= finalCount) { finalCount = i + 1; handleFinal(res[0].transcript); }
-      } else interim += res[0].transcript;
+        if (i >= finalCount) {
+          finalCount = i + 1;
+          const t = res[0].transcript;
+          // 已經提前送出翻譯的部分不要重複
+          const rest = t.length > committed ? t.slice(committed) : '';
+          committed = Math.max(0, committed - t.length);
+          if (rest.replace(/[\s\p{P}]/gu, '').length >= 2) handleFinal(rest);
+        }
+      }
     }
-    if (S.interim) showInterim(interim);
+    for (let i = finalCount; i < e.results.length; i++) if (!e.results[i].isFinal) interim += e.results[i][0].transcript;
+    liveInterim = interim;
+    // 句子太長：在標點或空白處先切一段送出翻譯
+    const pending = interim.slice(committed);
+    if (pending.length > MAX_SEG) {
+      const cut = cutPoint(pending);
+      handleFinal(pending.slice(0, cut)); committed += cut;
+    }
+    // 停頓一下就把目前的內容送出翻譯
+    clearTimeout(pauseTimer);
+    pauseTimer = setTimeout(flushInterim, PAUSE_MS);
+    if (S.interim) showInterim(liveInterim.slice(committed));
   };
   r.onerror = e => {
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
@@ -351,10 +380,12 @@ function makeRec(){
     else if (e.error !== 'no-speech' && e.error !== 'aborted') setStatus('辨識錯誤：' + e.error + '，自動重試中');
   };
   r.onend = () => {
+    clearTimeout(pauseTimer);
+    flushInterim();          // 辨識被系統中斷時，把還沒送出的文字補送，不會遺失
     showInterim('');
     if (!running) return;
     clearTimeout(restartTimer);
-    restartTimer = setTimeout(() => { if (running && !document.hidden) startRec(); }, backoff);
+    restartTimer = setTimeout(() => { if (running && !document.hidden) startRec(); }, backoff > 300 ? backoff : 50);
   };
   return r;
 }
