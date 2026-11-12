@@ -224,7 +224,8 @@ async function detectLang(text){
   }
   return null;
 }
-async function translate(text, src, trg){
+async function translate(text, src, trg, fbSrc){
+  fbSrc = fbSrc && fbSrc !== 'auto' ? fbSrc : (src !== 'auto' ? src : 'en');
   const k = src + '|' + trg + '|' + text;
   if (cache.has(k)) return cache.get(k);
   let out = null, detected = null;
@@ -233,25 +234,54 @@ async function translate(text, src, trg){
     const bt = await getBuiltin(src, trg);
     if (bt) { try { out = {text: await bt.translate(text), detected: src, via:'local'}; } catch(e) {} }
   }
+  // 依序嘗試多個免費服務；上次成功的服務優先，減少失敗的等待
+  const errs = [];
   if (!out) {
-    try {
-      const u = 'https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=' + encodeURIComponent(src) +
-                '&tl=' + encodeURIComponent(trg) + '&q=' + encodeURIComponent(text);
-      const r = await fetch(u); if (!r.ok) throw new Error(r.status);
-      const d = await r.json();
-      out = {text: (d[0] || []).map(x => x[0]).join(''), detected: d[2] || null, via:'web'};
-    } catch(e) {}
-  }
-  if (!out && src !== 'auto') {
-    try {
-      const r = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + src + '|' + trg);
-      const d = await r.json();
-      out = {text: d.responseData.translatedText, detected: src, via:'web'};
-    } catch(e) {}
+    const order = [...WEB].sort((a, b) => (b.name === lastOk) - (a.name === lastOk));
+    for (const svc of order) {
+      try {
+        const r = await svc.run(text, src, fbSrc, trg);
+        if (r && r.text) { out = {...r, via:'web'}; lastOk = svc.name; break; }
+        errs.push(svc.name + ':空白');
+      } catch(e) { errs.push(svc.name + ':' + (e.message || e.name || '錯誤')); }
+    }
   }
   if (out) { cache.set(k, out); if (cache.size > 300) cache.delete(cache.keys().next().value); }
+  else translate.lastErr = errs.join(' / ');
   return out;
 }
+let lastOk = '';
+async function getJSON(url){
+  const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 8000);
+  try {
+    const r = await fetch(url, {signal: ac.signal, credentials: 'omit', referrerPolicy: 'no-referrer'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch(e) { if (e.name === 'AbortError') throw new Error('逾時'); if (e instanceof TypeError) throw new Error('被擋'); throw e; }
+  finally { clearTimeout(t); }
+}
+const enc = encodeURIComponent;
+const lingvaCode = c => c === 'zh-TW' ? 'zh_HANT' : c === 'zh-CN' ? 'zh' : c;
+const WEB = [
+  {name:'Google', run: async (q, s, fs, t) => {
+    const d = await getJSON(`https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=${enc(s)}&tl=${enc(t)}&q=${enc(q)}`);
+    return {text: (d[0] || []).map(x => x[0]).join(''), detected: d[2] || null};
+  }},
+  {name:'Google2', run: async (q, s, fs, t) => {
+    const d = await getJSON(`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=${enc(s)}&tl=${enc(t)}&q=${enc(q)}`);
+    const v = Array.isArray(d) ? d[0] : (d.sentences ? d.sentences.map(x => x.trans).join('') : null);
+    return Array.isArray(v) ? {text: v[0], detected: v[1] || null} : {text: v, detected: null};
+  }},
+  {name:'MyMemory', run: async (q, s, fs, t) => {
+    const d = await getJSON(`https://api.mymemory.translated.net/get?q=${enc(q)}&langpair=${enc(fs)}|${enc(t)}`);
+    if (d.responseStatus && +d.responseStatus !== 200) throw new Error(String(d.responseDetails || d.responseStatus).slice(0, 30));
+    return {text: d.responseData && d.responseData.translatedText, detected: fs};
+  }},
+  {name:'Lingva', run: async (q, s, fs, t) => {
+    const d = await getJSON(`https://lingva.ml/api/v1/${lingvaCode(s === 'auto' ? fs : s)}/${lingvaCode(t)}/${enc(q)}`);
+    return {text: d.translation, detected: null};
+  }},
+];
 
 // ---------- 自動偵測語言 ----------
 let mismatch = 0;
@@ -273,11 +303,19 @@ async function handleFinal(text){
   const recLoc = S.src === 'auto' ? S.guess : S.src;
   let src = srcCodeForTranslate(recLoc);
   if (S.src === 'auto') { const d = await detectLang(text); if (d) { considerSwitch(d); src = srcCodeForTranslate(DETECT2LOCALE[d] || d); } else src = 'auto'; }
-  const r = await translate(text, src, S.trg);
+  await doTranslate(el, text, src, srcCodeForTranslate(recLoc));
+}
+async function doTranslate(el, text, src, fbSrc){
+  el.className = 'pending'; el.textContent = '…'; el.onclick = null;
+  const r = await translate(text, src, S.trg, fbSrc);
   if (r) {
     el.className = ''; el.textContent = r.text;
     if (S.src === 'auto' && src === 'auto') considerSwitch(r.detected);
-  } else { el.className = 'err'; el.textContent = '（翻譯失敗，請檢查網路）'; }
+  } else {
+    el.className = 'err';
+    el.textContent = '（翻譯失敗，點這裡重試）' + (translate.lastErr ? ' ' + translate.lastErr : '');
+    el.onclick = () => doTranslate(el, text, src, fbSrc);
+  }
   toBottom(trgPane);
 }
 
