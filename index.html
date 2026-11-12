@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" data-theme="auto">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7,6 +7,7 @@
 <title>每日新聞 · 語言學習</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+<script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <style>
 :root{
   --bg:#f4f1ea; --paper:#fbfaf6; --ink:#2f2d29; --soft:#5f5b53; --mute:#8f897d; --line:#e4dfd3;
@@ -17,16 +18,28 @@
   --tech:#7f7a9e; --tech-bg:#ebe9f1;
   --health:#ad7f84; --health-bg:#f2e8e8;
   --life:#8a9a68; --life-bg:#eceee3;
+  --pol:#8f7b6e; --pol-bg:#efe9e5;
   /* 語言色（低飽和） */
   --en:#5f7a8c; --ja:#a47b7b; --fr:#8a7fa3; --ko:#6d9393; --es:#b0806a; --th:#8b9466;
   --hard:#efe2c4; --hard-line:#c4a46a;
   --c:var(--tw); --cbg:var(--tw-bg); --l:var(--en);
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#1c1b19; --paper:#252421; --ink:#e8e4da; --soft:#c2bcb0; --mute:#8d877b; --line:#36342f;
-  --tw-bg:#26302a; --world-bg:#262b33; --fin-bg:#302b22; --tech-bg:#2a2833; --health-bg:#322627; --life-bg:#2b2e24;
-  --hard:#3d3524; --hard-line:#9c8455;
+
+:root[data-theme=dark]{
+  --bg:#1b1c1e; --paper:#232427; --ink:#e4e1d9; --soft:#b8b3a8; --mute:#878278; --line:#333438;
+  --tw:#86a28f; --world:#8597b0; --fin:#b29d76; --tech:#958fb0; --health:#b8959a; --life:#9cab80; --pol:#a8958a;
+  --tw-bg:#232a26; --world-bg:#22262d; --fin-bg:#2b2822; --tech-bg:#26252d; --health-bg:#2c2527; --life-bg:#262922; --pol-bg:#2a2624;
+  --en:#7891a3; --ja:#b08c8c; --fr:#9a90b3; --ko:#7fa3a3; --es:#b8917e; --th:#9aa27a;
+  --hard:#383226; --hard-line:#9c8455;
+}
+@media (prefers-color-scheme:dark){:root[data-theme=auto]{
+  --bg:#1b1c1e; --paper:#232427; --ink:#e4e1d9; --soft:#b8b3a8; --mute:#878278; --line:#333438;
+  --tw:#86a28f; --world:#8597b0; --fin:#b29d76; --tech:#958fb0; --health:#b8959a; --life:#9cab80; --pol:#a8958a;
+  --tw-bg:#232a26; --world-bg:#22262d; --fin-bg:#2b2822; --tech-bg:#26252d; --health-bg:#2c2527; --life-bg:#262922; --pol-bg:#2a2624;
+  --en:#7891a3; --ja:#b08c8c; --fr:#9a90b3; --ko:#7fa3a3; --es:#b8917e; --th:#9aa27a;
+  --hard:#383226; --hard-line:#9c8455;
 }}
+body[data-cat=pol]{--c:var(--pol);--cbg:var(--pol-bg)}
 body[data-cat=world]{--c:var(--world);--cbg:var(--world-bg)}
 body[data-cat=fin]{--c:var(--fin);--cbg:var(--fin-bg)}
 body[data-cat=tech]{--c:var(--tech);--cbg:var(--tech-bg)}
@@ -98,6 +111,9 @@ main{padding-top:14px;padding-bottom:100px}
 .vi{border-bottom:1px solid var(--line);padding:10px 0;display:flex;justify-content:space-between;gap:10px}
 .vi .lg{font-size:10.5px;border-radius:4px;padding:0 5px;color:#fff;margin-left:6px;vertical-align:2px}
 .vi small{color:var(--mute)}
+.vtabs{display:flex;gap:6px;overflow-x:auto;margin:10px 0 4px;scrollbar-width:none}
+.vtabs button{flex:none;border:1px solid var(--line);background:none;color:var(--soft);border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer}
+.vtabs button.on{color:#fff;border-color:transparent}
 .ghb{border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:999px;padding:1px 9px;font-size:11px;cursor:pointer;margin-top:3px}
 .ents{margin-top:10px;background:var(--cbg);border-radius:10px;padding:10px 12px}
 .ent-h{font-size:12.5px;color:var(--c);font-weight:500;margin-bottom:4px}
@@ -122,7 +138,7 @@ main{padding-top:14px;padding-bottom:100px}
 <header><div class="wrap">
   <div class="top">
     <h1><small>Daily News · Language</small>每日新聞學語言</h1>
-    <div style="text-align:right"><div id="date"></div><button id="ghBtn" class="ghb">📊 GitHub 用量</button></div>
+    <div style="text-align:right"><div id="date"></div><button id="themeBtn" class="ghb"></button> <button id="ghBtn" class="ghb">📊 用量</button></div>
   </div>
   <div class="mode" id="mode">
     <button data-mode="tw">🇹🇼 台灣新聞<small>中文 → 翻成外語</small></button>
@@ -159,28 +175,28 @@ const BBC = s => `https://feeds.bbci.co.uk/news/${s}rss.xml`;
 const NPR = id => `https://feeds.npr.org/${id}/rss.xml`;
 const EN_REGIONS = {
   us:{country:'🇺🇸 美國', tts:'en-US', gn:'hl=en-US&gl=US&ceid=US:en',
-      extra:{local:[NPR(1001)], world:[NPR(1004)], fin:[NPR(1006)], tech:[NPR(1019)], health:[NPR(1128)]}},
+      extra:{pol:[NPR(1014)], local:[NPR(1001)], world:[NPR(1004)], fin:[NPR(1006)], tech:[NPR(1019)], health:[NPR(1128)]}},
   uk:{country:'🇬🇧 英國', tts:'en-GB', gn:'hl=en-GB&gl=GB&ceid=GB:en',
-      extra:{local:[BBC('uk/')], world:[BBC('world/')], fin:[BBC('business/')], tech:[BBC('technology/')], health:[BBC('health/')]}},
+      extra:{pol:[BBC('politics/')], local:[BBC('uk/')], world:[BBC('world/')], fin:[BBC('business/')], tech:[BBC('technology/')], health:[BBC('health/')]}},
   au:{country:'🇦🇺 澳洲', tts:'en-AU', gn:'hl=en-AU&gl=AU&ceid=AU:en',
       extra:{local:['https://www.abc.net.au/news/feed/51120/rss.xml']}},
   nz:{country:'🇳🇿 紐西蘭', tts:'en-NZ', gn:'hl=en-NZ&gl=NZ&ceid=NZ:en',
       extra:{local:['https://www.rnz.co.nz/rss/national.xml'], world:['https://www.rnz.co.nz/rss/world.xml'], fin:['https://www.rnz.co.nz/rss/business.xml']}}
 };
 const LANGS = {
-  en:{name:'English',  short:'EN', tts:'en-US', words:true, regions:EN_REGIONS, life:'lifestyle OR food OR travel OR consumer'},
-  ja:{name:'日本語',    short:'JA', tts:'ja-JP', country:'🇯🇵 日本',
+  en:{pol:'politics', name:'English',  short:'EN', tts:'en-US', words:true, regions:EN_REGIONS, life:'lifestyle OR food OR travel OR consumer'},
+  ja:{pol:'政治', name:'日本語',    short:'JA', tts:'ja-JP', country:'🇯🇵 日本',
       gn:'hl=ja&gl=JP&ceid=JP:ja', life:'暮らし OR 生活',
-      extra:{local:['https://www3.nhk.or.jp/rss/news/cat1.xml'], world:['https://www3.nhk.or.jp/rss/news/cat6.xml'],
+      extra:{pol:['https://www3.nhk.or.jp/rss/news/cat4.xml'], local:['https://www3.nhk.or.jp/rss/news/cat1.xml'], world:['https://www3.nhk.or.jp/rss/news/cat6.xml'],
              fin:['https://www3.nhk.or.jp/rss/news/cat5.xml'], tech:['https://www3.nhk.or.jp/rss/news/cat3.xml'],
              health:['https://www3.nhk.or.jp/rss/news/cat3.xml']}},
-  fr:{name:'Français', short:'FR', tts:'fr-FR', words:true, country:'🇫🇷 法國',
+  fr:{pol:'politique', name:'Français', short:'FR', tts:'fr-FR', words:true, country:'🇫🇷 法國',
       gn:'hl=fr&gl=FR&ceid=FR:fr', life:'vie quotidienne OR consommation OR logement', extra:{}},
-  ko:{name:'한국어',    short:'KO', tts:'ko-KR', words:true, country:'🇰🇷 韓國',
+  ko:{pol:'정치', name:'한국어',    short:'KO', tts:'ko-KR', words:true, country:'🇰🇷 韓國',
       gn:'hl=ko&gl=KR&ceid=KR:ko', life:'생활 OR 라이프', extra:{}},
-  es:{name:'Español',  short:'ES', tts:'es-ES', words:true, country:'🇪🇸 西班牙',
+  es:{pol:'política', name:'Español',  short:'ES', tts:'es-ES', words:true, country:'🇪🇸 西班牙',
       gn:'hl=es&gl=ES&ceid=ES:es', life:'estilo de vida OR consumo OR vivienda', extra:{}},
-  th:{name:'ไทย',      short:'TH', tts:'th-TH', country:'🇹🇭 泰國',
+  th:{pol:'การเมือง', name:'ไทย',      short:'TH', tts:'th-TH', country:'🇹🇭 泰國',
       gn:'hl=th&gl=TH&ceid=TH:th', life:'ไลฟ์สไตล์ OR ชีวิต', extra:{}}
 };
 const TW_GN = 'hl=zh-TW&gl=TW&ceid=TW:zh-Hant';
@@ -190,6 +206,7 @@ const CATS = {
   fin:   {name:'財經', topic:'BUSINESS'},
   tech:  {name:'科技', topic:'TECHNOLOGY'},
   health:{name:'醫療', topic:'HEALTH'},
+  pol:   {name:'政治', topic:null},
   life:  {name:'生活', topic:null}
 };
 const TW_EXTRA = {
@@ -198,6 +215,7 @@ const TW_EXTRA = {
   fin:   ['https://news.ltn.com.tw/rss/business.xml', 'https://tw.stock.yahoo.com/rss?category=news'],
   tech:  ['https://tw.news.yahoo.com/rss/technology'],
   health:['https://tw.news.yahoo.com/rss/health'],
+  pol:   ['https://news.ltn.com.tw/rss/politics.xml'],
   life:  ['https://news.ltn.com.tw/rss/life.xml', 'https://tw.news.yahoo.com/rss/lifestyle']
 };
 const SRC_NAME = u => /ltn/.test(u) ? '自由時報' : /yahoo/.test(u) ? 'Yahoo新聞' : /bbc/.test(u) ? 'BBC' : /nhk/.test(u) ? 'NHK' : '';
@@ -206,12 +224,13 @@ const gnSearch = (q, ed) => `https://news.google.com/rss/search?q=${encodeURICom
 
 function sourcesFor(mode, cat, lang){
   if(mode === 'tw'){
-    const g = cat === 'life' ? gnSearch('生活 OR 民生 OR 消費', TW_GN) : gnTopic(CATS[cat].topic, TW_GN);
+    const q = {life:'生活 OR 民生 OR 消費', pol:'政治 OR 立法院 OR 行政院 OR 總統府'}[cat];
+    const g = q ? gnSearch(q, TW_GN) : gnTopic(CATS[cat].topic, TW_GN);
     const ex = TW_EXTRA[cat] || [];
-    return cat === 'life' ? [ex[0], g, ...ex.slice(1)] : [g, ...ex];
+    return q ? [ex[0], g, ...ex.slice(1)].filter(Boolean) : [g, ...ex];
   }
   const L = cfg(lang);
-  const g = cat === 'life' ? gnSearch(L.life, L.gn) : gnTopic(CATS[cat].topic, L.gn);
+  const g = (cat === 'life' || cat === 'pol') ? gnSearch(L[cat], L.gn) : gnTopic(CATS[cat].topic, L.gn);
   return [g, ...((L.extra || {})[cat] || [])];
 }
 /* 某語言目前的設定（英文會合併所選國家） */
@@ -599,7 +618,7 @@ async function openGitHub(){
     <div class="gh-sec">
       <div class="gh-t">資料存在哪裡？</div>
       <div class="gh-n">GitHub 上<b>只有這一個網頁檔</b>。你看過的新聞、翻譯、單字本都<b>不會</b>存到 GitHub，所以不會讓它變滿。</div>
-      <div class="gh-n">今天的新聞暫存和單字本只存在<b>這支手機的瀏覽器</b>裡（目前約 ${localKB} KB）。新聞暫存每天自動清空；單字本有 ${vocabN} 個字。</div>
+      <div class="gh-n">今天的新聞暫存和單字本只存在<b>這支手機的瀏覽器</b>裡（目前約 ${localKB} KB）。新聞暫存每天自動清空；單字本有 ${vocabN} 個字，每個字約 0.3 KB，瀏覽器大約可存 1 萬個字以上。</div>
       <div class="acts" style="margin-top:8px"><button data-clear="cache">清除今天的新聞暫存</button><button data-clear="vocab">清空單字本</button></div>
     </div>
     ${repo ? `<div class="gh-n" style="color:var(--mute);margin-top:8px">最後更新：${fmtTime(repo.pushed_at)} · <a href="${repo.html_url}" target="_blank" rel="noopener">GitHub 專案 ↗</a></div>` : ''}`;
@@ -615,23 +634,45 @@ function clearLocal(what){
 
 /* ====== 單字本 ====== */
 function updateCount(){ const n = store.get('nl_vocab', []).length; $('#vcount').textContent = n ? `· ${n}` : ''; }
-function openVocab(){
-  const v = store.get('nl_vocab', []), el = $('#vocab');
+let vocabBook = null;
+function openVocab(book){
+  const all = store.get('nl_vocab', []), el = $('#vocab');
   openSheet(el);
-  el.innerHTML = `<div class="hd"><span class="big">📒 我的單字本</span><button class="x" data-close>×</button></div>
-    ${v.length ? '' : '<div class="msg">還沒有單字。<br>點新聞裡的字，再按「☆ 加入單字本」。</div>'}
-    ${v.map((x, i) => `<div class="vi"><div><b>${esc(x.w)}</b><span class="lg" style="background:var(--${x.lang})">${LANGS[x.lang]?.short || x.lang}</span> <small>${x.d}</small><br>${esc(x.m)}<br><small>${esc(x.ctx)}</small></div>
-      <div style="display:flex;flex-direction:column;gap:5px"><button class="sbtn" data-vsay="${i}">🔊</button><button class="sbtn" data-vdel="${i}">刪除</button></div></div>`).join('')}
-    ${v.length ? '<div class="acts" style="margin-top:12px"><button id="vCopy">複製全部單字</button></div>' : ''}`;
+  const counts = {}; all.forEach(x => counts[x.lang] = (counts[x.lang] || 0) + 1);
+  vocabBook = book || vocabBook || (counts[state.lang] ? state.lang : (Object.keys(counts)[0] || state.lang));
+  const items = all.map((x, i) => ({...x, i})).filter(x => x.lang === vocabBook);
+  const L = LANGS[vocabBook];
+  el.style.borderTopColor = `var(--${vocabBook})`;
+  el.innerHTML = `<div class="hd"><span class="big">📒 單字本</span><button class="x" data-close>×</button></div>
+    <div class="vtabs">${Object.entries(LANGS).map(([k, l]) =>
+      `<button data-vbook="${k}" class="${k === vocabBook ? 'on' : ''}" style="${k === vocabBook ? 'background:var(--' + k + ')' : ''}">${l.name} ${counts[k] || 0}</button>`).join('')}</div>
+    ${items.length ? '' : `<div class="msg">${L.name} 單字本還是空的。<br>點新聞裡的字，再按「☆ 加入單字本」。</div>`}
+    ${items.map(x => `<div class="vi"><div><b>${esc(x.w)}</b> <small>${x.d}</small><br>${esc(x.m)}<br><small>${esc(x.ctx)}</small></div>
+      <div style="display:flex;flex-direction:column;gap:5px"><button class="sbtn" data-vsay="${x.i}">🔊</button><button class="sbtn" data-vdel="${x.i}">刪除</button></div></div>`).join('')}
+    ${items.length ? `<div class="acts" style="margin-top:12px"><button id="vCopy">複製 ${L.name} 單字（${items.length}）</button></div>` : ''}`;
   const c = $('#vCopy');
-  if(c) c.onclick = async () => { try{ await navigator.clipboard.writeText(v.map(x => `${x.w}\t${x.m}`).join('\n')); c.textContent = '已複製 ✓'; }catch(e){ c.textContent = '無法複製'; } };
+  if(c) c.onclick = async () => { try{ await navigator.clipboard.writeText(items.map(x => `${x.w}\t${x.m}`).join('\n')); c.textContent = '已複製 ✓'; }catch(e){ c.textContent = '無法複製'; } };
 }
+
+/* ====== 深淺色 ====== */
+const THEMES = {auto:'🌗 自動', light:'☀️ 淺色', dark:'🌙 深色'};
+function applyTheme(){
+  const th = store.get('nl_theme', 'auto');
+  document.documentElement.dataset.theme = th;
+  $('#themeBtn').textContent = THEMES[th] || THEMES.auto;
+  const dark = th === 'dark' || (th === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name=theme-color]').content = dark ? '#1b1c1e' : '#f4f1ea';
+}
+$('#themeBtn').onclick = () => { const ks = Object.keys(THEMES); store.set('nl_theme', ks[(ks.indexOf(store.get('nl_theme', 'auto')) + 1) % ks.length]); applyTheme(); };
+try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); }catch(e){}
+applyTheme();
 
 /* ====== 事件 ====== */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-ent],#ghBtn,[data-clear],[data-mode],[data-cat],[data-lang],[data-close],[data-say],.w,[data-vdel],[data-vsay],#shade');
+  const t = e.target.closest('[data-vbook],[data-ent],#ghBtn,[data-clear],[data-mode],[data-cat],[data-lang],[data-close],[data-say],.w,[data-vdel],[data-vsay],#shade');
   if(!t) return;
   if(t.id === 'shade' || t.dataset.close !== undefined) closeSheets();
+  else if(t.dataset.vbook){ openVocab(t.dataset.vbook); }
   else if(t.dataset.ent){ toggleEnts(t.closest('.card')); }
   else if(t.id === 'ghBtn'){ openGitHub(); }
   else if(t.dataset.clear){ clearLocal(t.dataset.clear); }
@@ -647,7 +688,7 @@ $('#showZh').onchange = e => { state.showZh = e.target.checked; store.set('nl_zh
 $('#region').onchange = e => { state.region = e.target.value; store.set('nl_region', state.region); renderNav(); render(); };
 $('#count').onchange = e => { state.count = +e.target.value; store.set('nl_count', state.count); render(); };
 $('#refresh').onclick = () => render(true);
-$('#vocabBtn').onclick = openVocab;
+$('#vocabBtn').onclick = () => openVocab(state.lang);
 try{ speechSynthesis.getVoices(); }catch(e){}
 
 const wk = new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei', weekday:'long'}).format(new Date());
