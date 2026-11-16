@@ -57,8 +57,8 @@ def from_cnyes():
             daily[day_of(t)] = c
         frm = min(t for t, _ in new) - 86400
         time.sleep(0.5)
-        if len(OLD_DAILY) and min(daily) <= min(OLD_DAILY):
-            break                  # 舊資料已經有更早的了，不用再翻
+        if OLD_DAILY.get("_full") and min(daily) <= max(k for k in OLD_DAILY if k != "_full"):
+            break                  # 以前已經抓過完整歷史，只要補最近的
     return quote, daily
 
 
@@ -94,6 +94,8 @@ def main():
         old = {}
     daily = {r[0]: r[1] for r in old.get("daily", [])}
     OLD_DAILY.update(daily)
+    if old.get("full"):
+        OLD_DAILY["_full"] = 1
     quote, d2 = from_cnyes()
     src = "鉅亨網"
     if d2:
@@ -107,7 +109,8 @@ def main():
         while td.weekday() >= 5:
             td += dt.timedelta(days=1)
         daily[td.strftime("%Y%m%d")] = quote["last"]
-    out = {"updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": src if quote else old.get("source"),
+    full = old.get("full") or len(daily) > 1300
+    out = {"full": full, "updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": src if quote else old.get("source"),
            "quote": quote or old.get("quote"), "daily": [[k, daily[k]] for k in sorted(daily)], "log": LOG[-10:]}
     with open(p, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
