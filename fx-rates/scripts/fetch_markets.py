@@ -72,13 +72,18 @@ def from_yahoo(sym, full):
     if intra:
         quote["open"] = next((o for o in q.get("open") or [] if o), None)
     time.sleep(0.8)
-    d = yahoo(sym, "?period1=0&period2=9999999999&interval=1d" if full else "?range=3mo&interval=1d")
     daily = {}
-    if d:
-        off = d["meta"].get("gmtoffset", off)
-        for t, c in zip(d.get("timestamp") or [], d["indicators"]["quote"][0].get("close") or []):
-            if c:
-                daily[local_day(t, off)] = round(c, 4)
+    tries = ["?period1=0&period2=9999999999&interval=1d", "?range=max&interval=1d", "?range=10y&interval=1d", "?range=5y&interval=1d"] if full else ["?range=3mo&interval=1d"]
+    for q in tries:                # 有些代號不接受「全部歷史」，就改要 max／10 年／5 年
+        d = yahoo(sym, q)
+        if d:
+            off = d["meta"].get("gmtoffset", off)
+            for t, c in zip(d.get("timestamp") or [], d["indicators"]["quote"][0].get("close") or []):
+                if c:
+                    daily[local_day(t, off)] = round(c, 4)
+        if len(daily) > 300 or not full:
+            break
+        time.sleep(0.8)
     return {"quote": quote, "daily": daily, "intra": intra}
 
 
