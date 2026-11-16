@@ -18,6 +18,7 @@ const save = () => { try { localStorage.setItem("fx-settings", JSON.stringify(S)
 const dataBase = () => { let b = (S.data||"").trim() || "data/"; return b.endsWith("/") ? b : b + "/"; };
 
 let RECENT = null;          // recent.json
+const isYahoo = () => !!(RECENT && RECENT.source === "yahoo");
 const HIST = {};            // CCY -> rows（完整歷史）
 
 const $ = s => document.querySelector(s);
@@ -117,10 +118,14 @@ function renderHome() {
   document.body.classList.toggle("us", S.color === "us");
   const now = new Date();
   $("#today").textContent = `${now.getMonth()+1}月${now.getDate()}日`;
-  $("#rateLabel").textContent = `台灣銀行・${RATE_NAME[S.rate]}${S.dir === "n" ? "" : "・每千台幣"}`;
+  $("#rateLabel").textContent = `${isYahoo() ? "市場匯率（Yahoo）" : "台灣銀行・" + RATE_NAME[S.rate]}${S.dir === "n" ? "" : "・每千台幣"}`;
+  document.querySelector(".foot").textContent = isYahoo()
+    ? "目前臺灣銀行網站擋掉自動抓取，暫用 Yahoo Finance 市場中間價（不是銀行買賣牌價，實際換匯會差一點）。縮圖為近 3 個月走勢，點右側數字可切換顯示。"
+    : "資料來源：臺灣銀行牌告匯率。縮圖為近 3 個月走勢，點右側數字可切換顯示。";
   $("#updated").textContent = RECENT ? `更新 ${RECENT.updated.slice(5)}` : "";
   const ul = $("#list"); ul.innerHTML = "";
   if (!RECENT) { ul.append(el("li","empty","載入中…")); return; }
+  if (!Object.keys(RECENT.rates || {}).length) { ul.append(el("li","empty","資料還沒抓到，請稍後再打開。")); return; }
   if (!S.list.length) { ul.append(el("li","empty","還沒有幣別，按右上「編輯」加入。")); return; }
   const c3 = cutoff("3M");
   for (const ccy of S.list) {
@@ -129,7 +134,7 @@ function renderHome() {
     const li = el("li","row");
     const last = all[all.length-1], prev = all[all.length-2];
     const [nm, flag] = CUR[ccy] || [ccy, ""];
-    const fb = usedKey(rows) !== S.rate ? `・${RATE_NAME[usedKey(rows)]}` : "";
+    const fb = !isYahoo() && usedKey(rows) !== S.rate ? `・${RATE_NAME[usedKey(rows)]}` : "";
     li.innerHTML = `<div><div class="name"><span class="flag">${flag}</span>${ccy}</div>
       <div class="desc">${nm}${fb}</div></div><canvas></canvas>
       <div class="right"><div class="price">${last ? fmt(last[1]) : "—"}</div><div class="badge"></div></div>`;
@@ -155,7 +160,7 @@ async function loadRecent(force) {
     RECENT = await r.json();
   } catch (e) {
     if (!RECENT) { $("#list").innerHTML = ""; $("#list").append(el("li","empty",
-      "還讀不到匯率資料。<br>如果是剛建立，請先到 GitHub 的 Actions 跑一次「匯率 - 更新匯率」。")); return; }
+      "還讀不到匯率資料。")); return; }
   }
   renderHome();
 }
@@ -194,7 +199,7 @@ function renderDetail() {
   const pts = need ? [] : all.filter(p => p[0] >= cutoff(D.range));
   D.pts = pts;
   const k = usedKey(rows);
-  $("#dSub").textContent = `臺灣銀行・${RATE_NAME[k]}・${unitLabel(ccy)}`;
+  $("#dSub").textContent = `${isYahoo() ? "市場匯率（Yahoo）" : "臺灣銀行・" + RATE_NAME[k]}・${unitLabel(ccy)}`;
   const cv = $("#chart");
   D.geo = drawLine(cv, thin(pts, Math.round(cv.clientWidth*2)), {baseline:true, axis:true, padR:58, padT:10, padB:10, lw:2});
   D.thin = thin(pts, Math.round(cv.clientWidth*2));
@@ -211,7 +216,8 @@ function renderDetail() {
   }
   // 四種牌價
   const last = rows[rows.length-1], rq = $("#dRates"); rq.innerHTML = "";
-  if (last) for (const kk of ["cs","ss","cb","sb"]) {
+  if (last && isYahoo()) rq.append(el("div","stat",`<span>市場中間價（1 ${ccy}）</span><b>${last[2]}</b><span>${ymd(last[0])}</span>`));
+  else if (last) for (const kk of ["cs","ss","cb","sb"]) {
     const v = last[COL[kk]];
     rq.append(el("div","stat",`<span>${RATE_NAME[kk]}（1 ${ccy}）</span><b>${v ? v : "無報價"}</b><span>${ymd(last[0])}</span>`));
   }
@@ -248,7 +254,7 @@ function convert(from) {
   if (!v) { $("#cvNote").textContent = "沒有報價"; return; }
   if (from === "twd") { const t = n(a.value); b.value = isFinite(t) ? (t / v).toLocaleString("en-US",{maximumFractionDigits: t/v >= 100 ? 0 : 2}) : ""; }
   else { const f = n(b.value); a.value = isFinite(f) ? Math.round(f * v).toLocaleString("en-US") : ""; }
-  $("#cvNote").textContent = `以${RATE_NAME[usedKey(rowsFor(D.ccy))]} ${v} 試算，實際以銀行交易時為準`;
+  $("#cvNote").textContent = isYahoo() ? `以市場中間價 ${v} 試算，銀行實際換匯會比較差一點` : `以${RATE_NAME[usedKey(rowsFor(D.ccy))]} ${v} 試算，實際以銀行交易時為準`;
 }
 
 /* ===== 編輯 ===== */

@@ -111,9 +111,9 @@ def merge(store, parsed):
     return changed
 
 
-def write_recent(store, note=""):
+def write_recent(store, note="", source="bot"):
     cutoff = (today_tpe() - dt.timedelta(days=RECENT_DAYS)).strftime("%Y%m%d")
-    out = {"updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "note": note, "rates": {}}
+    out = {"updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": source, "note": note, "rates": {}}
     for ccy in CCYS:
         h = store.get(ccy) or {}
         rows = [h[k] for k in sorted(h) if k >= cutoff]
@@ -140,20 +140,101 @@ def probe():
     """診斷：看看從 GitHub 的主機能不能連到各個來源。"""
     for u in ["https://rate.bot.com.tw/xrt/flcsv/0/day",
               "https://rate.bot.com.tw/xrt/fltxt/0/day",
-              "https://rate.bot.com.tw/xrt?Lang=zh-TW",
+              "https://govdata.bot.com.tw/v3/api-docs",
               "https://query1.finance.yahoo.com/v8/finance/chart/JPYTWD=X?range=5d&interval=1d"]:
         try:
             with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=20) as r:
                 raw = r.read()
-                DIAG.append({"probe": u, "status": r.status, "bytes": len(raw), "head": raw[:160].decode("utf-8", "replace")})
+                DIAG.append({"probe": u, "status": r.status, "bytes": len(raw), "head": raw[:3000].decode("utf-8", "replace")})
         except Exception as e:  # noqa: BLE001
             DIAG.append({"probe": u, "error": str(e)[:200]})
+
+
+YQ = "https://query1.finance.yahoo.com/v8/finance/chart/"
+
+
+def is_challenge(text):
+    return (not text) or text.lstrip().lower().startswith("<!doctype html") or "<html" in text[:200].lower()
+
+
+def yahoo_series(sym, full):
+    q = "?period1=0&period2=9999999999&interval=1d" if full else "?range=1mo&interval=1d"
+    txt = http_get(YQ + sym + q)
+    try:
+        res = json.loads(txt)["chart"]["result"][0]
+    except Exception:  # noqa: BLE001
+        return {}
+    off = res["meta"].get("gmtoffset", 0)
+    ts = res.get("timestamp") or []
+    closes = res["indicators"]["quote"][0].get("close") or []
+    out = {}
+    for t, c in zip(ts, closes):
+        if c and c > 0:
+            out[dt.datetime.fromtimestamp(t + off, dt.timezone.utc).strftime("%Y%m%d")] = c
+    live = res["meta"].get("regularMarketPrice")
+    if live and out:
+        out[max(out)] = live
+    return out
+
+
+def yahoo_ccy(ccy, full):
+    """回傳 {date: 1 外幣 = ? 台幣}。先試直接匯率，沒有就用美金交叉換算。"""
+    d = yahoo_series(f"{ccy}TWD=X", full)
+    if len(d) >= 5:
+        return d
+    usd_twd = yahoo_series("TWD=X", full)          # 1 USD = ? TWD
+    if ccy == "USD":
+        return usd_twd
+    usd_ccy = yahoo_series(f"{ccy}=X", full)        # 1 USD = ? CCY
+    return {k: usd_twd[k] / v for k, v in usd_ccy.items() if k in usd_twd and v}
+
+
+def cmd_update_yahoo(store):
+    """台銀擋掉時的備援：Yahoo 市場匯率（中間價，非台銀牌價）。"""
+    changed = 0
+    for ccy in CCYS:
+        h = store.setdefault(ccy, {})
+        full = len(h) < 200
+        rows = yahoo_ccy(ccy, full)
+        for d, v in rows.items():
+            v = float(f"{v:.6g}")
+            row = [d, v, v, v, v]
+            if h.get(d) != row:
+                h[d] = row
+                changed += 1
+        time.sleep(0.3)
+    return changed
+
+
+def current_source():
+    p = os.path.join(ROOT, "recent.json")
+    try:
+        with open(p, encoding="utf-8") as f:
+            return json.load(f).get("source", "")
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def cmd_update():
     store = load_all()
     t = today_tpe()
     changed = 0
+    test = http_get(BASE + "day")
+    if is_challenge(test):
+        print("臺灣銀行擋掉了（回傳驗證頁），改用 Yahoo 市場匯率")
+        if current_source() != "yahoo":
+            store = {c: {} for c in CCYS}   # 不混用兩種來源
+        changed = cmd_update_yahoo(store)
+        for c in CCYS:
+            if store.get(c):
+                save_hist(c, store[c])
+        write_recent(store, source="yahoo")
+        probe()
+        write_diag({"source": "yahoo", "rows_changed": changed})
+        print(f"update done (yahoo), {changed} rows changed")
+        return
+    if current_source() == "yahoo":
+        store = {c: {} for c in CCYS}
     # 1) 最近 7 天的收盤牌價（一次請求含全部幣別）
     for i in range(7, -1, -1):
         d = t - dt.timedelta(days=i)
@@ -193,6 +274,9 @@ def month_iter(start, stop):
 
 def cmd_backfill(max_minutes=330):
     """先試「單一幣別月份 CSV」（快），失敗再改用「逐日全幣別 CSV」（慢但確定可用）。"""
+    if is_challenge(http_get(BASE + "day")):
+        print("臺灣銀行擋掉了，改用 Yahoo（更新時就會一次抓完整歷史）")
+        return cmd_update()
     t0 = time.time()
     store = load_all()
     t = today_tpe()

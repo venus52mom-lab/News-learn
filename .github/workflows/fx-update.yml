@@ -4,6 +4,9 @@ on:
     # 台灣時間週一到週五 09:05–17:35，每 30 分鐘（GitHub 排程可能延遲幾分鐘）
     - cron: "5,35 1-9 * * 1-5"
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["fx-rates/scripts/**", ".github/workflows/fx-update.yml"]
 permissions:
   contents: write
 concurrency:
