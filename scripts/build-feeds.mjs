@@ -66,7 +66,7 @@ async function worker(){
     } else report[key] = { n: 0, tried };
   }
 }
-await Promise.all(Array.from({ length: 6 }, worker));
+await Promise.all(Array.from({ length: 10 }, worker));
 const good = Object.values(report).filter(r => r.n).length;
 fs.writeFileSync('out/index.json', JSON.stringify({ updated: new Date().toISOString(), ok: good, total: jobs.length, report }, null, 1));
 console.log(`完成：${good} / ${jobs.length} 個成功`);

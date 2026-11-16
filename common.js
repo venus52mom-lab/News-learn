@@ -64,7 +64,13 @@ const BUILTIN = {
     ca:{cc:'CA', place:'加拿大', accent:'加拿大英語', tts:'en-CA', hl:'en-CA'},
     sg:{cc:'SG', place:'新加坡', accent:'新加坡英語', tts:'en-SG', hl:'en-SG'},
     ie:{cc:'IE', place:'愛爾蘭', accent:'愛爾蘭英語', tts:'en-IE', hl:'en-IE'},
-    mt:{cc:'MT', place:'馬爾他', accent:'馬爾他英語', tts:'en-GB', hl:'en'} }},
+    mt:{cc:'MT', place:'馬爾他', accent:'馬爾他英語', tts:'en-GB', hl:'en'},
+    in:{cc:'IN', place:'印度', accent:'印度英語', tts:'en-IN', hl:'en-IN'},
+    pk:{cc:'PK', place:'巴基斯坦', accent:'巴基斯坦英語', tts:'en-IN', hl:'en'},
+    ae:{cc:'AE', place:'阿聯', accent:'阿聯英語', tts:'en-GB', hl:'en'},
+    jm:{cc:'JM', place:'牙買加', accent:'牙買加英語', tts:'en-GB', hl:'en'},
+    tt:{cc:'TT', place:'千里達及托巴哥', accent:'千里達英語', tts:'en-GB', hl:'en'},
+    bz:{cc:'BZ', place:'貝里斯', accent:'貝里斯英語', tts:'en-US', hl:'en'} }},
   ja:{name:'日本語', short:'JA', pol:'政治', life:'暮らし OR 生活', regions:{
     jp:{cc:'JP', place:'日本', accent:'日語（標準語）', tts:'ja-JP', hl:'ja', extra:{pol:[NHK(4)], local:[NHK(1)], world:[NHK(6)], fin:[NHK(5)], tech:[NHK(3)], health:[NHK(3)]}} }},
   ko:{name:'한국어', short:'KO', words:true, pol:'정치', life:'생활 OR 라이프', regions:{
@@ -75,7 +81,9 @@ const BUILTIN = {
     ca:{cc:'CA', place:'加拿大', accent:'加拿大法語（魁北克）', tts:'fr-CA', hl:'fr-CA'},
     be:{cc:'BE', place:'比利時', accent:'比利時法語', tts:'fr-BE', hl:'fr'},
     lu:{cc:'LU', place:'盧森堡', accent:'盧森堡法語', tts:'fr-LU', hl:'fr'},
-    mc:{cc:'MC', place:'摩納哥', accent:'摩納哥法語', tts:'fr-FR', hl:'fr'} }},
+    mc:{cc:'MC', place:'摩納哥', accent:'摩納哥法語', tts:'fr-FR', hl:'fr'},
+    ma:{cc:'MA', place:'摩洛哥（法語）', accent:'摩洛哥法語', tts:'fr-FR', hl:'fr'},
+    ht:{cc:'HT', place:'海地', accent:'海地法語', tts:'fr-FR', hl:'fr'} }},
   de:{name:'Deutsch', short:'DE', words:true, pol:'Politik', life:'Leben OR Verbraucher OR Wohnen', regions:{
     de:{cc:'DE', place:'德國', accent:'德國德語', tts:'de-DE', hl:'de'},
     ch:{cc:'CH', place:'瑞士', accent:'瑞士德語', tts:'de-CH', hl:'de'},
@@ -83,7 +91,26 @@ const BUILTIN = {
     lu:{cc:'LU', place:'盧森堡', accent:'盧森堡德語', tts:'de-LU', hl:'de'},
     li:{cc:'LI', place:'列支敦斯登', accent:'列支敦斯登德語', tts:'de-CH', hl:'de'} }},
   es:{name:'Español', short:'ES', words:true, pol:'política', life:'estilo de vida OR consumo OR vivienda', regions:{
-    es:{cc:'ES', place:'西班牙', accent:'西班牙西語', tts:'es-ES', hl:'es'} }},
+    es:{cc:'ES', place:'西班牙', accent:'西班牙西語', tts:'es-ES', hl:'es'},
+    mx:{cc:'MX', place:'墨西哥', accent:'墨西哥西語', tts:'es-MX', hl:'es-419'},
+    ar:{cc:'AR', place:'阿根廷', accent:'阿根廷西語', tts:'es-AR', hl:'es-419'},
+    co:{cc:'CO', place:'哥倫比亞', accent:'哥倫比亞西語', tts:'es-CO', hl:'es-419'},
+    cl:{cc:'CL', place:'智利', accent:'智利西語', tts:'es-CL', hl:'es-419'},
+    pe:{cc:'PE', place:'秘魯', accent:'秘魯西語', tts:'es-PE', hl:'es-419'},
+    ve:{cc:'VE', place:'委內瑞拉', accent:'委內瑞拉西語', tts:'es-VE', hl:'es-419'},
+    cu:{cc:'CU', place:'古巴', accent:'古巴西語', tts:'es-US', hl:'es-419'},
+    ec:{cc:'EC', place:'厄瓜多', accent:'厄瓜多西語', tts:'es-EC', hl:'es-419'},
+    bo:{cc:'BO', place:'玻利維亞', accent:'玻利維亞西語', tts:'es-BO', hl:'es-419'},
+    py:{cc:'PY', place:'巴拉圭', accent:'巴拉圭西語', tts:'es-PY', hl:'es-419'},
+    uy:{cc:'UY', place:'烏拉圭', accent:'烏拉圭西語', tts:'es-UY', hl:'es-419'},
+    cr:{cc:'CR', place:'哥斯大黎加', accent:'哥斯大黎加西語', tts:'es-CR', hl:'es-419'},
+    pa:{cc:'PA', place:'巴拿馬', accent:'巴拿馬西語', tts:'es-PA', hl:'es-419'},
+    gt:{cc:'GT', place:'瓜地馬拉', accent:'瓜地馬拉西語', tts:'es-GT', hl:'es-419'},
+    hn:{cc:'HN', place:'宏都拉斯', accent:'宏都拉斯西語', tts:'es-HN', hl:'es-419'},
+    sv:{cc:'SV', place:'薩爾瓦多', accent:'薩爾瓦多西語', tts:'es-SV', hl:'es-419'},
+    ni:{cc:'NI', place:'尼加拉瓜', accent:'尼加拉瓜西語', tts:'es-NI', hl:'es-419'},
+    do:{cc:'DO', place:'多明尼加', accent:'多明尼加西語', tts:'es-US', hl:'es-419'},
+    pr:{cc:'PR', place:'波多黎各', accent:'波多黎各西語', tts:'es-US', hl:'es-419'} }},
   it:{name:'Italiano', short:'IT', words:true, pol:'politica', life:'stile di vita OR consumi OR casa', regions:{
     it:{cc:'IT', place:'義大利', accent:'義大利語', tts:'it-IT', hl:'it'},
     ch:{cc:'CH', place:'瑞士', accent:'瑞士義大利語', tts:'it-CH', hl:'it'},
@@ -96,10 +123,11 @@ const BUILTIN = {
     vn:{cc:'VN', place:'越南', accent:'越南語（北部）', tts:'vi-VN', hl:'vi'} }},
   pt:{name:'Português', short:'PT', words:true, pol:'política', life:'estilo de vida OR consumo', regions:{
     pt:{cc:'PT', place:'葡萄牙', accent:'葡萄牙葡語', tts:'pt-PT', hl:'pt-PT'},
-    br:{cc:'BR', place:'巴西', accent:'巴西葡語', tts:'pt-BR', hl:'pt-BR'} }},
+    br:{cc:'BR', place:'巴西', accent:'巴西葡語', tts:'pt-BR', hl:'pt-BR', ceid:'BR:pt-419'} }},
   nl:{name:'Nederlands', short:'NL', words:true, pol:'politiek', life:'leven OR consument', regions:{
     nl:{cc:'NL', place:'荷蘭', accent:'荷蘭語', tts:'nl-NL', hl:'nl'},
-    be:{cc:'BE', place:'比利時（法蘭德斯）', accent:'比利時荷語', tts:'nl-BE', hl:'nl'} }},
+    be:{cc:'BE', place:'比利時（法蘭德斯）', accent:'比利時荷語', tts:'nl-BE', hl:'nl'},
+    sr:{cc:'SR', place:'蘇利南', accent:'蘇利南荷語', tts:'nl-NL', hl:'nl'} }},
   sv:{name:'Svenska', short:'SV', words:true, pol:'politik', life:'livsstil OR konsument', regions:{
     se:{cc:'SE', place:'瑞典', accent:'瑞典語', tts:'sv-SE', hl:'sv'} }},
   no:{name:'Norsk', short:'NO', words:true, pol:'politikk', life:'livsstil OR forbruker', regions:{
@@ -134,7 +162,9 @@ const BUILTIN = {
   bg:{name:'Български', short:'BG', words:true, pol:'политика', life:'начин на живот', regions:{
     bg:{cc:'BG', place:'保加利亞', accent:'保加利亞語', tts:'bg-BG', hl:'bg'} }},
   ru:{name:'Русский', short:'RU', words:true, pol:'политика', life:'образ жизни', regions:{
-    ru:{cc:'RU', place:'俄羅斯', accent:'俄語', tts:'ru-RU', hl:'ru'} }},
+    ru:{cc:'RU', place:'俄羅斯', accent:'俄語', tts:'ru-RU', hl:'ru'},
+    kz:{cc:'KZ', place:'哈薩克（俄語）', accent:'哈薩克俄語', tts:'ru-RU', hl:'ru'},
+    kg:{cc:'KG', place:'吉爾吉斯（俄語）', accent:'吉爾吉斯俄語', tts:'ru-RU', hl:'ru'} }},
   el:{name:'Ελληνικά', short:'EL', words:true, pol:'πολιτική', life:'τρόπος ζωής', regions:{
     gr:{cc:'GR', place:'希臘', accent:'希臘語', tts:'el-GR', hl:'el'},
     cy:{cc:'CY', place:'賽普勒斯', accent:'賽普勒斯希臘語', tts:'el-CY', hl:'el'} }},
@@ -155,10 +185,40 @@ const BUILTIN = {
   ca:{name:'Català', short:'CA', words:true, pol:'política', life:'estil de vida', regions:{
     ad:{cc:'AD', place:'安道爾', accent:'安道爾加泰隆尼亞語', tts:'ca-AD', hl:'ca'},
     es:{cc:'ES', place:'西班牙（加泰隆尼亞）', accent:'加泰隆尼亞語', tts:'ca-ES', hl:'ca'} }},
+  hi:{name:'हिन्दी', short:'HI', words:true, pol:'राजनीति', life:'जीवनशैली', regions:{
+    in:{cc:'IN', place:'印度', accent:'印地語', tts:'hi-IN', hl:'hi'} }},
+  ur:{name:'اردو', short:'UR', words:true, pol:'سیاست', life:'طرز زندگی', regions:{
+    pk:{cc:'PK', place:'巴基斯坦', accent:'烏爾都語', tts:'ur-PK', hl:'ur'} }},
+  ar:{name:'العربية', short:'AR', words:true, pol:'سياسة', life:'أسلوب حياة', regions:{
+    ae:{cc:'AE', place:'阿聯', accent:'阿拉伯語（海灣）', tts:'ar-AE', hl:'ar'},
+    sa:{cc:'SA', place:'沙烏地阿拉伯', accent:'阿拉伯語（沙烏地）', tts:'ar-SA', hl:'ar'},
+    qa:{cc:'QA', place:'卡達', accent:'阿拉伯語（卡達）', tts:'ar-QA', hl:'ar'},
+    kw:{cc:'KW', place:'科威特', accent:'阿拉伯語（科威特）', tts:'ar-KW', hl:'ar'},
+    bh:{cc:'BH', place:'巴林', accent:'阿拉伯語（巴林）', tts:'ar-BH', hl:'ar'},
+    om:{cc:'OM', place:'阿曼', accent:'阿拉伯語（阿曼）', tts:'ar-OM', hl:'ar'},
+    jo:{cc:'JO', place:'約旦', accent:'阿拉伯語（約旦）', tts:'ar-JO', hl:'ar'},
+    lb:{cc:'LB', place:'黎巴嫩', accent:'阿拉伯語（黎巴嫩）', tts:'ar-LB', hl:'ar'},
+    iq:{cc:'IQ', place:'伊拉克', accent:'阿拉伯語（伊拉克）', tts:'ar-IQ', hl:'ar'},
+    eg:{cc:'EG', place:'埃及', accent:'阿拉伯語（埃及）', tts:'ar-EG', hl:'ar'},
+    ma:{cc:'MA', place:'摩洛哥', accent:'阿拉伯語（摩洛哥）', tts:'ar-MA', hl:'ar'} }},
+  fa:{name:'فارسی', short:'FA', words:true, pol:'سیاست', life:'سبک زندگی', regions:{
+    ir:{cc:'IR', place:'伊朗', accent:'波斯語', tts:'fa-IR', hl:'fa'} }},
+  he:{name:'עברית', short:'HE', words:true, pol:'פוליטיקה', life:'לייף סטייל', regions:{
+    il:{cc:'IL', place:'以色列', accent:'希伯來語', tts:'he-IL', hl:'he'} }},
+  kk:{name:'Қазақ', short:'KK', words:true, pol:'саясат', life:'өмір салты', regions:{
+    kz:{cc:'KZ', place:'哈薩克', accent:'哈薩克語', tts:'kk-KZ', hl:'kk'} }},
+  uz:{name:'Oʻzbek', short:'UZ', words:true, pol:'siyosat', life:'turmush tarzi', regions:{
+    uz:{cc:'UZ', place:'烏茲別克', accent:'烏茲別克語', tts:'uz-UZ', hl:'uz'} }},
+  ky:{name:'Кыргызча', short:'KY', words:true, pol:'саясат', life:'жашоо образы', regions:{
+    kg:{cc:'KG', place:'吉爾吉斯', accent:'吉爾吉斯語', tts:'ky-KG', hl:'ky'} }},
+  tg:{name:'Тоҷикӣ', short:'TG', words:true, pol:'сиёсат', life:'тарзи зиндагӣ', regions:{
+    tj:{cc:'TJ', place:'塔吉克', accent:'塔吉克語', tts:'tg-TJ', hl:'tg'} }},
+  tk:{name:'Türkmençe', short:'TK', words:true, pol:'syýasat', life:'durmuş', regions:{
+    tm:{cc:'TM', place:'土庫曼', accent:'土庫曼語', tts:'tk-TM', hl:'tk'} }},
   tr:{name:'Türkçe', short:'TR', words:true, pol:'siyaset', life:'yaşam', regions:{
     tr:{cc:'TR', place:'土耳其', accent:'土耳其語', tts:'tr-TR', hl:'tr'} }}
 };
-const LANG_COLORS = {vi:'#8d9a7a', pt:'#9c8070', nl:'#8a8f9c', sv:'#7d8fa0', no:'#8e8797', da:'#a08588', fi:'#7f9b9b', is:'#8a98a6', cs:'#9a8a7c', sk:'#8f8f7d', pl:'#a3878a', hu:'#89977f', sl:'#82949a', et:'#7f8aa0', lv:'#9b8279', lt:'#8f9a72', uk:'#7d8fa6', ro:'#a08c74', bg:'#8a9a88', ru:'#93868f', el:'#7a8fa8', hr:'#9a8580', sr:'#8b7f8f', bs:'#88937f', sq:'#a0817d', mk:'#a38f72', mt:'#8f8a7f', ca:'#a08478', tr:'#a07d80', en:'#5f7a8c', ja:'#a47b7b', fr:'#8a7fa3', ko:'#6d9393', es:'#b0806a', th:'#8b9466', it:'#8f8a72', de:'#7a8a7e', id:'#a0866e', zh:'#6f8f7a'};
+const LANG_COLORS = {hi:'#a3866f', ur:'#7f9a87', ar:'#9a8a6c', fa:'#8a9aa0', he:'#7f8ea6', kk:'#8a9fa3', uz:'#9e8c7a', ky:'#a0857f', tg:'#8c8fa3', tk:'#90a080', vi:'#8d9a7a', pt:'#9c8070', nl:'#8a8f9c', sv:'#7d8fa0', no:'#8e8797', da:'#a08588', fi:'#7f9b9b', is:'#8a98a6', cs:'#9a8a7c', sk:'#8f8f7d', pl:'#a3878a', hu:'#89977f', sl:'#82949a', et:'#7f8aa0', lv:'#9b8279', lt:'#8f9a72', uk:'#7d8fa6', ro:'#a08c74', bg:'#8a9a88', ru:'#93868f', el:'#7a8fa8', hr:'#9a8580', sr:'#8b7f8f', bs:'#88937f', sq:'#a0817d', mk:'#a38f72', mt:'#8f8a7f', ca:'#a08478', tr:'#a07d80', en:'#5f7a8c', ja:'#a47b7b', fr:'#8a7fa3', ko:'#6d9393', es:'#b0806a', th:'#8b9466', it:'#8f8a72', de:'#7a8a7e', id:'#a0866e', zh:'#6f8f7a'};
 const CUSTOM_COLORS = ['#7f8fa0','#a08a8f','#8f9a84','#9a8fa8','#a8977e','#7e9a9a'];
 
 /* 自訂語言／地區（只是設定，存在手機瀏覽器，很小） */
@@ -180,7 +240,7 @@ function regionOf(lang, rk){
   const cc = r.cc.toUpperCase();
   return {...r, key, lang, flag:flagOf(cc), label:`${flagOf(cc)} ${r.place}`,
           accent: r.accent || `${r.place}${L.name}`, tts: r.tts || `${lang}-${cc}`,
-          gn: `hl=${r.hl || lang}&gl=${cc}&ceid=${r.ceid || cc + ':' + lang}`};
+          gn: `hl=${r.hl || lang}&gl=${cc}&ceid=${r.ceid || cc + ':' + (/-419$/.test(r.hl || '') ? r.hl : lang)}`};
 }
 const CATS = {
   local:{name:'本地', topic:'NATION'}, world:{name:'國際', topic:'WORLD'}, fin:{name:'財經', topic:'BUSINESS'},
@@ -197,7 +257,7 @@ async function catKeyword(lang, cat){
   return kwCache[k];
 }
 /* Google 新聞沒有當地版本的國家，先改用 Bing 新聞（同樣免費、可用當地語言） */
-const NO_GN = new Set(['DK','FI','IS','EE','HR','BA','AL','MK','ME','LU','MT','CY','MD','AD','MC','LI','SM','XK','BY','IE']);
+const NO_GN = new Set(['QA','KW','BH','OM','JO','IQ','IR','KZ','UZ','KG','TJ','TM','EC','BO','PY','UY','CR','PA','GT','HN','SV','NI','DO','PR','JM','TT','BZ','SR','HT','DK','FI','IS','EE','HR','BA','AL','MK','ME','LU','MT','CY','MD','AD','MC','LI','SM','XK','BY','IE']);
 const BING_CAT = {local:'', world:'international', fin:'economy', pol:'politics', tech:'technology', health:'health', life:'lifestyle'};
 async function bingQuery(lang, cc, cat){
   let place = cc; try{ place = new Intl.DisplayNames([lang], {type:'region'}).of(cc) || cc; }catch(e){}
@@ -958,8 +1018,12 @@ async function officialLangs(cc){
    語言／國家下拉選單（依地區分組）
    ========================================================= */
 const GROUPS = [
-  ['亞洲', 'TW JP KR TH ID VN SG HK'],
-  ['美洲・大洋洲', 'US CA AU NZ BR MX'],
+  ['東亞・東南亞', 'TW JP KR TH ID VN SG HK'],
+  ['南亞', 'IN PK BD LK NP'],
+  ['中東・西亞', 'AE SA QA KW BH OM JO LB IQ IR IL EG MA'],
+  ['中亞', 'KZ UZ KG TJ TM'],
+  ['北美・大洋洲', 'US CA AU NZ'],
+  ['中南美洲・加勒比', 'MX BR AR CO CL PE VE CU EC BO PY UY CR PA GT HN SV NI DO PR JM TT BZ SR HT'],
   ['西歐', 'GB IE FR BE NL LU MC DE AT CH LI'],
   ['南歐', 'ES PT IT SM AD MT'],
   ['北歐', 'SE NO DK FI IS'],
