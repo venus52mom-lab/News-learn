@@ -1,10 +1,10 @@
 {
- "time": "2026-11-16 16:58",
+ "time": "2026-11-16 16:59",
  "graph": 0,
  "gap_days": 0,
  "today": 19,
- "XAU": 0,
- "XAG": 0,
+ "XAU": 5692,
+ "XAG": 5692,
  "esun_ccys": [
   "AUD",
   "CAD",
@@ -26,7 +26,7 @@
   "兆豐": 9
  },
  "fails": {},
- "minutes": 1.0,
+ "minutes": 0.2,
  "rows": {
   "USD": 2482,
   "HKD": 2482,
@@ -47,73 +47,8 @@
   "VND": 2482,
   "MYR": 2482,
   "CNY": 2482,
-  "XAU": 0,
-  "XAG": 0
+  "XAU": 5692,
+  "XAG": 5692
  },
- "log": [
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "yahoo": "GC=F",
-   "error": "Expecting value: line 1 column 1 (char 0)"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "yahoo": "TWD=X",
-   "error": "Expecting value: line 1 column 1 (char 0)"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/SI=F?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/SI=F?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/SI=F?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "yahoo": "SI=F",
-   "error": "Expecting value: line 1 column 1 (char 0)"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?period1=0&period2=9999999999&interval=1d",
-   "error": "HTTP Error 429: Too Many Requests"
-  },
-  {
-   "yahoo": "TWD=X",
-   "error": "Expecting value: line 1 column 1 (char 0)"
-  }
- ]
+ "log": []
 }
