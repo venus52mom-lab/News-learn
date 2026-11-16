@@ -3,80 +3,96 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1c1e21">
+<meta name="theme-color" content="#131a1e">
 <title>即時聽譯</title>
 <style>
   :root{
-    --bg:#1c1e21; --panel:#222529; --text:#cfcac1; --sub:#9aa39b; --muted:#80858a;
-    --accent:#8ea597; --warn:#b89a86; --line:#30343a; --btn:#2a2e33; --fs:20px;
+    --bg:#0f1417; --panel:#131a1e; --raise:#172127; --line:#233039;
+    --text:#d8d2c6; --lat:#93b4c4; --muted:#66757e; --ann:#8b9a9f;
+    --accent:#6fa3a8; --accent2:#b19e7c; --warn:#c38f78; --fs:20px;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   }
   :root[data-theme="light"]{
-    --bg:#ece9e3; --panel:#f5f3ee; --text:#3a3c3e; --sub:#5f6b63; --muted:#8c8e8f;
-    --accent:#6f8a7c; --warn:#9c7a66; --line:#dcd8cf; --btn:#e4e0d8;
+    --bg:#edf0f1; --panel:#f5f7f8; --raise:#e5eaec; --line:#d3dbdf;
+    --text:#2c2925; --lat:#2f5c70; --muted:#7a8990; --ann:#6b7b82;
+    --accent:#3e7c83; --accent2:#8a7250; --warn:#a2604a;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font-family:system-ui,-apple-system,"PingFang TC","Noto Sans TC",sans-serif;-webkit-tap-highlight-color:transparent}
   body{display:flex;flex-direction:column;height:100dvh;
     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-  header{display:flex;gap:6px;align-items:center;padding:8px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  button,select{font:inherit;font-size:15px;color:var(--text);background:var(--btn);border:1px solid var(--line);
-    border-radius:10px;padding:8px 10px;min-height:40px}
-  select{max-width:38vw}
-  #toggle{min-width:84px;font-weight:600}
-  #toggle.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
-  .arrow{color:var(--muted)}
-  .spacer{flex:1}
-  #status{width:100%;font-size:12px;color:var(--muted);min-height:16px;padding:0 2px}
+  header{display:flex;gap:6px;align-items:center;padding:8px 8px 6px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  button,select{font:inherit;font-size:15px;color:var(--text);background:var(--raise);border:1px solid var(--line);
+    border-radius:8px;padding:7px 9px;min-height:40px}
+  select{flex:1;min-width:0;max-width:34vw}
+  #toggle{min-width:78px;font-weight:600;letter-spacing:.04em}
+  #toggle.on{background:transparent;color:var(--accent);border-color:var(--accent)}
+  #swap{padding:7px 8px;color:var(--accent)}
+  #gear{margin-left:auto}
+  #status{width:100%;display:flex;align-items:center;gap:7px;font:11px/1.4 var(--mono);color:var(--muted);letter-spacing:.04em;min-height:16px;padding:2px 2px 0}
+  #led{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+  #led.on{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+  #led.err{background:var(--warn)}
   main{flex:1;display:flex;flex-direction:column;min-height:0}
   section{flex:1;display:flex;flex-direction:column;min-height:0}
   section+section{border-top:1px solid var(--line)}
-  .label{font-size:12px;color:var(--muted);padding:6px 12px 0;letter-spacing:.04em}
-  .pane{flex:1;overflow-y:auto;padding:4px 12px 12px;font-size:var(--fs);line-height:1.55;overscroll-behavior:contain}
-  #trg .pane{color:var(--sub)}
-  .pane p{margin:0 0 .45em}
+  .label{display:flex;align-items:center;gap:8px;font:11px/1 var(--mono);color:var(--muted);padding:9px 12px 5px;letter-spacing:.1em;text-transform:uppercase}
+  .label::before{content:"";width:6px;height:6px;background:var(--accent)}
+  #trg .label::before{background:var(--accent2)}
+  .pane{flex:1;overflow-y:auto;padding:2px 12px 12px;font-size:var(--fs);line-height:1.55;overscroll-behavior:contain}
+  .pane p{margin:0 0 .4em;padding-left:9px;border-left:2px solid transparent}
+  .pane p:last-of-type{border-left-color:var(--line)}
+  .lat{color:var(--lat)}
+  .ann{color:var(--ann);font-size:.8em}
   .pane .interim{color:var(--muted)}
-  .pane .pending{color:var(--muted)}
+  .pane .pending{color:var(--muted);font-family:var(--mono)}
   .pane .err{color:var(--warn);font-size:.8em}
-  .empty{color:var(--muted);font-size:15px;line-height:1.6}
-  /* 設定面板 */
-  #sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:9}
-  #sheet.show{display:flex}
-  .card{background:var(--panel);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
+  .pane .note{display:block;font-size:.72em;color:var(--ann);margin-top:.15em;line-height:1.45}
+  .hl{background:color-mix(in srgb,var(--accent) 25%,transparent);border-radius:3px}
+  .empty{color:var(--muted);font-size:15px;line-height:1.7}
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:9}
+  .sheet.show{display:flex}
+  .card{background:var(--panel);width:100%;max-width:560px;border-radius:14px 14px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));
     max-height:85dvh;overflow-y:auto;border-top:1px solid var(--line)}
+  .card h3{margin:0 0 4px;font-size:17px}
+  .kicker{font:11px/1.4 var(--mono);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
   .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
   .row small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
   .seg button{padding:6px 10px;min-height:34px}
-  .seg button.sel{background:var(--accent);color:var(--bg);border-color:var(--accent)}
-  input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
+  .seg button.sel{border-color:var(--accent);color:var(--accent)}
+  input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex:none}
   input[type=range]{accent-color:var(--accent);width:140px}
   .tips{font-size:13px;color:var(--muted);line-height:1.6;margin:12px 0 4px;padding-left:18px}
-  .card h3{margin:0 0 4px;font-size:16px}
+  #infoTr{font-size:16px;margin:4px 0 10px;padding:8px 10px;background:var(--raise);border-left:2px solid var(--accent2)}
+  #infoBody{font-size:15px;line-height:1.7;margin:0}
+  #infoLink{display:inline-block;margin-top:10px;font:12px var(--mono);color:var(--accent)}
 </style>
 </head>
 <body>
 <header>
   <button id="toggle">● 開始</button>
   <select id="srcSel" aria-label="原始語言"></select>
-  <span class="arrow">→</span>
+  <button id="swap" aria-label="交換翻譯方向" title="交換方向">⇄</button>
   <select id="trgSel" aria-label="翻譯語言"></select>
-  <span class="spacer"></span>
   <button id="gear" aria-label="設定">⚙</button>
-  <div id="status">按「開始」並允許麥克風</div>
+  <div id="status"><span id="led"></span><span id="statusText">按「開始」並允許麥克風</span></div>
 </header>
 <main>
   <section id="src"><div class="label" id="srcLabel">原文</div><div class="pane" id="srcPane">
-    <div class="empty">把手機放在講者附近，按「開始」。<br>上面顯示聽到的原文，下面顯示翻譯。</div></div></section>
+    <div class="empty">把手機放在講者附近，按「開始」。<br>上面是原文，下面是翻譯。<br>點任何一個詞，可以查它的翻譯和解釋。<br>按 ⇄ 可以反過來，把你說的中文翻成對方的語言。</div></div></section>
   <section id="trg"><div class="label" id="trgLabel">譯文</div><div class="pane" id="trgPane"></div></section>
 </main>
 
-<div id="sheet"><div class="card">
+<div id="sheet" class="sheet"><div class="card">
   <h3>設定</h3>
   <div class="row"><div>主題</div><div class="seg" id="themeSeg">
     <button data-v="dark">深色</button><button data-v="light">淺色</button><button data-v="auto">跟隨系統</button></div></div>
   <div class="row"><div>文字大小</div><input type="range" id="fs" min="14" max="34" step="1"></div>
   <div class="row"><div>保持螢幕開啟<small>瀏覽器關螢幕後會停止收音，建議開啟並調暗亮度</small></div><input type="checkbox" id="wake"></div>
   <div class="row"><div>即時顯示辨識中文字<small>關閉後只顯示完整句子，更省電</small></div><input type="checkbox" id="interim"></div>
+  <div class="row"><div>台灣用語<small>把「視頻、軟件、質量」等改成台灣常用說法</small></div><input type="checkbox" id="tw"></div>
+  <div class="row"><div>縮寫、人物自動註解<small>上維基百科查詢，用括號補充說明（免費，不用 AI）</small></div><input type="checkbox" id="notes"></div>
   <div class="row"><div>裝置端語音辨識<small>Chrome 新版支援時才有效，可離線、不傳到雲端</small></div><input type="checkbox" id="local"></div>
   <div class="row"><div>清除所有文字</div><button id="clear">清除</button></div>
   <ul class="tips">
@@ -87,6 +103,14 @@
   </ul>
   <button id="closeSheet" style="width:100%;margin-top:8px">完成</button>
 </div></div>
+<div id="info" class="sheet"><div class="card">
+  <div class="kicker" id="infoKick">LOOKUP</div>
+  <h3 id="infoTitle"></h3>
+  <div id="infoTr"></div>
+  <p id="infoBody"></p>
+  <a id="infoLink" href="#" target="_blank" rel="noopener"></a>
+  <button id="closeInfo" style="width:100%;margin-top:12px">關閉</button>
+</div></div>
 
 <script>
 (() => {
@@ -94,19 +118,32 @@
 // ---------- 語言清單 ----------
 // 辨識用語言 (Web Speech API locale)
 const SRC = [
-  ['auto','自動偵測'],['en-US','英文 (美)'],['en-GB','英文 (英)'],['ja-JP','日文'],['ko-KR','韓文'],
-  ['zh-TW','中文 (台灣)'],['zh-CN','中文 (普通話)'],['yue-Hant-HK','粵語'],['fr-FR','法文'],['de-DE','德文'],
-  ['es-ES','西班牙文'],['it-IT','義大利文'],['pt-BR','葡萄牙文'],['ru-RU','俄文'],['vi-VN','越南文'],
-  ['th-TH','泰文'],['id-ID','印尼文'],['ms-MY','馬來文'],['ar-SA','阿拉伯文'],['hi-IN','印地文'],['tr-TR','土耳其文'],['nl-NL','荷蘭文']
+  ['auto','自動偵測'],['en-US','英文 (美)'],['en-GB','英文 (英)'],['en-AU','英文 (澳)'],['en-IN','英文 (印度)'],
+  ['zh-TW','中文 (台灣)'],['zh-CN','中文 (普通話)'],['yue-Hant-HK','粵語'],['ja-JP','日文'],['ko-KR','韓文'],
+  ['fr-FR','法文'],['fr-CA','法文 (加拿大)'],['de-DE','德文'],['es-ES','西班牙文'],['es-MX','西班牙文 (墨西哥)'],
+  ['pt-BR','葡萄牙文 (巴西)'],['pt-PT','葡萄牙文 (葡萄牙)'],['it-IT','義大利文'],['nl-NL','荷蘭文'],['ru-RU','俄文'],['uk-UA','烏克蘭文'],
+  ['pl-PL','波蘭文'],['cs-CZ','捷克文'],['hu-HU','匈牙利文'],['ro-RO','羅馬尼亞文'],['el-GR','希臘文'],['tr-TR','土耳其文'],
+  ['sv-SE','瑞典文'],['da-DK','丹麥文'],['nb-NO','挪威文'],['fi-FI','芬蘭文'],
+  ['vi-VN','越南文'],['th-TH','泰文'],['id-ID','印尼文'],['ms-MY','馬來文'],['fil-PH','菲律賓文'],['km-KH','高棉文'],['lo-LA','寮文'],['my-MM','緬甸文'],
+  ['hi-IN','印地文'],['bn-IN','孟加拉文'],['ta-IN','坦米爾文'],['ur-PK','烏爾都文'],['ne-NP','尼泊爾文'],
+  ['ar-SA','阿拉伯文'],['he-IL','希伯來文'],['fa-IR','波斯文'],['sw-KE','史瓦希里文'],['mn-MN','蒙古文']
 ];
 // 翻譯目標語言 (Google 代碼)
 const TRG = [
-  ['zh-TW','繁體中文'],['zh-CN','簡體中文'],['en','英文'],['ja','日文'],['ko','韓文'],['fr','法文'],['de','德文'],
-  ['es','西班牙文'],['it','義大利文'],['pt','葡萄牙文'],['ru','俄文'],['vi','越南文'],['th','泰文'],['id','印尼文'],['ms','馬來文'],['ar','阿拉伯文'],['hi','印地文'],['tr','土耳其文'],['nl','荷蘭文']
+  ['zh-TW','繁體中文'],['zh-CN','簡體中文'],['en','英文'],['ja','日文'],['ko','韓文'],['fr','法文'],['de','德文'],['es','西班牙文'],
+  ['pt','葡萄牙文'],['it','義大利文'],['nl','荷蘭文'],['ru','俄文'],['uk','烏克蘭文'],['pl','波蘭文'],['cs','捷克文'],['hu','匈牙利文'],
+  ['ro','羅馬尼亞文'],['el','希臘文'],['tr','土耳其文'],['sv','瑞典文'],['da','丹麥文'],['no','挪威文'],['fi','芬蘭文'],
+  ['vi','越南文'],['th','泰文'],['id','印尼文'],['ms','馬來文'],['tl','菲律賓文'],['km','高棉文'],['lo','寮文'],['my','緬甸文'],
+  ['hi','印地文'],['bn','孟加拉文'],['ta','坦米爾文'],['ur','烏爾都文'],['ne','尼泊爾文'],['ar','阿拉伯文'],['iw','希伯來文'],['fa','波斯文'],['sw','史瓦希里文'],['mn','蒙古文']
 ];
 // 偵測到的語言 → 辨識 locale
 const DETECT2LOCALE = {en:'en-US',ja:'ja-JP',ko:'ko-KR',zh:'zh-TW','zh-TW':'zh-TW','zh-CN':'zh-CN','zh-Hant':'zh-TW','zh-Hans':'zh-CN',
-  yue:'yue-Hant-HK',fr:'fr-FR',de:'de-DE',es:'es-ES',it:'it-IT',pt:'pt-BR',ru:'ru-RU',vi:'vi-VN',th:'th-TH',id:'id-ID',ms:'ms-MY',ar:'ar-SA',hi:'hi-IN',tr:'tr-TR',nl:'nl-NL'};
+  yue:'yue-Hant-HK',fr:'fr-FR',de:'de-DE',es:'es-ES',it:'it-IT',pt:'pt-BR',ru:'ru-RU',vi:'vi-VN',th:'th-TH',id:'id-ID',ms:'ms-MY',ar:'ar-SA',
+  hi:'hi-IN',tr:'tr-TR',nl:'nl-NL',uk:'uk-UA',pl:'pl-PL',cs:'cs-CZ',hu:'hu-HU',ro:'ro-RO',el:'el-GR',sv:'sv-SE',da:'da-DK',no:'nb-NO',nb:'nb-NO',
+  fi:'fi-FI',tl:'fil-PH',fil:'fil-PH',km:'km-KH',lo:'lo-LA',my:'my-MM',bn:'bn-IN',ta:'ta-IN',ur:'ur-PK',ne:'ne-NP',he:'he-IL',iw:'he-IL',fa:'fa-IR',sw:'sw-KE',mn:'mn-MN'};
+// 翻譯目標 → 說話辨識語言（交換方向用）
+const TRG2LOC = {'zh-TW':'zh-TW','zh-CN':'zh-CN',en:'en-US',iw:'he-IL',no:'nb-NO',tl:'fil-PH'};
+const LATIN_LANGS = new Set(['en','fr','de','es','pt','it','nl','pl','cs','hu','ro','tr','sv','da','nb','no','fi','vi','id','ms','fil','tl','sw']);
 const nameOf = (list, code) => (list.find(x => x[0] === code) || [code, code])[1];
 const base = c => (c || '').toLowerCase().split('-')[0].replace('cmn','zh').replace('yue','zh');
 // locale → 翻譯 API 的來源碼
@@ -114,20 +151,21 @@ const srcCodeForTranslate = loc => {
   if (!loc) return 'auto';
   if (loc.startsWith('zh-TW') || loc.startsWith('yue')) return 'zh-TW';
   if (loc.startsWith('zh')) return 'zh-CN';
-  return base(loc);
+  const b = base(loc);
+  return b === 'he' ? 'iw' : b === 'nb' ? 'no' : b === 'fil' ? 'tl' : b;
 };
 // Chrome 內建 Translator 用 BCP47
 const bcp = c => c === 'zh-TW' ? 'zh-Hant' : c === 'zh-CN' ? 'zh' : c;
 
 // ---------- 設定 ----------
-const DEF = {src:'auto', trg:'zh-TW', theme:'dark', fs:20, wake:true, interim:true, local:false, guess:'en-US'};
+const DEF = {src:'auto', trg:'zh-TW', theme:'dark', fs:20, wake:true, interim:true, local:false, guess:'en-US', tw:true, notes:true};
 let S = {...DEF};
 try { Object.assign(S, JSON.parse(localStorage.getItem('lt.settings') || '{}')); } catch(e) {}
 const save = () => { try { localStorage.setItem('lt.settings', JSON.stringify(S)); } catch(e) {} };
 
 const $ = id => document.getElementById(id);
 const srcSel = $('srcSel'), trgSel = $('trgSel'), srcPane = $('srcPane'), trgPane = $('trgPane'),
-      statusEl = $('status'), toggleBtn = $('toggle');
+      statusEl = $('statusText'), toggleBtn = $('toggle');
 SRC.forEach(([v,n]) => srcSel.add(new Option(n, v)));
 TRG.forEach(([v,n]) => trgSel.add(new Option(n, v)));
 srcSel.value = S.src; trgSel.value = S.trg;
@@ -135,20 +173,41 @@ srcSel.value = S.src; trgSel.value = S.trg;
 function applyTheme(){
   const t = S.theme === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : S.theme;
   document.documentElement.dataset.theme = t;
-  document.querySelector('meta[name=theme-color]').content = t === 'light' ? '#ece9e3' : '#1c1e21';
+  document.querySelector('meta[name=theme-color]').content = t === 'light' ? '#f5f7f8' : '#131a1e';
   document.querySelectorAll('#themeSeg button').forEach(b => b.classList.toggle('sel', b.dataset.v === S.theme));
 }
 function applyFs(){ document.documentElement.style.setProperty('--fs', S.fs + 'px'); }
 applyTheme(); applyFs();
 matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => S.theme === 'auto' && applyTheme());
 
-const setStatus = t => { statusEl.textContent = t; };
+const setStatus = t => {
+  statusEl.textContent = t;
+  $('led').className = running && !/錯誤|拒絕|不支援|中斷|無法/.test(t) ? 'on' : (/錯誤|拒絕|不支援|中斷|無法/.test(t) ? 'err' : '');
+};
 function updateLabels(){
   const cur = S.src === 'auto' ? `自動偵測：${nameOf(SRC, S.guess)}` : nameOf(SRC, S.src);
   $('srcLabel').textContent = `原文 · ${cur}`;
   $('trgLabel').textContent = `譯文 · ${nameOf(TRG, S.trg)}`;
 }
 updateLabels();
+
+// ---------- 中英文分色：拉丁字母一種顏色、中日韓文字另一種 ----------
+const LAT_RE = /([A-Za-z\u00C0-\u024F\u1E00-\u1EFF0-9][A-Za-z\u00C0-\u024F\u1E00-\u1EFF0-9'’.&\-]*(?:[ ,]+[A-Za-z\u00C0-\u024F\u1E00-\u1EFF0-9][A-Za-z\u00C0-\u024F\u1E00-\u1EFF0-9'’.&\-]*)*)/;
+function renderText(el, text){
+  // \u0001...\u0002 包住的是註解（括號說明）
+  el.textContent = '';
+  const frag = document.createDocumentFragment();
+  text.split(/(\u0001[^\u0002]*\u0002)/).forEach(chunk => {
+    if (!chunk) return;
+    if (chunk[0] === '\u0001') { const a = document.createElement('span'); a.className = 'ann'; a.textContent = chunk.slice(1, -1); frag.appendChild(a); return; }
+    chunk.split(LAT_RE).forEach((part, i) => {
+      if (!part) return;
+      if (i % 2) { const sp = document.createElement('span'); sp.className = 'lat'; sp.textContent = part; frag.appendChild(sp); }
+      else frag.appendChild(document.createTextNode(part));
+    });
+  });
+  el.appendChild(frag);
+}
 
 // ---------- 顯示：超過畫面後才刪舊文字 ----------
 const stick = new WeakMap(); // 使用者是否停在底部
@@ -189,7 +248,7 @@ let seq = 0;
 function addFinal(text){
   clearEmpty();
   const id = String(++seq);
-  const ps = document.createElement('p'); ps.dataset.id = id; ps.textContent = text;
+  const ps = document.createElement('p'); ps.dataset.id = id; renderText(ps, text);
   if (interimEl) srcPane.insertBefore(ps, interimEl); else srcPane.appendChild(ps);
   const pt = document.createElement('p'); pt.dataset.id = id; pt.className = 'pending'; pt.textContent = '…';
   trgPane.appendChild(pt);
@@ -283,6 +342,153 @@ const WEB = [
   }},
 ];
 
+// ---------- 台灣用語修正（只在翻成繁體中文時套用，長詞優先） ----------
+const TW_FIX = [
+  ['視頻通話','視訊通話'],['視頻會議','視訊會議'],['視頻','影片'],['短視頻','短影音'],['軟件','軟體'],['硬件','硬體'],['互聯網','網路'],['網絡','網路'],
+  ['數據庫','資料庫'],['默認','預設'],['屏幕','螢幕'],['打印','列印'],['鼠標','滑鼠'],['服務器','伺服器'],['文件夾','資料夾'],
+  ['光盤','光碟'],['硬盤','硬碟'],['U盤','隨身碟'],['內存','記憶體'],['操作系統','作業系統'],['應用程序','應用程式'],['程序員','工程師'],
+  ['智能手機','智慧型手機'],['人工智能','人工智慧'],['智能','智慧'],['芯片','晶片'],['硅谷','矽谷'],['硅','矽'],['激光','雷射'],
+  ['短信','簡訊'],['博客','部落格'],['帖子','貼文'],['社交媒體','社群媒體'],['營銷','行銷'],['渠道','管道'],['寬帶','寬頻'],
+  ['移動支付','行動支付'],['移動電話','行動電話'],['移動設備','行動裝置'],['高清','高畫質'],['出租車','計程車'],['的士','計程車'],
+  ['自行車','腳踏車'],['摩托車','機車'],['質量','品質'],['信息','資訊'],['反饋','回饋'],['創客','自造者'],['點贊','按讚'],
+  ['美聯儲','聯準會'],['美國聯邦儲備委員會','美國聯準會'],['聯邦儲備','聯準會'],['標準普爾','標普'],['納斯達克','那斯達克'],['道瓊斯','道瓊'],
+  ['首席執行官','執行長'],['首席財務官','財務長'],['首席技術官','技術長'],['首席運營官','營運長'],['運營','營運'],['國內生產總值','國內生產毛額'],
+  ['特朗普','川普'],['奧巴馬','歐巴馬'],['普京','普丁'],['默克爾','梅克爾'],['鮑威爾','鮑爾'],['內塔尼亞胡','納坦雅胡'],['澤連斯基','澤倫斯基'],
+  ['悉尼','雪梨'],['新西蘭','紐西蘭'],['意大利','義大利'],['澳大利亞','澳洲'],['沙特阿拉伯','沙烏地阿拉伯'],['沙特','沙烏地'],
+  ['朝鮮','北韓'],['卡塔爾','卡達'],['也門','葉門'],['肯尼亞','肯亞'],['尼日利亞','奈及利亞'],['老撾','寮國'],['新澤西','紐澤西'],
+  ['老虎機','吃角子老虎'],['土豆','馬鈴薯'],['西紅柿','番茄'],['菠蘿','鳳梨'],['三文魚','鮭魚'],['方便麵','泡麵'],
+  ['早上好','早安'],['搞定','搞定'],['給力','厲害'],['靠譜','可靠'],['牛逼','超強'],['小視頻','短影音'],['大巴','遊覽車'],
+];
+function twFix(s){ if (!S.tw || S.trg !== 'zh-TW' || !s) return s; for (const [a,b] of TW_FIX) if (s.includes(a)) s = s.split(a).join(b); return s; }
+
+// ---------- 常見縮寫（台灣慣用說法），查不到才上維基百科 ----------
+const ABBR = {
+  FOMO:['錯失恐懼症','怕錯過行情或機會而跟風'], FUD:['恐懼、不確定、懷疑','刻意散播負面消息'], YOLO:['人生只有一次','及時行樂'],
+  GDP:['國內生產毛額','衡量國家經濟規模'], CPI:['消費者物價指數','衡量通膨'], PPI:['生產者物價指數','衡量上游物價'], PCE:['個人消費支出物價指數','聯準會最看重的通膨指標'],
+  Fed:['聯準會','美國中央銀行'], FOMC:['聯邦公開市場委員會','聯準會決定利率的會議'], ECB:['歐洲央行',''], BOJ:['日本央行',''], IMF:['國際貨幣基金',''],
+  IPO:['首次公開發行','公司第一次上市募資'], ETF:['指數股票型基金',''], EPS:['每股盈餘',''], ROI:['投資報酬率',''], ROE:['股東權益報酬率',''],
+  YoY:['年增率','跟去年同期比'], QoQ:['季增率','跟上一季比'], MoM:['月增率','跟上個月比'], 'M&A':['併購',''], VC:['創投','創業投資'],
+  SEC:['美國證券交易委員會','美國證券主管機關'], 'S&P':['標普','標準普爾'], AUM:['管理資產規模',''], ESG:['環境、社會、公司治理','永續投資指標'],
+  CEO:['執行長',''], CFO:['財務長',''], CTO:['技術長',''], COO:['營運長',''], KPI:['關鍵績效指標',''], OKR:['目標與關鍵成果','一種目標管理法'],
+  AI:['人工智慧',''], AGI:['通用人工智慧','能做各種人類工作的AI'], LLM:['大型語言模型','像ChatGPT這類AI'], GPU:['圖形處理器','顯示卡晶片'],
+  CPU:['中央處理器',''], EV:['電動車',''], IoT:['物聯網',''], VR:['虛擬實境',''], AR:['擴增實境',''], SaaS:['軟體即服務','用訂閱方式使用的線上軟體'],
+  API:['應用程式介面','程式之間溝通的接口'], TSMC:['台積電',''], NVDA:['輝達','Nvidia 股票代號'],
+  NATO:['北約','北大西洋公約組織'], UN:['聯合國',''], EU:['歐盟',''], WHO:['世界衛生組織',''], WTO:['世界貿易組織',''], NASA:['美國太空總署',''],
+  FBI:['美國聯邦調查局',''], CIA:['美國中央情報局',''], DOJ:['美國司法部',''], IRS:['美國國稅局',''], GOP:['美國共和黨','老大黨'], DEI:['多元、平等、共融',''],
+  NBA:['美國職籃',''], MLB:['美國職棒大聯盟',''], NFL:['美國職業美式足球聯盟',''], MVP:['最有價值球員',''],
+  ASAP:['盡快',''], FYI:['供你參考',''], BTW:['順帶一提',''], IMO:['我個人認為',''], TBD:['待定',''], ETA:['預計抵達時間',''], DM:['私訊',''], DIY:['自己動手做',''],
+  PhD:['博士',''], MBA:['企管碩士',''], ICU:['加護病房',''], ER:['急診室',''], GP:['家醫科醫師','英國、澳洲常用'], NHS:['英國國民保健署','英國公營醫療'],
+  BBC:['英國廣播公司',''], ABC:['美國廣播公司 或 澳洲廣播公司',''], PM:['首相／總理',''], MP:['國會議員',''], ASX:['澳洲證券交易所',''],
+  NHK:['日本放送協會','日本公共電視'], LDP:['自民黨','日本執政黨'],
+};
+const ABBR_KEYS = Object.keys(ABBR);
+const ABBR_SKIP = new Set(['I','A','OK','TV','US','USA','UK','AM','PM','OH','NO','SO','UP','IT','IS','IN','ON','AT','TO','OF','OR','AN','BE','DO','GO','HE','ME','MY','WE','US','LOL','OMG','HI']);
+const STOP = new Set(('The A An And But Or So Yes No Okay OK Oh Well Now Then This That These Those There Here What When Where Why How Who Which ' +
+  'I I\'m I\'ll I\'ve I\'d My We Our You Your He She They It Its His Her Their Mr Mrs Ms Dr Sir Madam Thank Thanks Hello Hi Please Sorry ' +
+  'Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July August September October November December ' +
+  'English American British Chinese Japanese Korean French German Spanish Thai Vietnamese Portuguese Australian European Asian ' +
+  'America China Taiwan Japan Korea Europe Asia Africa Australia Canada Mexico Russia India France Germany Spain Italy Britain England London Paris Tokyo New York ' +
+  'United States United Kingdom God Internet Christmas Easter Okay Also Just Because If Let Let\'s Maybe Because Again').split(/\s+/));
+const NAME_LINK = /^(de|da|di|van|von|der|del|la|le|bin|al)$/;
+function escapeRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function findTerms(text){
+  const found = [];
+  const add = t => { if (t && !found.includes(t)) found.push(t); };
+  for (const k of ABBR_KEYS) if (new RegExp('(^|[^A-Za-z])' + escapeRe(k) + 's?(?![A-Za-z])').test(text)) add(k);
+  for (const m of text.matchAll(/(?<![A-Za-z])[A-Z][A-Z0-9&]{1,5}(?![A-Za-z])/g)) if (!ABBR_SKIP.has(m[0])) add(m[0]);
+  // 人名、地名、公司名：連續大寫開頭的字（只適用英、法、德、西、葡、越、印尼等拉丁字母語言）
+  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
+    const words = sentence.split(/\s+/);
+    let grp = [], start = 0;
+    const flush = () => {
+      if (grp.length) {
+        while (grp.length && NAME_LINK.test(grp[grp.length - 1])) grp.pop();
+        const g = grp.join(' ');
+        const ok = grp.length >= 2 || (start > 0 && grp[0].length >= 4);
+        if (ok && !STOP.has(g) && !ABBR_KEYS.includes(g)) add(g);
+      }
+      grp = [];
+    };
+    words.forEach((w, i) => {
+      const c = w.replace(/^[^\p{L}]+/u, '').replace(/[^\p{L}'’.-]+$/u, '').replace(/['’]s$/, '').replace(/\.$/, '');
+      if (/^\p{Lu}\p{Ll}[\p{L}'’-]*$/u.test(c) && !STOP.has(c)) { if (!grp.length) start = i; grp.push(c); if (/[,;:!?]$/.test(w)) flush(); }
+      else if (grp.length && NAME_LINK.test(c)) grp.push(c);
+      else flush();
+    });
+    flush();
+  }
+  return found;
+}
+
+const clip = (s, n) => {
+  if (!s || s.length <= n) return s;
+  const cut = Math.max(s.lastIndexOf('，', n), s.lastIndexOf('、', n), s.lastIndexOf(', ', n));
+  return (cut > n * 0.5 ? s.slice(0, cut) : s.slice(0, n)) + '…';
+};
+let wikiCache = new Map();
+try { wikiCache = new Map(JSON.parse(localStorage.getItem('lt.wiki') || '[]')); } catch(e) {}
+const saveWiki = () => { try { localStorage.setItem('lt.wiki', JSON.stringify([...wikiCache].slice(-400))); } catch(e) {} };
+const WIKI_LANGS = new Set(['zh','en','uk','pl','cs','hu','ro','el','sv','da','fi','he','fa','bn','ta','ur','ja','de','fr','es','pt','it','ko','vi','th','id','ru','nl','tr','ms','ar','hi']);
+
+async function wikiInfo(term, sb){
+  const srcWiki = WIKI_LANGS.has(sb) ? sb : 'en';
+  const tb = base(S.trg);
+  if (srcWiki === tb) return null;
+  const d = await getJSON(`https://${srcWiki}.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&titles=${enc(term)}&prop=langlinks|pageprops&lllang=${tb}&ppprop=disambiguation`);
+  const p = Object.values((d.query && d.query.pages) || {})[0];
+  if (!p || 'missing' in p || (p.pageprops && 'disambiguation' in p.pageprops)) return null;
+  const t = p.langlinks && p.langlinks[0] && p.langlinks[0]['*'];
+  if (!t) return null;
+  const variant = tb === 'zh' ? (S.trg === 'zh-CN' ? 'zh-cn' : 'zh-tw') : '';
+  const e = await getJSON(`https://${tb}.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro=1&explaintext=1&exsentences=2&redirects=1&titles=${enc(t)}${variant ? '&variant=' + variant : ''}`);
+  const q = Object.values((e.query && e.query.pages) || {})[0];
+  let ex = ((q && q.extract) || '').replace(/\s+/g, ' ').trim();
+  let name = ((ex.match(/^[^（(，,。：:]+/) || [t])[0]).replace(/是.*$/, '').trim();
+  if (!name || name.length > 24) name = t.replace(/\s*[（(].*$/, '');
+  let rest = ex;
+  for (let k = 0; k < 3; k++) rest = rest.replace(/（[^（）]*）|\([^()]*\)/g, '');
+  const at = rest.indexOf(name);
+  rest = (at >= 0 ? rest.slice(at + name.length) : rest).replace(/^[\s，,、：:;；]+/, '').replace(/^(是|為|乃|is|was|are)\s*/, '');
+  rest = rest.split(/。|\. /)[0].replace(/^一(位|名|個|家|種)/, '');
+  return {term, name: twFix(name), desc: twFix(clip(rest, tb === 'zh' ? 32 : 70))};
+}
+async function lookupTerm(term, sb){
+  const key = S.trg + '|' + term;
+  if (wikiCache.has(key)) return wikiCache.get(key);
+  let info = null;
+  if (ABBR[term] && S.trg.startsWith('zh')) info = {term, name: ABBR[term][0], desc: ABBR[term][1]};
+  else { try { info = await wikiInfo(term, sb); } catch(e) { return null; } }   // 網路失敗不記錄，下次再查
+  wikiCache.set(key, info); if (wikiCache.size > 450) wikiCache.delete(wikiCache.keys().next().value); saveWiki();
+  return info;
+}
+const seenTerms = new Set();   // 同一個名詞只在第一次出現時註解，畫面才不會太亂
+async function annotate(el, srcText, sb){
+  const cands = findTerms(srcText).filter(t => !seenTerms.has(t.toLowerCase())).slice(0, 4);
+  if (!cands.length) return;
+  cands.forEach(t => seenTerms.add(t.toLowerCase()));
+  const infos = (await Promise.all(cands.map(t => lookupTerm(t, sb)))).filter(Boolean);
+  if (!infos.length || !el.isConnected) return;
+  let out = el.dataset.raw || el.textContent; const notes = [];
+  for (const info of infos) {
+    const short = (info.name || '').split(/[·・‧]/).pop();
+    const keys = [info.term, info.name, short].filter(k => k && k.length >= 2);
+    let done = false;
+    for (const k of keys) {
+      const i = out.indexOf(k);
+      if (i < 0) continue;
+      const paren = k === info.term && info.term !== info.name ? info.name + (info.desc ? '，' + info.desc : '') : info.desc;
+      if (paren) out = out.slice(0, i + k.length) + '\u0001（' + paren + '）\u0002' + out.slice(i + k.length);
+      done = true; break;
+    }
+    if (!done) notes.push(`${info.term}：${info.name}${info.desc ? '，' + info.desc : ''}`);
+  }
+  el.dataset.raw = out; renderText(el, out);
+  if (notes.length) { const n = document.createElement('span'); n.className = 'note'; n.textContent = '註：' + notes.join('；'); el.appendChild(n); }
+  toBottom(trgPane);
+}
+
+
 // ---------- 自動偵測語言 ----------
 let mismatch = 0;
 function considerSwitch(detected){
@@ -309,7 +515,8 @@ async function doTranslate(el, text, src, fbSrc){
   el.className = 'pending'; el.textContent = '…'; el.onclick = null;
   const r = await translate(text, src, S.trg, fbSrc);
   if (r) {
-    el.className = ''; el.textContent = r.text;
+    el.className = ''; el.dataset.raw = twFix(r.text); renderText(el, el.dataset.raw);
+    if (S.notes) annotate(el, text, base(src === 'auto' ? (r.detected || fbSrc) : src));
     if (S.src === 'auto' && src === 'auto') considerSwitch(r.detected);
   } else {
     el.className = 'err';
@@ -318,6 +525,112 @@ async function doTranslate(el, text, src, fbSrc){
   }
   toBottom(trgPane);
 }
+
+
+// ---------- 點字查詢：翻譯＋維基百科摘要 ----------
+const curSrcBase = () => base(S.src === 'auto' ? S.guess : S.src);
+const segCache = {};
+function wordAt(e){
+  let node, off;
+  if (document.caretPositionFromPoint) { const c = document.caretPositionFromPoint(e.clientX, e.clientY); if (!c) return null; node = c.offsetNode; off = c.offset; }
+  else if (document.caretRangeFromPoint) { const r = document.caretRangeFromPoint(e.clientX, e.clientY); if (!r) return null; node = r.startContainer; off = r.startOffset; }
+  if (!node || node.nodeType !== 3) return null;
+  const par = node.parentElement;
+  if (!par || par.closest('.ann,.note,.err,.pending,.interim,.empty')) return null;
+  const t = node.data;
+  if (par.classList.contains('lat')) {
+    // 拉丁文字：取點到的單字；若是大寫開頭，連同前後的大寫字一起（人名、機構名）
+    const words = [...t.matchAll(/[\p{L}\p{N}'’&.\-]+/gu)];
+    let k = words.findIndex(m => off >= m.index && off <= m.index + m[0].length);
+    if (k < 0) return null;
+    const cap = w => /^\p{Lu}/u.test(w) && !STOP.has(w);
+    let a = k, b = k;
+    if (cap(words[k][0])) { while (a > 0 && cap(words[a - 1][0]) && words[a].index - (words[a-1].index + words[a-1][0].length) <= 1) a--;
+                            while (b < words.length - 1 && cap(words[b + 1][0]) && words[b+1].index - (words[b].index + words[b][0].length) <= 1) b++; }
+    return {node, start: words[a].index, end: words[b].index + words[b][0].length, latin: true};
+  }
+  // 中日韓等：用瀏覽器內建斷詞
+  const lang = par.closest('#trgPane') ? base(S.trg) : curSrcBase();
+  if (!('Intl' in self) || !Intl.Segmenter) return null;
+  const sg = segCache[lang] || (segCache[lang] = new Intl.Segmenter(lang, {granularity: 'word'}));
+  for (const seg of sg.segment(t)) {
+    if (off >= seg.index && off < seg.index + seg.segment.length) {
+      if (!seg.isWordLike) return null;
+      return {node, start: seg.index, end: seg.index + seg.segment.length, latin: false};
+    }
+  }
+  return null;
+}
+let hlSpan = null;
+function clearHl(){ if (hlSpan && hlSpan.parentNode) { hlSpan.replaceWith(...hlSpan.childNodes); } hlSpan = null; }
+const first = d => Object.values((d && d.query && d.query.pages) || {})[0];
+
+async function wikiDetail(term, lang){
+  const wl = WIKI_LANGS.has(lang) ? lang : 'en';
+  const tb = base(S.trg) === 'iw' ? 'he' : base(S.trg);
+  const q1 = t => `https://${wl}.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&titles=${enc(t)}&prop=langlinks|pageprops&lllang=${tb}&ppprop=disambiguation${wl === 'zh' ? '&converttitles=1' : ''}`;
+  let page = first(await getJSON(q1(term)));
+  if (!page || 'missing' in page || (page.pageprops && 'disambiguation' in page.pageprops)) {
+    const sr = await getJSON(`https://${wl}.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=search&srlimit=1&srsearch=${enc(term)}`);
+    const hit = sr.query && sr.query.search && sr.query.search[0];
+    if (!hit) return null;
+    page = first(await getJSON(q1(hit.title)));
+    if (!page || 'missing' in page) return null;
+  }
+  let host = wl, title = page.title;
+  const ll = page.langlinks && page.langlinks[0] && page.langlinks[0]['*'];
+  if (wl !== tb && ll) { host = tb; title = ll; }
+  const variant = host === 'zh' ? (S.trg === 'zh-CN' ? 'zh-cn' : 'zh-tw') : '';
+  const e = first(await getJSON(`https://${host}.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=extracts&exintro=1&explaintext=1&exsentences=5&redirects=1&titles=${enc(title)}${variant ? '&variant=' + variant : ''}`));
+  let ex = ((e && e.extract) || '').replace(/\s+/g, ' ').trim();
+  if (!ex) return null;
+  for (let k = 0; k < 2; k++) ex = ex.replace(/（[^（）]{14,}）|\([^()]{24,}\)/g, '');
+  if (host !== tb) { const tr = await translate(ex.slice(0, 700), srcCodeForTranslate(host), S.trg, srcCodeForTranslate(host)); if (tr) ex = tr.text; }
+  const shownTitle = host === 'zh' ? (ex.match(/^[^（(，,。：:是]{1,24}/) || [title])[0] : title;
+  return {title: twFix(shownTitle), text: twFix(ex), url: `https://${host}.wikipedia.org/${variant || 'wiki'}/${enc(title.replace(/ /g, '_'))}`};
+}
+
+let lookupSeq = 0;
+async function lookupTap(term, lang, inTarget){
+  const my = ++lookupSeq;
+  $('infoKick').textContent = 'LOOKUP · ' + lang.toUpperCase();
+  $('infoTitle').textContent = term;
+  $('infoTr').textContent = '翻譯中…';
+  $('infoBody').textContent = '查詢維基百科中…';
+  $('infoLink').textContent = ''; $('infoLink').removeAttribute('href');
+  $('info').classList.add('show');
+  // 點原文 → 翻成目標語言；點譯文 → 翻回原文語言（若譯文是中文，查英文）
+  const from = srcCodeForTranslate(lang === 'zh' ? (inTarget ? S.trg : (S.src === 'auto' ? S.guess : S.src)) : lang);
+  let to = inTarget ? srcCodeForTranslate(S.src === 'auto' ? S.guess : S.src) : S.trg;
+  if (base(to) === base(from)) to = base(from) === 'en' ? S.trg : 'en';
+  if (base(to) === base(from)) to = 'en';
+  translate(term, from, to, from).then(r => { if (my === lookupSeq) $('infoTr').textContent = r ? (nameOf(TRG, to) + '：' + twFix(r.text)) : '（翻譯失敗）'; });
+  try {
+    const d = await wikiDetail(term, lang);
+    if (my !== lookupSeq) return;
+    if (!d) { $('infoBody').textContent = '維基百科沒有找到這個詞條。'; return; }
+    $('infoTitle').textContent = d.title === term ? term : `${term} · ${d.title}`;
+    $('infoBody').textContent = d.text;
+    $('infoLink').href = d.url; $('infoLink').textContent = '在維基百科閱讀全文 ↗';
+  } catch(e) { if (my === lookupSeq) $('infoBody').textContent = '查詢失敗：' + (e.message || '網路錯誤'); }
+}
+[srcPane, trgPane].forEach(p => p.addEventListener('click', e => {
+  if (e.target.closest('.err')) return;
+  const w = wordAt(e);
+  if (!w) return;
+  const term = w.node.data.slice(w.start, w.end).replace(/[.\-]+$/, '').trim();
+  if (!term || term.length > 60) return;
+  clearHl();
+  try { const r = document.createRange(); r.setStart(w.node, w.start); r.setEnd(w.node, w.end);
+        hlSpan = document.createElement('span'); hlSpan.className = 'hl'; r.surroundContents(hlSpan); } catch(_) { hlSpan = null; }
+  const inTarget = p === trgPane;
+  let lang = inTarget ? base(S.trg) : curSrcBase();
+  if (w.latin && !LATIN_LANGS.has(lang)) lang = 'en';
+  if (lang === 'iw') lang = 'he';
+  lookupTap(term, lang, inTarget);
+}));
+$('closeInfo').addEventListener('click', clearHl);
+$('info').addEventListener('click', e => { if (e.target.id === 'info') clearHl(); });
 
 // ---------- 語音辨識 ----------
 const SR = self.SpeechRecognition || self.webkitSpeechRecognition;
@@ -332,6 +645,7 @@ function cutPoint(t){
 function flushInterim(){
   const pending = liveInterim.slice(committed);
   if (pending.trim()) { handleFinal(pending); committed = liveInterim.length; }
+  showInterim('');
 }
 
 function makeRec(){
@@ -433,18 +747,30 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // ---------- 控制項 ----------
+$('swap').onclick = () => {
+  const curLoc = S.src === 'auto' ? S.guess : S.src;
+  let newTrg = srcCodeForTranslate(curLoc);
+  if (!TRG.some(x => x[0] === newTrg)) newTrg = 'en';
+  const newSrc = TRG2LOC[S.trg] || DETECT2LOCALE[S.trg] || 'en-US';
+  S.src = SRC.some(x => x[0] === newSrc) ? newSrc : 'auto'; S.trg = newTrg; mismatch = 0;
+  srcSel.value = S.src; trgSel.value = S.trg; save(); updateLabels(); restartRec();
+  setStatus('已交換方向：' + nameOf(SRC, S.src) + ' → ' + nameOf(TRG, S.trg));
+};
 srcSel.onchange = () => { S.src = srcSel.value; mismatch = 0; save(); updateLabels(); restartRec(); };
 trgSel.onchange = () => { S.trg = trgSel.value; save(); updateLabels(); };
 $('gear').onclick = () => $('sheet').classList.add('show');
 $('closeSheet').onclick = () => $('sheet').classList.remove('show');
-$('sheet').onclick = e => { if (e.target.id === 'sheet') $('sheet').classList.remove('show'); };
+document.querySelectorAll('.sheet').forEach(sh => sh.onclick = e => { if (e.target === sh) sh.classList.remove('show'); });
+$('closeInfo').onclick = () => $('info').classList.remove('show');
 document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => { S.theme = b.dataset.v; save(); applyTheme(); });
 const fs = $('fs'); fs.value = S.fs; fs.oninput = () => { S.fs = +fs.value; applyFs(); }; fs.onchange = save;
 const wake = $('wake'); wake.checked = S.wake; wake.onchange = () => { S.wake = wake.checked; save(); if (running) S.wake ? wakeOn() : wakeOff(); };
 const interim = $('interim'); interim.checked = S.interim; interim.onchange = () => { S.interim = interim.checked; save(); restartRec(); };
+const tw = $('tw'); tw.checked = S.tw; tw.onchange = () => { S.tw = tw.checked; save(); };
+const notesBox = $('notes'); notesBox.checked = S.notes; notesBox.onchange = () => { S.notes = notesBox.checked; save(); };
 const local = $('local'); local.checked = S.local; local.onchange = () => { S.local = local.checked; save(); restartRec(); };
 if (!SR || !('processLocally' in (SR.prototype || {}))) { local.disabled = true; local.parentElement.querySelector('small').textContent = '這個瀏覽器不支援裝置端辨識'; }
-$('clear').onclick = () => { srcPane.innerHTML = ''; trgPane.innerHTML = ''; interimEl = null; $('sheet').classList.remove('show'); };
+$('clear').onclick = () => { seenTerms.clear(); srcPane.innerHTML = ''; trgPane.innerHTML = ''; interimEl = null; $('sheet').classList.remove('show'); };
 
 if (!SR) setStatus('這個瀏覽器不支援語音辨識，請改用 Android 的 Chrome 或 iPhone 的 Safari');
 })();
