@@ -729,3 +729,61 @@ function scriptLang(text, fallback){
   if(kana + han === max) return kana > 0 && kana / (kana + han) > 0.1 ? 'ja' : 'zh';
   return /^(zh|ja|ko|th)$/.test(fallback) ? 'en' : fallback;
 }
+
+/* =========================================================
+   只輸入語言名稱 → 自動找出語言代碼與官方國家（用瀏覽器內建資料，免費）
+   ========================================================= */
+const normName = s => (s || '').toLowerCase().replace(/[\s()（）]/g, '').replace(/(語言|語|语|文|話|话|language)$/, '');
+const normPlace = s => (s || '').toLowerCase().replace(/[\s()（）]/g, '');
+let _langIdx = null, _ccIdx = null;
+function langIndex(){
+  if(_langIdx) return _langIdx;
+  const dn = l => { try{ return new Intl.DisplayNames([l], {type:'language'}); }catch(e){ return null; } };
+  const zh = dn('zh-TW'), cn = dn('zh-CN'), en = dn('en');
+  const codes = [];
+  for(let a = 97; a <= 122; a++) for(let b = 97; b <= 122; b++) codes.push(String.fromCharCode(a, b));
+  codes.push('fil', 'haw', 'yue', 'ceb', 'hmn', 'ckb');
+  _langIdx = codes.map(c => {
+    let n; try{ n = zh?.of(c); }catch(e){ return null; }
+    if(!n || n === c) return null;
+    let nat = ''; try{ nat = new Intl.DisplayNames([c], {type:'language'}).of(c); }catch(e){}
+    return {code:c, zh:n, cn:cn?.of(c) || '', en:en?.of(c) || '', native:nat};
+  }).filter(Boolean);
+  return _langIdx;
+}
+function ccIndex(){
+  if(_ccIdx) return _ccIdx;
+  const zh = new Intl.DisplayNames(['zh-TW'], {type:'region'}), cn = new Intl.DisplayNames(['zh-CN'], {type:'region'}), en = new Intl.DisplayNames(['en'], {type:'region'});
+  const out = [];
+  for(let a = 65; a <= 90; a++) for(let b = 65; b <= 90; b++){
+    const c = String.fromCharCode(a, b); let n; try{ n = zh.of(c); }catch(e){ continue; }
+    if(n && n !== c) out.push({cc:c, zh:n, cn:cn.of(c), en:en.of(c)});
+  }
+  return _ccIdx = out;
+}
+function matchIn(list, q, fields, norm){
+  const n = norm(q); if(!n) return null;
+  return list.find(x => fields.some(f => norm(x[f]) === n)) ||
+         (n.length >= 2 ? list.find(x => fields.some(f => norm(x[f]).startsWith(n))) : null);
+}
+const PLACE_FIX = {HK:'香港', MO:'澳門', TW:'台灣', CN:'中國', KR:'韓國', KP:'北韓'};
+const countryName = cc => PLACE_FIX[cc] || (() => { try{ return new Intl.DisplayNames(['zh-TW'], {type:'region'}).of(cc); }catch(e){ return cc; } })();
+const HOME_COUNTRY = {pt:'PT', ar:'SA', sw:'KE', ms:'MY', fa:'IR', ur:'PK', bn:'BD', ta:'IN'};
+async function findLanguage(q){
+  q = (q || '').trim(); if(!q) return null;
+  const idx = langIndex();
+  let hit = idx.find(x => x.code === q.toLowerCase()) || matchIn(idx, q, ['zh','cn','en','native'], normName);
+  if(!hit){ try{ hit = matchIn(idx, (await translate(q, 'auto', 'en')).t, ['en'], normName); }catch(e){} }
+  if(!hit) return null;
+  let cc = 'US', script = '';
+  try{ const loc = new Intl.Locale(hit.code).maximize(); cc = HOME_COUNTRY[hit.code] || loc.region || cc; script = loc.script || ''; }catch(e){}
+  return {code:hit.code, zh:hit.zh, name:hit.native || hit.en || hit.zh, cc, place:countryName(cc),
+          words: !['Hans','Hant','Jpan','Thai','Laoo','Khmr','Mymr','Tibt'].includes(script)};
+}
+async function findCountry(q){
+  q = (q || '').trim(); if(!q) return null;
+  const idx = ccIndex();
+  let hit = idx.find(x => x.cc === q.toUpperCase()) || matchIn(idx, q, ['zh','cn','en'], normPlace);
+  if(!hit){ try{ hit = matchIn(idx, (await translate(q, 'auto', 'en')).t, ['en'], normPlace); }catch(e){} }
+  return hit ? {cc:hit.cc, place:PLACE_FIX[hit.cc] || hit.zh} : null;
+}

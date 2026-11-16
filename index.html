@@ -10,7 +10,7 @@
 <script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css?v=5">
+<link rel="stylesheet" href="common.css?v=6">
 </head>
 <body data-cat="local">
 <header><div class="wrap">
@@ -46,10 +46,10 @@
 <div id="pop" class="sheet hidden"></div>
 <div id="vocab" class="sheet hidden"></div>
 <div id="gh" class="sheet hidden"></div>
-<div id="settings" class="sheet hidden"></div>
+<div id="setFull" class="full hidden"></div>
 <div id="full" class="full hidden"></div>
 
-<script src="common.js?v=5"></script>
+<script src="common.js?v=6"></script>
 <script>
 /* ====== 狀態 ====== */
 const NEWS_CATS = ['local','world','fin','pol','tech','health','life'];
@@ -341,50 +341,54 @@ function openVocab(book){
   if(c) c.onclick = async () => { try{ await navigator.clipboard.writeText(items.map(x => `${x.w}\t${x.ph || ''}\t${x.m}`).join('\n')); c.textContent = '已複製 ✓'; }catch(e){ c.textContent = '無法複製'; } };
 }
 
-/* ====== 語言／地區設定（可自訂） ====== */
+/* ====== 語言／地區設定：只要輸入名稱 ====== */
 function openSettings(){
-  const el = $('#settings'), L = allLangs(), c = customCfg();
-  openSheet(el);
-  el.innerHTML = `<div class="hd"><span class="big">⚙️ 語言與地區</span><button class="x" data-close>×</button></div>
-    <div class="note">每個語言可以有多個地區，切換地區就會抓那個國家的當地新聞，發音也換成當地口音。你自己加的可以按 × 刪除。</div>
+  const el = $('#setFull'), L = allLangs();
+  if(el.classList.contains('hidden')){ lockScroll(); el.classList.remove('hidden'); }
+  el.innerHTML = `<div class="fbar"><div class="wrap"><button class="back" data-setclose>← 返回</button><b style="font-size:15px">⚙️ 語言與地區</b></div></div>
+  <div class="wrap" style="padding-bottom:60px">
+    <div class="sec-t">＋ 新增語言</div>
+    <div class="inrow"><input id="nLang" placeholder="例如：越南語、葡萄牙文、Swahili" enterkeyhint="done"><button class="btn solid" id="nAdd">加入</button></div>
+    <div class="note">只要輸入語言名稱（中文、英文、當地文字都可以），會自動找出語言代碼，並先加入這個語言的主要國家。</div>
+    <div class="sec-t">＋ 幫某個語言多加一個國家</div>
+    <div class="inrow"><select id="fLang" style="border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px;font-size:16px;max-width:42%">${Object.entries(L).filter(([k, l]) => !l.hidden).map(([k, l]) => `<option value="${k}">${esc(l.name)}</option>`).join('')}</select>
+      <input id="fCountry" placeholder="例如：愛爾蘭、墨西哥" enterkeyhint="done"><button class="btn solid" id="fAdd">加入</button></div>
+    <div id="sMsg" class="note" style="color:var(--c)"></div>
+    <div class="sec-t">目前的語言和國家</div>
+    <div class="note">切換國家就會抓那個國家的當地新聞，發音也換成當地口音。你自己加的可以按 × 刪除。</div>
     ${Object.entries(L).filter(([k, l]) => !l.hidden).map(([k, l]) => `
-      <div class="sec-t" style="color:${l.color}">${esc(l.name)} <small style="color:var(--mute);font-weight:400">${k}${l.custom ? ' · 自訂 <button class="ghb" data-dellang="' + k + '">刪除語言</button>' : ''}</small></div>
+      <div style="margin:10px 0 2px;font-weight:500;color:${l.color}">${esc(l.name)}${l.custom ? ` <button class="ghb" data-dellang="${k}">刪除這個語言</button>` : ''}</div>
       <div>${Object.keys(l.regions).map(rk => { const r = regionOf(k, rk);
-        return `<span class="chip">${r.label}${l.regions[rk].custom ? `<button data-delreg="${k}|${rk}">×</button>` : '<span style="width:6px"></span>'}</span>`; }).join('')}</div>`).join('')}
-    <div class="sec-t">＋ 幫現有語言加地區</div>
-    <div class="form">
-      <label>語言<select id="fLang">${Object.entries(L).filter(([k, l]) => !l.hidden).map(([k, l]) => `<option value="${k}">${esc(l.name)}</option>`).join('')}</select></label>
-      <label>國家代碼（2 個英文字母）<input id="fCC" placeholder="例如 IE（愛爾蘭）、IN（印度）、MX（墨西哥）" maxlength="2"></label>
-      <label>國家中文名<input id="fPlace" placeholder="例如 愛爾蘭"></label>
-      <button class="btn" id="fAddReg">加入地區</button>
-    </div>
-    <div class="sec-t">＋ 新增一個語言</div>
-    <div class="form">
-      <label>語言代碼（2～3 個小寫字母）<input id="nCode" placeholder="例如 vi 越南語、pt 葡萄牙語、nl 荷蘭語" maxlength="3"></label>
-      <label>語言名稱<input id="nName" placeholder="例如 Tiếng Việt"></label>
-      <label>國家代碼<input id="nCC" placeholder="例如 VN" maxlength="2"></label>
-      <label>國家中文名<input id="nPlace" placeholder="例如 越南"></label>
-      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="nWords" checked> 這個語言用空格分開單字（中日泰文請取消）</label>
-      <button class="btn" id="fAddLang">加入語言</button>
-      <div class="note">常用代碼：越南 vi/VN、葡萄牙 pt/PT、巴西 pt/BR、荷蘭 nl/NL、俄羅斯 ru/RU、土耳其 tr/TR、波蘭 pl/PL、馬來西亞 ms/MY、菲律賓 tl/PH、印度 hi/IN、阿拉伯 ar/EG、希伯來 he/IL、瑞典 sv/SE。<br>新聞來自該國的 Google 新聞；如果 Google 沒有那個國家／語言的版本，會抓不到。</div>
-      <div id="fMsg" class="note"></div>
-    </div>`;
-  const msg = t => { $('#fMsg').textContent = t; };
-  $('#fAddReg').onclick = () => {
-    const lang = $('#fLang').value, cc = $('#fCC').value.trim().toUpperCase(), place = $('#fPlace').value.trim();
-    if(!/^[A-Z]{2}$/.test(cc) || !place){ msg('請填 2 個字母的國家代碼和國家中文名。'); return; }
-    const c = customCfg(); c.regions[lang] = c.regions[lang] || {};
-    const rk = cc.toLowerCase(); if(allLangs()[lang].regions[rk]){ msg('這個地區已經有了。'); return; }
-    c.regions[lang][rk] = {cc, place}; saveCustom(c); renderNav(); openSettings();
-  };
-  $('#fAddLang').onclick = () => {
-    const code = $('#nCode').value.trim().toLowerCase(), name = $('#nName').value.trim(), cc = $('#nCC').value.trim().toUpperCase(), place = $('#nPlace').value.trim();
-    if(!/^[a-z]{2,3}$/.test(code) || !name || !/^[A-Z]{2}$/.test(cc) || !place){ msg('四個欄位都要填，代碼格式要正確。'); return; }
-    if(allLangs()[code]){ msg('這個語言已經有了，請用上面的「加地區」。'); return; }
-    const c = customCfg(); c.langs[code] = {name, short:code.toUpperCase(), words:$('#nWords').checked, regions:{[cc.toLowerCase()]:{cc, place}}};
+        return `<span class="chip">${r.label}${l.regions[rk].custom || l.custom ? `<button data-delreg="${k}|${rk}">×</button>` : '<span style="width:6px"></span>'}</span>`; }).join('')}</div>`).join('')}
+  </div>`;
+  const msg = (s, err) => { const m = $('#sMsg'); m.textContent = s; m.style.color = err ? 'var(--health)' : 'var(--c)'; };
+  const addLang = async () => {
+    const q = $('#nLang').value; if(!q.trim()) return;
+    msg('🔎 查詢中…');
+    const f = await findLanguage(q);
+    if(!f){ msg(`找不到「${q}」這個語言，換個寫法試試（例如英文名稱）。`, true); return; }
+    if(allLangs()[f.code]){ msg(`${f.zh}（${f.code}）已經有了。`, true); return; }
+    const c = customCfg(); c.langs[f.code] = {name:f.name, short:f.code.toUpperCase(), words:f.words, regions:{[f.cc.toLowerCase()]:{cc:f.cc, place:f.place}}};
     saveCustom(c); renderNav(); openSettings();
+    msg(`✅ 已加入 ${f.zh}（${f.name}），國家：${f.place}。回到新聞頁就能選它。`);
   };
+  const addReg = async () => {
+    const lang = $('#fLang').value, q = $('#fCountry').value; if(!q.trim()) return;
+    msg('🔎 查詢中…');
+    const f = await findCountry(q);
+    if(!f){ msg(`找不到「${q}」這個國家。`, true); return; }
+    const rk = f.cc.toLowerCase();
+    if(allLangs()[lang].regions[rk]){ msg(`${f.place} 已經有了。`, true); return; }
+    const c = customCfg();
+    if(c.langs[lang]) c.langs[lang].regions[rk] = {cc:f.cc, place:f.place};
+    else { c.regions[lang] = c.regions[lang] || {}; c.regions[lang][rk] = {cc:f.cc, place:f.place}; }
+    saveCustom(c); renderNav(); openSettings();
+    msg(`✅ ${allLangs()[lang].name} 已加入 ${f.place}。`);
+  };
+  $('#nAdd').onclick = addLang; $('#nLang').onkeydown = e => { if(e.key === 'Enter'){ e.target.blur(); addLang(); } };
+  $('#fAdd').onclick = addReg; $('#fCountry').onkeydown = e => { if(e.key === 'Enter'){ e.target.blur(); addReg(); } };
 }
+function closeSettings(){ const el = $('#setFull'); if(el.classList.contains('hidden')) return; el.classList.add('hidden'); el.innerHTML = ''; unlockScroll(); render(); }
 
 /* ====== GitHub 用量 ====== */
 const REPO = 'venus52mom-lab/News-learn';
@@ -430,13 +434,14 @@ function clearLocal(what){
 
 /* ====== 事件 ====== */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-artclose],[data-art],[data-dellang],[data-delreg],[data-vbook],[data-ent],[data-clear],[data-mode],[data-cat],[data-lang],[data-close],[data-say],.w,[data-vdel],[data-vsay],#shade');
+  const t = e.target.closest('[data-setclose],[data-artclose],[data-art],[data-dellang],[data-delreg],[data-vbook],[data-ent],[data-clear],[data-mode],[data-cat],[data-lang],[data-close],[data-say],.w,[data-vdel],[data-vsay],#shade');
   if(!t) return;
   if(t.id === 'shade' || t.dataset.close !== undefined) closeSheets();
+  else if(t.dataset.setclose !== undefined) closeSettings();
   else if(t.dataset.artclose !== undefined) closeArticle();
   else if(t.dataset.art){ openArticle(t.closest('.card')); }
   else if(t.dataset.dellang){ const c = customCfg(); delete c.langs[t.dataset.dellang]; saveCustom(c); fixState(); renderNav(); openSettings(); }
-  else if(t.dataset.delreg){ const [l, rk] = t.dataset.delreg.split('|'); const c = customCfg(); delete c.regions[l]?.[rk]; if(c.langs[l]) delete c.langs[l].regions[rk]; saveCustom(c); renderNav(); openSettings(); }
+  else if(t.dataset.delreg){ const [l, rk] = t.dataset.delreg.split('|'); const c = customCfg(); delete c.regions[l]?.[rk]; if(c.langs[l]){ delete c.langs[l].regions[rk]; if(!Object.keys(c.langs[l].regions).length) delete c.langs[l]; } saveCustom(c); fixState(); renderNav(); openSettings(); }
   else if(t.dataset.vbook){ openVocab(t.dataset.vbook); }
   else if(t.dataset.ent){ toggleEnts(t.closest('.card')); }
   else if(t.dataset.clear){ clearLocal(t.dataset.clear); }
