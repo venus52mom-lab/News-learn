@@ -29,6 +29,8 @@ HIST = os.path.join(ROOT, "hist")
 TPE = dt.timezone(dt.timedelta(hours=8))
 RECENT_DAYS = 120
 DATA_VERSION = "bank1"
+METALS = ["XAU", "XAG"]          # 黃金、白銀
+OZ = 31.1034768                  # 1 金衡盎司 = 31.1 公克
 UA = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 "
                     "(KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
       "Accept-Language": "zh-TW,zh;q=0.9"}
@@ -87,6 +89,8 @@ def esun_now():
 def findrate_day(ccy, day):
     """比率網某天某幣別各銀行牌價：{銀行: [cb, cs, sb, ss]}"""
     html = http(FR_HIS.format(c=ccy, y=day.year, m=day.month, d=day.day))
+    if "<html" not in html.lower():
+        return None          # 抓取失敗（不是「那天沒資料」）
     t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
     out = {}
     want = day.strftime("%Y-%m-%d")
@@ -147,6 +151,80 @@ def findrate_graph(ccy):
     return out
 
 
+def sinopac_now():
+    """永豐銀行官網：{CCY: [cb, cs, sb, ss]}"""
+    out = {}
+    for typ, idx in (("CASH", 0), ("REMIT", 2)):
+        txt = http(f"https://mma.sinopac.com/ws/share/rate/ws_exchange.ashx?exchangeType={typ}")
+        try:
+            for r in json.loads(txt)[0]["SubInfo"]:
+                c = r.get("DataValue4")
+                if c in CCYS:
+                    v = out.setdefault(c, [None, None, None, None])
+                    v[idx], v[idx + 1] = num(r.get("DataValue2")), num(r.get("DataValue3"))
+        except Exception as e:  # noqa: BLE001
+            DIAG.append({"sinopac": typ, "error": str(e)[:150]})
+    return {c: v for c, v in out.items() if any(v)}
+
+
+def yahoo(sym, full):
+    q = "?period1=0&period2=9999999999&interval=1d" if full else "?range=1mo&interval=1d"
+    try:
+        res = json.loads(http("https://query1.finance.yahoo.com/v8/finance/chart/" + urllib.parse.quote(sym, safe="=^") + q))["chart"]["result"][0]
+        off = res["meta"].get("gmtoffset", 0)
+        return {dt.datetime.fromtimestamp(t + off, dt.timezone.utc).strftime("%Y%m%d"): c
+                for t, c in zip(res.get("timestamp") or [], res["indicators"]["quote"][0].get("close") or []) if c and c > 0}
+    except Exception as e:  # noqa: BLE001
+        DIAG.append({"yahoo": sym, "error": str(e)[:150]})
+        return {}
+
+
+def stooq(sym):
+    """備援：stooq.com 每日 CSV"""
+    out = {}
+    for line in http(f"https://stooq.com/q/d/l/?s={sym}&i=d").splitlines()[1:]:
+        p = line.split(",")
+        if len(p) >= 5 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", p[0]) and num(p[4]):
+            out[p[0].replace("-", "")] = num(p[4])
+    return out
+
+
+def series(yahoo_sym, stooq_sym, full):
+    """先 Yahoo，抓不到換 stooq。"""
+    d = yahoo(yahoo_sym, full)
+    if len(d) < 5:
+        d2 = stooq(stooq_sym)
+        if len(d2) > len(d):
+            DIAG.append({"fallback": f"{yahoo_sym} -> stooq {stooq_sym}"})
+            d = d2 if full else dict(sorted(d2.items())[-25:])
+    return d
+
+
+def market_fx(ccy, full):
+    """國際市場價：1 外幣 = ? 台幣"""
+    d = series(f"{ccy}TWD=X", f"{ccy.lower()}twd", full)
+    if len(d) >= 5:
+        return {k: float(f"{v:.6g}") for k, v in d.items()}
+    usd_twd = series("TWD=X", "usdtwd", full)
+    if ccy == "USD":
+        return usd_twd
+    usd_c = series(f"{ccy}=X", f"usd{ccy.lower()}", full)
+    return {k: float(f"{usd_twd[k] / v:.6g}") for k, v in usd_c.items() if k in usd_twd and v}
+
+
+def metal_twd_per_gram(m, full):
+    """黃金 GC=F／白銀 SI=F（美元／盎司）× 美元匯率 ÷ 31.1 = 台幣／公克"""
+    ysym, ssym = {"XAU": ("GC=F", "xauusd"), "XAG": ("SI=F", "xagusd")}[m]
+    px = series(ysym, ssym, full)
+    fx = series("TWD=X", "usdtwd", full)
+    out, last_fx = {}, None
+    for d in sorted(set(px) | set(fx)):
+        last_fx = fx.get(d, last_fx)
+        if d in px and last_fx:
+            out[d] = round(px[d] * last_fx / OZ, 2 if m == "XAU" else 3)
+    return out
+
+
 # ---------- 儲存 ----------
 def load_hist(ccy):
     p = os.path.join(HIST, f"{ccy}.json")
@@ -174,7 +252,7 @@ def write_recent(store):
     cutoff = (now_tpe().date() - dt.timedelta(days=RECENT_DAYS)).strftime("%Y%m%d")
     out = {"updated": now_tpe().strftime("%Y-%m-%d %H:%M"), "source": "bank", "version": DATA_VERSION,
            "rates": {}, "first": {}}
-    for ccy in CCYS:
+    for ccy in CCYS + METALS:
         h = store.get(ccy) or {}
         rows = [h[k] for k in sorted(h) if k >= cutoff]
         if rows:
@@ -195,6 +273,7 @@ def update(max_minutes=45):
     fresh_start = read_recent().get("version") != DATA_VERSION
     store = {c: ({} if fresh_start else load_hist(c)) for c in CCYS}
     stats = {"graph": 0, "gap_days": 0, "today": 0}
+    fails = {}
     today = now_tpe().date()
 
     # 1) 沒有歷史的幣別：先抓比率網 10 年走勢（臺灣銀行）
@@ -203,6 +282,9 @@ def update(max_minutes=45):
             store[ccy].update(findrate_graph(ccy))
             stats["graph"] += 1
             time.sleep(0.6)
+            if not store[ccy]:   # 比率網抓不到 → 先用國際市場價頂著
+                for d, v in market_fx(ccy, full=True).items():
+                    store[ccy][d] = [d, v, v, v, v, "市場"]
 
     # 2) 補洞：臺灣銀行資料結束後到昨天，用比率網每日歷史頁（有現鈔牌價的銀行優先，玉山第一）
     empty_p = os.path.join(ROOT, "empty_days.json")
@@ -211,6 +293,8 @@ def update(max_minutes=45):
     except Exception:  # noqa: BLE001
         empty = {}
     for ccy in CCYS:
+        if fails.get("findrate_his", 0) >= 5:
+            break
         h = store[ccy]
         bot_days = [k for k, r in h.items() if r[5] == "台銀"]
         has_cash = any(h[k][2] for k in bot_days[-20:])
@@ -224,7 +308,14 @@ def update(max_minutes=45):
         while day < today and time.time() - T0 < max_minutes * 60:
             d = day.strftime("%Y%m%d")
             if day.weekday() < 5 and d not in h and d not in skip:
-                bank, vals = pick_bank(findrate_day(ccy, day), need_cash=has_cash)
+                banks = findrate_day(ccy, day)
+                if banks is None:
+                    fails["findrate_his"] = fails.get("findrate_his", 0) + 1
+                    if fails["findrate_his"] >= 5:
+                        break        # 比率網掛了，下次再補
+                    day += dt.timedelta(days=1)
+                    continue
+                bank, vals = pick_bank(banks, need_cash=has_cash)
                 if vals:
                     h[d] = [d, *vals, SHORT.get(bank, bank[:2])]
                     stats["gap_days"] += 1
@@ -238,6 +329,7 @@ def update(max_minutes=45):
 
     # 3) 今天：玉山即時牌告；玉山沒有的幣別改抓比率網今天的頁面
     live = esun_now()
+    sino, used = None, {}
     if today.weekday() < 5:
         for ccy in CCYS:
             h = store[ccy]
@@ -245,12 +337,25 @@ def update(max_minutes=45):
             row = live.get(ccy)
             if row and has_cash and not row[2]:
                 row = None        # 玉山沒有這個幣別的現鈔牌價，改找別家
-            if not row:
+            d = today.strftime("%Y%m%d")
+            if not row:                                   # 第 2 家：比率網（30 幾家銀行）
                 bank, vals = pick_bank(findrate_now(ccy), need_cash=has_cash)
                 if vals:
-                    d = today.strftime("%Y%m%d")
                     row = [d, *vals, SHORT.get(bank, bank[:2])]
                 time.sleep(0.6)
+            if not row:                                   # 第 3 家：永豐銀行官網
+                if sino is None:
+                    sino = sinopac_now()
+                v = sino.get(ccy)
+                if v and (v[1] or not has_cash):
+                    row = [d, *v, "永豐"]
+            if not row:                                   # 最後：國際市場價
+                mk = market_fx(ccy, full=False)
+                if mk and max(mk) >= (today - dt.timedelta(days=3)).strftime("%Y%m%d"):
+                    v = mk[max(mk)]
+                    row = [d, v, v, v, v, "市場"]
+            if row:
+                used[row[5]] = used.get(row[5], 0) + 1
             if row and row[0] == today.strftime("%Y%m%d"):
                 h[row[0]] = row
                 stats["today"] += 1
@@ -258,9 +363,21 @@ def update(max_minutes=45):
     for ccy in CCYS:
         if store[ccy]:
             save_hist(ccy, store[ccy])
+
+    # 4) 黃金、白銀：國際價格換算成「台幣／公克」
+    for m in METALS:
+        h = {} if fresh_start else load_hist(m)
+        rows = metal_twd_per_gram(m, full=len(h) < 200)
+        for d, v in rows.items():
+            h[d] = [d, v, v, v, v, "國際"]
+        if h:
+            save_hist(m, h)
+            store[m] = h
+        stats[m] = len(rows)
+
     write_recent(store)
-    write_diag({**stats, "esun_ccys": sorted(live), "minutes": round((time.time() - T0) / 60, 1),
-                "rows": {c: len(store[c]) for c in CCYS}})
+    write_diag({**stats, "esun_ccys": sorted(live), "today_sources": used, "fails": fails,
+                "minutes": round((time.time() - T0) / 60, 1), "rows": {c: len(store.get(c) or {}) for c in CCYS + METALS}})
     print(stats, "esun:", sorted(live))
 
 

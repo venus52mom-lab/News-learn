@@ -4,16 +4,19 @@ const CUR = {
   USD:["美金","🇺🇸"],HKD:["港幣","🇭🇰"],GBP:["英鎊","🇬🇧"],AUD:["澳幣","🇦🇺"],CAD:["加拿大幣","🇨🇦"],
   SGD:["新加坡幣","🇸🇬"],CHF:["瑞士法郎","🇨🇭"],JPY:["日圓","🇯🇵"],ZAR:["南非幣","🇿🇦"],SEK:["瑞典幣","🇸🇪"],
   NZD:["紐元","🇳🇿"],THB:["泰銖","🇹🇭"],PHP:["菲國比索","🇵🇭"],IDR:["印尼盾","🇮🇩"],EUR:["歐元","🇪🇺"],
-  KRW:["韓元","🇰🇷"],VND:["越南盾","🇻🇳"],MYR:["馬來幣","🇲🇾"],CNY:["人民幣","🇨🇳"]
+  KRW:["韓元","🇰🇷"],VND:["越南盾","🇻🇳"],MYR:["馬來幣","🇲🇾"],CNY:["人民幣","🇨🇳"],
+  XAU:["黃金","🥇"],XAG:["白銀","🥈"]
 };
+const METAL = c => c === "XAU" || c === "XAG";
 const RATE_NAME = {cb:"現金買入",cs:"現金賣出",sb:"即期買入",ss:"即期賣出"};
 const COL = {cb:1,cs:2,sb:3,ss:4};
 const FALLBACK = {cs:["cs","ss"],ss:["ss","cs"],cb:["cb","sb"],sb:["sb","cb"]};
 
 /* ===== 設定（存在手機本機） ===== */
-const DEF = {list:["JPY","USD","AUD","THB","KRW"],rate:"cs",dir:"n",color:"tw",data:"",badge:"d"};
+const DEF = {list:["JPY","USD","AUD","THB","KRW","XAU","XAG"],rate:"cs",dir:"n",color:"tw",data:"",badge:"d"};
 let S = {...DEF};
 try { S = {...DEF, ...JSON.parse(localStorage.getItem("fx-settings")||"{}")}; } catch(e) {}
+if (!S.metals) { for (const m of ["XAU","XAG"]) if (!S.list.includes(m)) S.list.push(m); S.metals = 1; }
 const save = () => { try { localStorage.setItem("fx-settings", JSON.stringify(S)); } catch(e) {} };
 const dataBase = () => { let b = (S.data||"").trim() || "data/"; return b.endsWith("/") ? b : b + "/"; };
 
@@ -59,7 +62,7 @@ function cutoff(range) {
   if (range === "3Y") d.setFullYear(d.getFullYear()-3);
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
 }
-const unitLabel = ccy => S.dir === "n" ? `1 ${ccy} → 台幣` : `1000 台幣 → ${ccy}`;
+const unitLabel = ccy => METAL(ccy) ? (S.dir === "n" ? "1 公克 → 台幣" : "1000 台幣 → 公克") : S.dir === "n" ? `1 ${ccy} → 台幣` : `1000 台幣 → ${ccy}`;
 
 /* ===== 畫圖 ===== */
 function cssVar(n) { return getComputedStyle(document.body).getPropertyValue(n).trim(); }
@@ -145,8 +148,8 @@ function renderHome() {
     const [nm, flag] = CUR[ccy] || [ccy, ""];
     const lastRow = rows[rows.length-1] || [];
     const fb = (lastRow[5] ? `・${lastRow[5]}` : "") + (!isYahoo() && usedKey(rows) !== S.rate ? `・${RATE_NAME[usedKey(rows)]}` : "");
-    li.innerHTML = `<div><div class="name"><span class="flag">${flag}</span>${ccy}</div>
-      <div class="desc">${nm}${fb}</div></div><canvas></canvas>
+    li.innerHTML = `<div><div class="name"><span class="flag">${flag}</span>${METAL(ccy) ? nm : ccy}</div>
+      <div class="desc">${METAL(ccy) ? "台幣／公克・國際價" : nm + fb}</div></div><canvas></canvas>
       <div class="right"><div class="price">${last ? fmt(last[1]) : "—"}</div><div class="badge"></div></div>`;
     const b = li.querySelector(".badge");
     let ch = null, txt = "—";
@@ -211,7 +214,8 @@ function renderDetail() {
   const k = usedKey(rows);
   const lastBank = (rows[rows.length-1] || [])[5];
   const BANK = {玉山:"玉山銀行",台銀:"臺灣銀行",台企銀:"臺灣企銀",一銀:"第一銀行",兆豐:"兆豐銀行",永豐:"永豐銀行",國泰:"國泰世華"};
-  $("#dSub").textContent = `${isYahoo() ? "市場匯率（Yahoo）" : (lastBank ? (BANK[lastBank] || lastBank) + "・" : "") + RATE_NAME[k]}・${unitLabel(ccy)}`;
+  $("#dSub").textContent = METAL(ccy) ? `國際${CUR[ccy][0]}價換算台幣・${unitLabel(ccy)}`
+    : `${isYahoo() ? "市場匯率（Yahoo）" : (lastBank ? (BANK[lastBank] || lastBank) + "・" : "") + RATE_NAME[k]}・${unitLabel(ccy)}`;
   // 換銀行的位置（畫虛線）
   D.switches = [];
   for (let i = 1; i < rows.length; i++) if (rows[i][5] && rows[i-1][5] && rows[i][5] !== rows[i-1][5] && rows[i][0] >= (pts[0]||[""])[0]) D.switches.push([rows[i][0], rows[i-1][5], rows[i][5]]);
@@ -233,13 +237,19 @@ function renderDetail() {
   }
   // 四種牌價
   const last = rows[rows.length-1], rq = $("#dRates"); rq.innerHTML = "";
-  if (last && isYahoo()) rq.append(el("div","stat",`<span>市場中間價（1 ${ccy}）</span><b>${last[2]}</b><span>${ymd(last[0])}</span>`));
+  if (last && METAL(ccy)) {
+    const g = last[2];
+    for (const [lab, mul] of [["1 公克", 1], ["1 台錢（3.75 公克）", 3.75], ["1 台兩（37.5 公克）", 37.5], ["1 盎司（31.1 公克）", 31.1035]])
+      rq.append(el("div","stat",`<span>${lab}</span><b>${(g*mul).toLocaleString("en-US",{maximumFractionDigits: g*mul >= 100 ? 0 : 2})} 元</b><span>${ymd(last[0])}</span>`));
+    { const n = el("div","muted small","國際價（紐約期貨）× 美元匯率換算，未含銀行黃金存摺買賣價差。"); n.style.gridColumn = "1/-1"; rq.append(n); }
+  }
+  else if (last && isYahoo()) rq.append(el("div","stat",`<span>市場中間價（1 ${ccy}）</span><b>${last[2]}</b><span>${ymd(last[0])}</span>`));
   else if (last) for (const kk of ["cs","ss","cb","sb"]) {
     const v = last[COL[kk]];
     rq.append(el("div","stat",`<span>${RATE_NAME[kk]}（1 ${ccy}）</span><b>${v ? v : "無報價"}</b><span>${ymd(last[0])}${last[5] ? "・" + last[5] : ""}</span>`));
   }
   // 換算
-  $("#cvFxLabel").textContent = `${CUR[ccy]?.[0]||ccy} ${ccy}`;
+  $("#cvFxLabel").textContent = METAL(ccy) ? `公克 ${CUR[ccy][0]}` : `${CUR[ccy]?.[0]||ccy} ${ccy}`;
   convert("twd");
 }
 function showPoint(i) {
@@ -272,6 +282,7 @@ function convert(from) {
   if (!v) { $("#cvNote").textContent = "沒有報價"; return; }
   if (from === "twd") { const t = n(a.value); b.value = isFinite(t) ? (t / v).toLocaleString("en-US",{maximumFractionDigits: t/v >= 100 ? 0 : 2}) : ""; }
   else { const f = n(b.value); a.value = isFinite(f) ? Math.round(f * v).toLocaleString("en-US") : ""; }
+  if (METAL(D.ccy)) { $("#cvNote").textContent = `以國際價 ${v} 元／公克試算`; return; }
   $("#cvNote").textContent = isYahoo() ? `以市場中間價 ${v} 試算，銀行實際換匯會比較差一點` : `以${RATE_NAME[usedKey(rowsFor(D.ccy))]} ${v} 試算，實際以銀行交易時為準`;
 }
 
