@@ -18,6 +18,8 @@
 .tools2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13.5px;color:var(--soft);margin:10px 0}
 .tools2 select,.tools2 button{border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:8px;padding:4px 8px;font-size:13.5px;cursor:pointer}
 .book .para .o{font-family:"Noto Serif TC",serif;font-size:17.5px;line-height:1.95}
+.spk{font-size:13px;opacity:.45;margin-right:6px;font-family:sans-serif}
+.para.now .spk{opacity:1}
 .pager{display:flex;justify-content:space-between;align-items:center;margin:18px 0;font-size:13.5px;color:var(--soft)}
 .pager button{border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:8px;padding:6px 14px;cursor:pointer}
 </style>
@@ -131,13 +133,14 @@ $('#file').onchange = async e => {
   $('#status').textContent = '🔎 偵測語言中…';
   const sample = paras.join(' ').slice(0, 600);
   let lang = scriptLang(sample, 'en');
+  if(!/^(zh|ja|ko|th)$/.test(lang)) lang = guessLatin(sample) || lang;
   try{ const d = await translate(sample, 'auto', 'en'); if(d.detected) lang = d.detected.split('-')[0]; }catch(err){}
   if(lang === 'zh' || lang.startsWith('zh')) lang = 'zh';
   if(!allLangs()[lang]){
     // 沒在清單裡的語言：用 Google 語音直接念
     BUILTIN[lang] = {hidden:true, name:lang, short:lang.toUpperCase(), regions:{x:{cc:'UN', place:lang, accent:lang, tts:lang}}};
   }
-  doc = {name, paras, lang, region: Object.keys(allLangs()[lang].regions)[0], mixed:true, page:0, trs:{}};
+  doc = {name, paras, lang, region: Object.keys(allLangs()[lang].regions)[0], auto:true, page:0, trs:{}};
   $('#status').textContent = '';
   renderBook();
 };
@@ -156,16 +159,19 @@ function renderBook(){
     <h2>${esc(doc.name.replace(/\.[^.]+$/, ''))}</h2>
     <div class="note">${doc.paras.length} 段 · 約 ${chars.toLocaleString()} 字 · 偵測到：${LANG_ZH[doc.lang] || doc.lang}</div>
     <div class="tools2">
-      朗讀語言 <select id="langSel">${langOptions()}</select>
-      <label style="display:flex;gap:4px;align-items:center"><input type="checkbox" id="mixed" ${doc.mixed ? 'checked' : ''}>中英日韓混合時自動切換</label>
+      朗讀語言 <select id="langSel"><option value="auto">🔎 自動偵測（每段自動切換語言）</option>${langOptions()}</select>
       <button id="trPage">🈶 翻譯這一頁成中文</button>
     </div>
+    <div class="tools2"><button class="btn solid" id="playTop" style="font-size:15px;padding:9px 16px">🔊 從頭開始朗讀</button>
+      ${doc.page > 0 ? '<button class="btn" id="playPage" style="font-size:15px;padding:9px 16px">🔊 從這一頁開始</button>' : ''}
+      <span style="color:var(--mute)">也可以點任何一段的 🔊</span></div>
     ${pager(pages, p)}
-    ${list.map((t, k) => `<div class="para" data-k="${from + k}"><div class="o">${esc(t)}</div>${doc.trs[from + k] ? `<div class="t">${esc(doc.trs[from + k])}</div>` : ''}</div>`).join('')}
+    ${list.map((t, k) => `<div class="para" data-k="${from + k}"><div class="o"><span class="spk">🔊</span>${esc(t)}</div>${doc.trs[from + k] ? `<div class="t">${esc(doc.trs[from + k])}</div>` : ''}</div>`).join('')}
     ${pager(pages, p)}`;
-  $('#langSel').value = `${doc.lang}|${doc.region}`;
-  $('#langSel').onchange = e => { [doc.lang, doc.region] = e.target.value.split('|'); restartIfPlaying(); };
-  $('#mixed').onchange = e => { doc.mixed = e.target.checked; restartIfPlaying(); };
+  $('#langSel').value = doc.auto ? 'auto' : `${doc.lang}|${doc.region}`;
+  $('#langSel').onchange = e => { if(e.target.value === 'auto') doc.auto = true; else { doc.auto = false; [doc.lang, doc.region] = e.target.value.split('|'); } restartIfPlaying(); };
+  $('#playTop').onclick = () => startAt(0);
+  if($('#playPage')) $('#playPage').onclick = () => startAt(doc.page * PER_PAGE);
   $('#trPage').onclick = translatePage;
   document.querySelectorAll('.pager button').forEach(b => b.onclick = () => { doc.page = +b.dataset.p; renderBook(); window.scrollTo(0, 0); });
   document.querySelectorAll('#book .para').forEach(el => el.onclick = () => startAt(+el.dataset.k));
@@ -188,12 +194,35 @@ async function translatePage(){
 
 /* ====== 朗讀 ====== */
 const player = new Player((i, playing) => { $('#pp').textContent = playing ? '❚❚' : '▶'; markNow(i, playing); });
+/* 拉丁字母語言（英法德西義印尼）用常見小字來分辨 */
+const LATIN_WORDS = {
+  en:'the and of to is in that it was for on with as are this be by have not but you he she they his her at from',
+  fr:'le la les des et est une un du que qui dans pour pas sur au avec ce il elle je nous vous mais sont été',
+  de:'der die das und ist nicht ein eine zu den mit von sich auf für dem des ich sie wir auch wird',
+  es:'el la los las de que y en un una es por con para no se del al lo como pero más su',
+  it:'il la che di e un una per non è con del della sono si gli le lo come ma anche più',
+  id:'yang dan di ini itu dengan untuk tidak dari dalam akan pada ke adalah saya kami mereka juga'
+};
+const LATIN_SETS = Object.fromEntries(Object.entries(LATIN_WORDS).map(([k, v]) => [k, new Set(v.split(' '))]));
+function guessLatin(text){
+  const ws = text.toLowerCase().match(/[a-zà-ÿ']+/g) || [];
+  let best = null, score = 1;
+  for(const [k, s] of Object.entries(LATIN_SETS)){ const n = ws.filter(w => s.has(w)).length; if(n > score){ best = k; score = n; } }
+  return best;
+}
+function detectLang(text){
+  let lang = scriptLang(text, doc.lang);
+  if(!/^(zh|ja|ko|th)$/.test(lang)) lang = guessLatin(text) || (/^(zh|ja|ko|th)$/.test(doc.lang) ? 'en' : doc.lang);
+  return lang;
+}
 function ttsFor(text){
-  let lang = doc.lang;
-  if(doc.mixed) lang = scriptLang(text, doc.lang);
+  if(!doc.auto) return regionOf(doc.lang, doc.region).tts;
+  const lang = detectLang(text);
   if(lang === doc.lang) return regionOf(doc.lang, doc.region).tts;
   return lang === 'zh' ? 'zh-TW' : (regionOf(lang, '')?.tts || lang);
 }
+const TTS_NAME = tts => { const [l] = tts.split('-'); const L = allLangs()[l]; if(!L) return tts;
+  const r = Object.keys(L.regions).map(k => regionOf(l, k)).find(r => r.tts.toLowerCase() === tts.toLowerCase()); return r ? r.accent : (l === 'zh' ? '台灣華語' : L.name); };
 function startAt(k){
   if(!doc) return;
   player.load(doc.paras.map((t, i) => ({text:t, tts:ttsFor(t), label:t.slice(0, 60), k:i})), doc.name);
@@ -209,7 +238,7 @@ function markNow(i = player.i, playing = player.playing){
   document.querySelectorAll('#book .para').forEach(el => el.classList.toggle('now', +el.dataset.k === i && player.items.length > 0));
   const el = document.querySelector('#book .para.now');
   if(el && playing && document.visibilityState === 'visible') el.scrollIntoView({block:'center', behavior:'smooth'});
-  $('#now').textContent = player.items.length ? `第 ${i + 1} / ${doc.paras.length} 段` : '按 ▶ 或點任一段開始朗讀';
+  $('#now').textContent = player.items.length ? `第 ${i + 1} / ${doc.paras.length} 段 · ${TTS_NAME(player.items[i]?.tts || '')}` : '按 ▶ 或點任一段開始朗讀';
 }
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && doc) markNow(); });
 $('#pp').onclick = () => { if(!doc) return; player.items.length ? player.toggle() : startAt(doc.page * PER_PAGE); };
