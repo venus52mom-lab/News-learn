@@ -8,13 +8,13 @@
 <style>
   :root{
     --bg:#0f1417; --panel:#131a1e; --raise:#172127; --line:#233039;
-    --text:#d8d2c6; --lat:#93b4c4; --muted:#66757e; --ann:#8b9a9f;
+    --text:#e3dac9; --lat:#7cb2c1; --muted:#66757e; --ann:#8b9a9f;
     --accent:#6fa3a8; --accent2:#b19e7c; --warn:#c38f78; --fs:20px;
     --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   }
   :root[data-theme="light"]{
     --bg:#edf0f1; --panel:#f5f7f8; --raise:#e5eaec; --line:#d3dbdf;
-    --text:#2c2925; --lat:#2f5c70; --muted:#7a8990; --ann:#6b7b82;
+    --text:#2e2a25; --lat:#286579; --muted:#7a8990; --ann:#6b7b82;
     --accent:#3e7c83; --accent2:#8a7250; --warn:#a2604a;
   }
   *{box-sizing:border-box}
@@ -192,22 +192,26 @@ function updateLabels(){
 updateLabels();
 
 // ---------- 中英文分色：拉丁字母一種顏色、中日韓文字另一種 ----------
-const LAT_RE = /([A-Za-z\u00C0-\u024F\u1E00-\u1EFF0-9][A-Za-z\u00C0-\u024F\u1E00-\u1EFF0-9'’.&\-]*(?:[ ,]+[A-Za-z\u00C0-\u024F\u1E00-\u1EFF0-9][A-Za-z\u00C0-\u024F\u1E00-\u1EFF0-9'’.&\-]*)*)/;
-function renderText(el, text){
+const FOREIGN_RE = /((?:(?!\p{Script=Han})\p{L})(?:(?!\p{Script=Han})[\p{L}\p{M}\p{N}'’.&\-]|[ ,]+(?=(?!\p{Script=Han})\p{L}))*)/u;
+function renderText(el, text, allForeign){
   // \u0001...\u0002 包住的是註解（括號說明）
   el.textContent = '';
   const frag = document.createDocumentFragment();
+  const span = (cls, t) => { const sp = document.createElement('span'); sp.className = cls; sp.textContent = t; frag.appendChild(sp); };
   text.split(/(\u0001[^\u0002]*\u0002)/).forEach(chunk => {
     if (!chunk) return;
-    if (chunk[0] === '\u0001') { const a = document.createElement('span'); a.className = 'ann'; a.textContent = chunk.slice(1, -1); frag.appendChild(a); return; }
-    chunk.split(LAT_RE).forEach((part, i) => {
+    if (chunk[0] === '\u0001') { span('ann', chunk.slice(1, -1)); return; }
+    if (allForeign) { span('lat', chunk); return; }   // 原文是外語（含日文、泰文等）時整段用外語色
+    chunk.split(FOREIGN_RE).forEach((part, i) => {
       if (!part) return;
-      if (i % 2) { const sp = document.createElement('span'); sp.className = 'lat'; sp.textContent = part; frag.appendChild(sp); }
-      else frag.appendChild(document.createTextNode(part));
+      if (i % 2) span('lat', part); else frag.appendChild(document.createTextNode(part));
     });
   });
   el.appendChild(frag);
 }
+function curSrcBase(){ return base(S.src === 'auto' ? S.guess : S.src); }
+const srcForeign = () => curSrcBase() !== 'zh';
+const trgForeign = () => base(S.trg) !== 'zh';
 
 // ---------- 顯示：超過畫面後才刪舊文字 ----------
 const stick = new WeakMap(); // 使用者是否停在底部
@@ -244,16 +248,37 @@ function showInterim(t){
   }, 300);
 }
 
-let seq = 0;
+let seq = 0, group = null, recentSrc = '';
+const SENT_END = /[.!?。！？…」』"”)]\s*$/;
+const TIGHT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}]/u;
+function joinText(a, b){ return a + (TIGHT.test(a.slice(-1)) && TIGHT.test(b[0]) ? '' : ' ') + b; }
+function tailSentence(t){
+  if (!t) return '';
+  t = t.slice(-220);
+  const m = t.match(/[.!?。！？]\s*(?=\S[^.!?。！？]*[.!?。！？]?\s*$)/);
+  return (m ? t.slice(m.index + m[0].length) : t).trim().slice(-180);
+}
 function addFinal(text){
   clearEmpty();
+  const now = Date.now();
+  recentSrc = (recentSrc + ' ' + text).slice(-600);
+  // 上一段還沒講完（沒有句號）、且間隔不久 → 合併成同一段，翻譯時能看到完整上下文
+  if (group && group.ps.isConnected && group.pt.isConnected && !SENT_END.test(group.text) &&
+      group.text.length + text.length < 280 && now - group.t < 12000) {
+    group.text = joinText(group.text, text); group.t = now;
+    renderText(group.ps, group.text, srcForeign());
+    toBottom(srcPane);
+    return group;
+  }
   const id = String(++seq);
-  const ps = document.createElement('p'); ps.dataset.id = id; renderText(ps, text);
+  const ps = document.createElement('p'); ps.dataset.id = id; renderText(ps, text, srcForeign());
   if (interimEl) srcPane.insertBefore(ps, interimEl); else srcPane.appendChild(ps);
   const pt = document.createElement('p'); pt.dataset.id = id; pt.className = 'pending'; pt.textContent = '…';
   trgPane.appendChild(pt);
+  // 上一段的最後一句當作「前文」，讓翻譯知道在講什麼
+  group = {id, ps, pt, text, ctx: tailSentence(group && group.text), infos: [], ver: 0, t: now, raw: ''};
   trim(srcPane); trim(trgPane); toBottom(srcPane); toBottom(trgPane);
-  return pt;
+  return group;
 }
 
 // ---------- 翻譯：內建離線翻譯 → 免費網路翻譯 ----------
@@ -463,14 +488,19 @@ async function lookupTerm(term, sb){
   return info;
 }
 const seenTerms = new Set();   // 同一個名詞只在第一次出現時註解，畫面才不會太亂
-async function annotate(el, srcText, sb){
-  const cands = findTerms(srcText).filter(t => !seenTerms.has(t.toLowerCase())).slice(0, 4);
+async function annotateGroup(g, sb){
+  const cands = findTerms(g.text).filter(t => !seenTerms.has(t.toLowerCase())).slice(0, 4);
   if (!cands.length) return;
-  cands.forEach(t => seenTerms.add(t.toLowerCase()));
+  cands.forEach(t => { seenTerms.add(t.toLowerCase()); hotTerms.add(t); });
   const infos = (await Promise.all(cands.map(t => lookupTerm(t, sb)))).filter(Boolean);
-  if (!infos.length || !el.isConnected) return;
-  let out = el.dataset.raw || el.textContent; const notes = [];
-  for (const info of infos) {
+  if (!infos.length || !g.pt.isConnected) return;
+  g.infos.push(...infos);
+  applyAnns(g);
+}
+function applyAnns(g){
+  const el = g.pt;
+  let out = g.raw; const notes = [];
+  for (const info of g.infos) {
     const short = (info.name || '').split(/[·・‧]/).pop();
     const keys = [info.term, info.name, short].filter(k => k && k.length >= 2);
     let done = false;
@@ -483,11 +513,11 @@ async function annotate(el, srcText, sb){
     }
     if (!done) notes.push(`${info.term}：${info.name}${info.desc ? '，' + info.desc : ''}`);
   }
-  el.dataset.raw = out; renderText(el, out);
+  renderText(el, out, trgForeign());
   if (notes.length) { const n = document.createElement('span'); n.className = 'note'; n.textContent = '註：' + notes.join('；'); el.appendChild(n); }
   toBottom(trgPane);
 }
-
+const hotTerms = new Set();   // 聽過的專有名詞，之後辨識時優先猜這些字
 
 // ---------- 自動偵測語言 ----------
 let mismatch = 0;
@@ -505,30 +535,39 @@ function considerSwitch(detected){
 
 async function handleFinal(text){
   text = text.trim(); if (!text) return;
-  const el = addFinal(text);
+  const g = addFinal(text);
   const recLoc = S.src === 'auto' ? S.guess : S.src;
   let src = srcCodeForTranslate(recLoc);
-  if (S.src === 'auto') { const d = await detectLang(text); if (d) { considerSwitch(d); src = srcCodeForTranslate(DETECT2LOCALE[d] || d); } else src = 'auto'; }
-  await doTranslate(el, text, src, srcCodeForTranslate(recLoc));
+  if (S.src === 'auto') { const d = await detectLang(g.text); if (d) { considerSwitch(d); src = srcCodeForTranslate(DETECT2LOCALE[d] || d); } else src = 'auto'; }
+  g.src = src; g.fbSrc = srcCodeForTranslate(recLoc);
+  await translateGroup(g);
 }
-async function doTranslate(el, text, src, fbSrc){
-  el.className = 'pending'; el.textContent = '…'; el.onclick = null;
-  const r = await translate(text, src, S.trg, fbSrc);
-  if (r) {
-    el.className = ''; el.dataset.raw = twFix(r.text); renderText(el, el.dataset.raw);
-    if (S.notes) annotate(el, text, base(src === 'auto' ? (r.detected || fbSrc) : src));
-    if (S.src === 'auto' && src === 'auto') considerSwitch(r.detected);
-  } else {
+async function translateGroup(g){
+  const ver = ++g.ver, text = g.text, el = g.pt;
+  if (!g.raw) { el.className = 'pending'; el.textContent = '…'; }
+  el.onclick = null;
+  let r = null, out = null;
+  // 把前文一起送去翻譯（用換行分開），再只取最後一行 → 翻譯會參考上下文
+  if (g.ctx) {
+    const r1 = await translate(g.ctx + '\n' + text, g.src, S.trg, g.fbSrc);
+    const lines = r1 ? r1.text.split('\n').map(x => x.trim()).filter(Boolean) : [];
+    if (lines.length >= 2) { r = r1; out = lines[lines.length - 1]; }
+  }
+  if (!out) { r = await translate(text, g.src, S.trg, g.fbSrc); out = r && r.text; }
+  if (ver !== g.ver) return;            // 已經有更新、更完整的版本在翻了
+  if (out) {
+    el.className = ''; g.raw = twFix(out); applyAnns(g);
+    if (S.notes) annotateGroup(g, base(g.src === 'auto' ? (r.detected || g.fbSrc) : g.src));
+    if (S.src === 'auto' && g.src === 'auto') considerSwitch(r.detected);
+  } else if (!g.raw) {
     el.className = 'err';
     el.textContent = '（翻譯失敗，點這裡重試）' + (translate.lastErr ? ' ' + translate.lastErr : '');
-    el.onclick = () => doTranslate(el, text, src, fbSrc);
+    el.onclick = () => translateGroup(g);
   }
   toBottom(trgPane);
 }
 
-
 // ---------- 點字查詢：翻譯＋維基百科摘要 ----------
-const curSrcBase = () => base(S.src === 'auto' ? S.guess : S.src);
 const segCache = {};
 function wordAt(e){
   let node, off;
@@ -538,7 +577,9 @@ function wordAt(e){
   const par = node.parentElement;
   if (!par || par.closest('.ann,.note,.err,.pending,.interim,.empty')) return null;
   const t = node.data;
-  if (par.classList.contains('lat')) {
+  const ch = t[off] || t[off - 1] || '';
+  const noSpaceScript = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}]/u.test(ch);
+  if (par.classList.contains('lat') && !noSpaceScript) {
     // 拉丁文字：取點到的單字；若是大寫開頭，連同前後的大寫字一起（人名、機構名）
     const words = [...t.matchAll(/[\p{L}\p{N}'’&.\-]+/gu)];
     let k = words.findIndex(m => off >= m.index && off <= m.index + m[0].length);
@@ -635,7 +676,19 @@ $('info').addEventListener('click', e => { if (e.target.id === 'info') clearHl()
 // ---------- 語音辨識 ----------
 const SR = self.SpeechRecognition || self.webkitSpeechRecognition;
 let rec = null, running = false, finalCount = 0, backoff = 300, restartTimer = 0;
-let committed = 0, liveInterim = '', pauseTimer = 0;
+let committed = 0, liveInterim = '', pauseTimer = 0, noPhrases = false;
+// 從幾個辨識候選中，挑跟前文用字最接近的（例如前面一直在講 Fed，就選 Fed 而不是 fed up）
+function pickAlt(res){
+  if (!res || res.length < 2) return res[0].transcript;
+  const ctx = new Set((recentSrc + ' ' + [...hotTerms].join(' ')).toLowerCase().match(/[\p{L}\p{N}']+/gu) || []);
+  let best = 0, bestScore = -1;
+  for (let k = 0; k < res.length; k++) {
+    const words = (res[k].transcript.toLowerCase().match(/[\p{L}\p{N}']+/gu) || []);
+    const score = words.reduce((n, w) => n + (ctx.has(w) ? (w.length > 3 ? 2 : 1) : 0), 0) - k * 0.5 + (res[k].confidence || 0);
+    if (score > bestScore) { bestScore = score; best = k; }
+  }
+  return res[best].transcript;
+}
 const MAX_SEG = 90, PAUSE_MS = 1300;
 function cutPoint(t){
   const m = [...t.slice(0, MAX_SEG + 20).matchAll(/[.!?。！？,，、;；:：]\s*|\s+/g)];
@@ -653,7 +706,10 @@ function makeRec(){
   r.lang = S.src === 'auto' ? S.guess : S.src;
   r.continuous = true;
   r.interimResults = true;   // 一律取得中間結果才能自動分段；設定只控制是否顯示
-  r.maxAlternatives = 1;
+  r.maxAlternatives = 3;
+  if (S.local && !noPhrases && 'phrases' in r && self.SpeechRecognitionPhrase && hotTerms.size) {
+    try { r.phrases = [...hotTerms].slice(-40).map(t => new SpeechRecognitionPhrase(t, 4)); } catch(e) {}
+  }
   if (S.local && 'processLocally' in r) { try { r.processLocally = true; } catch(e) {} }
   finalCount = 0; committed = 0; liveInterim = '';
   r.onresult = e => {
@@ -664,7 +720,7 @@ function makeRec(){
       if (res.isFinal) {
         if (i >= finalCount) {
           finalCount = i + 1;
-          const t = res[0].transcript;
+          const t = pickAlt(res);
           // 已經提前送出翻譯的部分不要重複
           const rest = t.length > committed ? t.slice(committed) : '';
           committed = Math.max(0, committed - t.length);
@@ -672,7 +728,7 @@ function makeRec(){
         }
       }
     }
-    for (let i = finalCount; i < e.results.length; i++) if (!e.results[i].isFinal) interim += e.results[i][0].transcript;
+    for (let i = finalCount; i < e.results.length; i++) if (!e.results[i].isFinal) interim += pickAlt(e.results[i]);
     liveInterim = interim;
     // 句子太長：在標點或空白處先切一段送出翻譯
     const pending = interim.slice(committed);
@@ -689,6 +745,7 @@ function makeRec(){
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
       setStatus('麥克風權限被拒絕，請在瀏覽器網址列的設定中允許麥克風'); stop(); return;
     }
+    if (e.error === 'phrases-not-supported') { noPhrases = true; return; }
     if (e.error === 'language-not-supported') { setStatus('這個瀏覽器不支援此語言的辨識'); stop(); return; }
     if (e.error === 'network') { setStatus('網路中斷，稍後自動重試…'); backoff = Math.min(backoff * 2, 8000); }
     else if (e.error !== 'no-speech' && e.error !== 'aborted') setStatus('辨識錯誤：' + e.error + '，自動重試中');
@@ -752,12 +809,12 @@ $('swap').onclick = () => {
   let newTrg = srcCodeForTranslate(curLoc);
   if (!TRG.some(x => x[0] === newTrg)) newTrg = 'en';
   const newSrc = TRG2LOC[S.trg] || DETECT2LOCALE[S.trg] || 'en-US';
-  S.src = SRC.some(x => x[0] === newSrc) ? newSrc : 'auto'; S.trg = newTrg; mismatch = 0;
+  S.src = SRC.some(x => x[0] === newSrc) ? newSrc : 'auto'; S.trg = newTrg; mismatch = 0; group = null;
   srcSel.value = S.src; trgSel.value = S.trg; save(); updateLabels(); restartRec();
   setStatus('已交換方向：' + nameOf(SRC, S.src) + ' → ' + nameOf(TRG, S.trg));
 };
-srcSel.onchange = () => { S.src = srcSel.value; mismatch = 0; save(); updateLabels(); restartRec(); };
-trgSel.onchange = () => { S.trg = trgSel.value; save(); updateLabels(); };
+srcSel.onchange = () => { S.src = srcSel.value; mismatch = 0; group = null; save(); updateLabels(); restartRec(); };
+trgSel.onchange = () => { S.trg = trgSel.value; group = null; save(); updateLabels(); };
 $('gear').onclick = () => $('sheet').classList.add('show');
 $('closeSheet').onclick = () => $('sheet').classList.remove('show');
 document.querySelectorAll('.sheet').forEach(sh => sh.onclick = e => { if (e.target === sh) sh.classList.remove('show'); });
@@ -770,7 +827,7 @@ const tw = $('tw'); tw.checked = S.tw; tw.onchange = () => { S.tw = tw.checked; 
 const notesBox = $('notes'); notesBox.checked = S.notes; notesBox.onchange = () => { S.notes = notesBox.checked; save(); };
 const local = $('local'); local.checked = S.local; local.onchange = () => { S.local = local.checked; save(); restartRec(); };
 if (!SR || !('processLocally' in (SR.prototype || {}))) { local.disabled = true; local.parentElement.querySelector('small').textContent = '這個瀏覽器不支援裝置端辨識'; }
-$('clear').onclick = () => { seenTerms.clear(); srcPane.innerHTML = ''; trgPane.innerHTML = ''; interimEl = null; $('sheet').classList.remove('show'); };
+$('clear').onclick = () => { seenTerms.clear(); group = null; recentSrc = ''; srcPane.innerHTML = ''; trgPane.innerHTML = ''; interimEl = null; $('sheet').classList.remove('show'); };
 
 if (!SR) setStatus('這個瀏覽器不支援語音辨識，請改用 Android 的 Chrome 或 iPhone 的 Safari');
 })();
