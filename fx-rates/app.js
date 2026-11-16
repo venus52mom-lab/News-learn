@@ -356,12 +356,9 @@ function renderAdd() {   // 編輯模式：下方列出可以加入的項目
     (groups[it.group] = groups[it.group] || []).push(id);
   }
   const inp = $("#addQ");
-  inp.oninput = () => { renderAdd.q = inp.value; clearTimeout(renderAdd.t); renderAdd.t = setTimeout(() => { renderAdd(); const i = $("#addQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); };
-  if (qv && /^[0-9a-z.\-]{1,10}$/i.test(qv)) {   // 用代號直接查（台股、美股）
-    const b = el("button", "wide", `用代號加入「${esc(renderAdd.q.trim().toUpperCase())}」（台股／美股）`);
-    b.onclick = () => addBySymbol(renderAdd.q.trim()); $("#addHint").append(b);
-  }
-  if (qv && !Object.keys(groups).length) $("#addHint").insertAdjacentHTML("beforeend", `<p class="muted small">目錄裡找不到「${esc(renderAdd.q)}」。台股或美股可以直接用代號加入。</p>`);
+  inp.oninput = () => { renderAdd.q = inp.value; renderAdd.msg = ""; clearTimeout(renderAdd.t); renderAdd.t = setTimeout(() => { renderAdd(); const i = $("#addQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); };
+  if (qv) symbolHint(renderAdd.q, !!Object.keys(groups).length);
+  else $("#addHint").innerHTML = (renderAdd.msg || "") + `<p class="muted small">找不到想要的？可以直接輸入代號加入，例如 2330、AAPL、0700.HK。</p>`;
   for (const g of GROUPS) {
     if (!groups[g]) continue;
     box.append(el("div", "section-title", `可加入：${g}`));
@@ -379,22 +376,87 @@ function renderAdd() {   // 編輯模式：下方列出可以加入的項目
     if (!confirm(`確定刪除「${LIST().n}」？`)) return;
     S.lists.splice(S.cur, 1); S.cur = Math.max(0, S.cur - 1); save(); renderHome(); };
 }
-async function addBySymbol(code) {
-  const hint = $("#addHint"); hint.innerHTML = `<p class="muted small">查詢中…</p>`;
-  const c = code.toUpperCase();
-  for (const sym of [`TWS:${c}:STOCK`, `USS:${c}:STOCK`, `TWG:${c}:STOCK`]) {
-    try {
-      const j = await getJSON(`${CNYES}/quote/quotes/${sym}`);
-      const q = j && j.data && j.data[0]; if (!q || q["6"] == null) continue;
-      const id = "U_" + sym.replace(/[^A-Z0-9]/g, "_");
-      const tw = sym.startsWith("TW");
-      S.custom[id] = {name: q["200009"] || c, sub: `${c}・${tw ? "台股" : "美股"}`, cn: sym};
-      applyCustom();
-      if (!LIST().items.includes(id)) LIST().items.push(id);
-      renderAdd.q = ""; save(); renderHome(); refreshLive(); return;
-    } catch (e) {}
+/* ===== 用代號加入：先檢查格式，再到網路上查 ===== */
+const FMT_HELP = `<div class="fmt"><b>代號格式說明</b>
+<div>🇹🇼 台股／ETF：數字代號，例 <code>2330</code>、<code>0050</code>、<code>00631L</code>（上市上櫃都可以，也可以打 <code>2330.TW</code>）</div>
+<div>🇺🇸 美股／ETF：英文代號，例 <code>AAPL</code>、<code>TSLA</code>、<code>SPY</code>、<code>BRK.B</code></div>
+<div>🇭🇰 港股：數字加 <code>.HK</code>，例 <code>0700.HK</code>、<code>9988.HK</code></div>
+<div>🔎 也可以打中文名稱，例 <code>環球晶</code>、<code>騰訊</code>，會幫你找代號</div>
+<div class="muted">日股、韓股、歐股等其他市場目前沒辦法用手機直接查，請告訴開發者把它加進目錄。</div></div>`;
+function normSym(q) {   // 全形轉半形、去空白、轉大寫
+  return q.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/　/g, " ").trim().toUpperCase();
+}
+function parseSym(q) {   // → {ok, tries:[鉅亨網代號…], label} 或 {ok:false, why}
+  const c = normSym(q).replace(/\s+/g, "");
+  let m;
+  if ((m = c.match(/^(\d{4,6}[A-Z]?)(\.TWO?)?$/))) return {ok:true, code:m[1], mk:"台股", tries:[`TWS:${m[1]}:STOCK`, `OTC:${m[1]}:STOCK`]};
+  if ((m = c.match(/^(\d{1,5})\.HK$/)) || (m = c.match(/^HK[:\-]?(\d{1,5})$/))) { const n = String(+m[1]).padStart(4, "0"); return {ok:true, code:n + ".HK", mk:"港股", tries:[`HKS:${n}:STOCK`]}; }
+  if ((m = c.match(/^([A-Z]{1,5})(?:[.\-]([A-Z]))?$/))) { const k = m[2] ? `${m[1]}.${m[2]}` : m[1]; return {ok:true, code:k, mk:"美股", tries:[`USS:${k}:STOCK`]}; }
+  if (/^[A-Z0-9]+\.(T|KS|KQ|SS|SZ|L|PA|DE|F|AS|MI|AX|SI|TO|BO|NS|SW)$/.test(c) || /^\^/.test(c) || /=[FX]$/.test(c) || /-USD$/.test(c))
+    return {ok:false, yahoo:true, why:`「${c}」是 Yahoo Finance 的代號格式，格式沒錯，但 Yahoo 不允許手機網頁直接查詢它的資料（只有伺服器能抓），所以這種代號沒辦法從這裡加入。可以先在上面目錄搜尋看看，或請開發者把它加進目錄。`};
+  if (/[㐀-鿿]/.test(c)) return {ok:false, name:true};
+  if (/^\d{1,3}$/.test(c)) return {ok:false, why:`「${c}」只有 ${c.length} 位數。台股代號至少 4 位數（例 2330、0050）；港股請在後面加 .HK（例 ${c.padStart(4,"0")}.HK）。`};
+  if (/^\d{7,}$/.test(c)) return {ok:false, why:`「${c}」位數太多。台股代號是 4～6 位數（例 2330、00631L）。`};
+  if (/^[A-Z]{6,}$/.test(c)) return {ok:false, why:`「${c}」太長了。美股代號是 1～5 個英文字母（例 AAPL、TSLA）。`};
+  return {ok:false, why:`「${c}」不是看得懂的代號格式。`};
+}
+function symbolHint(q, inCatalog) {
+  const h = $("#addHint"); const p = parseSym(q);
+  if (p.ok) {
+    const b = el("button", "wide", `🔎 上網查「${esc(p.code)}」（${p.mk}）並加入`);
+    b.onclick = () => addBySymbol(q); h.append(b);
+    if (!inCatalog) h.insertAdjacentHTML("beforeend", `<p class="muted small">目錄裡沒有，按上面的按鈕到鉅亨網查詢。</p>`);
+  } else if (p.name) {
+    if (!inCatalog) { const b = el("button", "wide", `🔎 用名稱「${esc(normSym(q))}」上網找代號`); b.onclick = () => searchByName(q); h.append(b); }
+  } else if (!inCatalog) {
+    h.insertAdjacentHTML("beforeend", `<p class="warnline">⚠️ ${esc(p.why)}</p>${p.yahoo ? "" : FMT_HELP}`);
   }
-  hint.innerHTML = `<p class="warnline">找不到代號「${esc(c)}」。台股請輸入數字代號（例：2330），美股請輸入英文代號（例：AAPL）。</p>`;
+}
+async function addBySymbol(q) {
+  const hint = $("#addHint"); const p = parseSym(q);
+  if (!p.ok) { hint.innerHTML = `<p class="warnline">⚠️ ${esc(p.why || "格式不對")}</p>${FMT_HELP}`; return; }
+  hint.innerHTML = `<p class="muted small">正在鉅亨網查詢「${esc(p.code)}」…</p>`;
+  let net = 0, nf = 0, noPrice = null;
+  for (const sym of p.tries) {
+    let j;
+    try { j = await getJSON(`${CNYES}/quote/quotes/${sym}`, 10000); }
+    catch (e) { if (/^4\d\d$/.test(e.message)) nf++; else net++; continue; }
+    const d = j && j.data && j.data[0];
+    if (!d) { nf++; continue; }
+    if (d["6"] == null) { noPrice = d; continue; }
+    const id = "U_" + sym.replace(/[^A-Z0-9]/g, "_");
+    S.custom[id] = {name: d["200009"] || p.code, sub: `${p.code}・${p.mk}`, cn: sym};
+    applyCustom();
+    const had = LIST().items.includes(id);
+    if (!had) LIST().items.push(id);
+    renderAdd.q = ""; renderAdd.msg = `<p class="okline">✅ ${had ? "已經在列表裡了" : "已加入「" + esc(LIST().n) + "」"}：${esc(d["200009"] || p.code)}（${esc(p.code)}）</p>`;
+    save(); renderHome(); refreshLive();
+    return;
+  }
+  let why;
+  if (noPrice) why = `查得到「${noPrice["200009"] || p.code}」，但目前沒有任何報價（可能已下市、暫停交易，或是還沒開始交易）。`;
+  else if (net && !nf) why = `連不上鉅亨網（可能是手機網路不穩，或鉅亨網暫時故障），請稍後再試一次。`;
+  else why = `鉅亨網查不到 ${p.mk}「${p.code}」。可能原因：代號打錯、已經下市，或不是${p.mk}。${p.mk === "美股" ? "如果是台股，請輸入數字代號；如果是港股，請在後面加 .HK。" : ""}`;
+  hint.innerHTML = `<p class="warnline">⚠️ ${esc(why)}</p>${FMT_HELP}`;
+}
+async function searchByName(q) {   // 鉅亨網沒有開放名稱查詢，改從新聞標題找「名稱(代號-TW)」
+  const hint = $("#addHint"); const name = normSym(q);
+  hint.innerHTML = `<p class="muted small">正在找「${esc(name)}」的代號…</p>`;
+  let items;
+  try { items = ((await getJSON(`https://ess.api.cnyes.com/ess/api/v1/siteSearch/main?q=${encodeURIComponent(name)}&limit=20&category=TWS`, 10000)).data || {}).news || []; }
+  catch (e) { hint.innerHTML = `<p class="warnline">⚠️ 連不上鉅亨網，沒辦法用名稱找。請稍後再試，或直接輸入代號。</p>${FMT_HELP}`; return; }
+  const found = new Map();
+  for (const n of items) {
+    const t = (n.title || "").replace(/<\/?mark>/g, "");
+    for (const m of t.matchAll(/([㐀-鿿A-Za-z0-9\-\*]{1,12})\s*[（(]\s*([0-9A-Z.]{1,8})-(TW|US|HK)\s*[)）]/g)) {
+      if (!m[1].includes(name) && !name.includes(m[1])) continue;
+      const code = m[3] === "HK" ? m[2] + ".HK" : m[2];
+      if (!found.has(code)) found.set(code, m[1]);
+    }
+  }
+  if (!found.size) { hint.innerHTML = `<p class="warnline">⚠️ 找不到「${esc(name)}」的代號。可能是名稱不完整、不是台股／美股／港股，或最近沒有相關新聞可以對照。請改輸入代號。</p>${FMT_HELP}`; return; }
+  hint.innerHTML = `<p class="muted small">找到以下代號，點一下加入：</p>`;
+  for (const [code, nm] of found) { const b = el("button", "wide", `＋ ${esc(nm)}（${esc(code)}）`); b.onclick = () => addBySymbol(code); hint.append(b); }
 }
 function removeItem(id) { LIST().items = LIST().items.filter(x => x !== id); save(); renderHome(); }
 function newList() {
