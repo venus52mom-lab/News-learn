@@ -1,7 +1,7 @@
 {
- "time": "2026-11-16 16:40",
+ "time": "2026-11-16 16:43",
  "graph": 0,
- "gap_days": 397,
+ "gap_days": 0,
  "today": 19,
  "esun_ccys": [
   "AUD",
@@ -19,7 +19,7 @@
   "USD",
   "ZAR"
  ],
- "minutes": 5.8,
+ "minutes": 0.1,
  "rows": {
   "USD": 2482,
   "HKD": 2482,
