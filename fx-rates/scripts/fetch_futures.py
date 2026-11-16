@@ -152,7 +152,7 @@ def main():
             segs[sg[0][0]] = sg
     except Exception as e:  # noqa: BLE001
         LOG.append({"sessions": str(e)[:100]})
-    intra = [segs[k] for k in sorted(segs)][-3:]
+    intra = [segs[k] for k in sorted(segs)][-12:]     # 約 6 個交易日（日盤＋夜盤），給「當日」「1週」用
     out = {"intra": intra, "full": full, "updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": src if quote else old.get("source"),
            "quote": quote or old.get("quote"), "daily": [[k, daily[k]] for k in sorted(daily)], "log": LOG[-10:]}
     with open(p, "w", encoding="utf-8") as f:

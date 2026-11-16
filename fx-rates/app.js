@@ -473,12 +473,13 @@ async function loadWeeks(ids) {   // 1週：鉅亨網 30 分鐘線（沒有鉅�
     try { const j = await getJSON(dataBase() + "week.json?t=" + Date.now(), 15000); WEEKF = {t: Date.now()};
       for (const [id, arr] of Object.entries(j.items || {})) { const m = MK[id] || (MK[id] = {}); if (!m.weekLive) m.week = arr.map(([t, c]) => [tpeKey(t), c]); } } catch (e) { WEEKF = {t: Date.now()}; }
   }
-  await Promise.allSettled(ids.filter(id => ITEMS[id] && ITEMS[id].cn).map(async id => {
+  await Promise.allSettled(ids.filter(id => K(id) === "txf").map(id => cnyesIntra(id)));
+  await Promise.allSettled(ids.filter(id => ITEMS[id] && ITEMS[id].cn && K(id) !== "txf").map(async id => {
     const m = MK[id] || (MK[id] = {}); if (m.weekLive && Date.now() - m.wt < 10*60*1000) return;
     const now = Math.floor(Date.now()/1000);
     const h = (await getJSON(`${CNYES}/charting/history?symbol=${ITEMS[id].cn}&resolution=30&from=${now}&to=${now - 8*86400}`, 15000)).data;
     const pts = h.t.map((t, i) => [t, h.c[i]]).filter(p => p[1]).sort((a,b) => a[0]-b[0]).filter(p => p[0] >= now - 7*86400);
-    if (pts.length > 1) { m.week = pts.map(([t, c]) => [tpeKey(t), c]); m.weekLive = true; m.wt = Date.now(); }
+    if (pts.length > 1 && pts[pts.length-1][0] - pts[0][0] > 2*86400) { m.week = pts.map(([t, c]) => [tpeKey(t), c]); m.weekLive = true; m.wt = Date.now(); }
   }));
   renderHome(); if (!$("#detail").hidden && D.range === "1W") renderDetail();
 }
@@ -536,6 +537,16 @@ async function cnyesIntra(id) {
     segs.sort((a, b) => a[0][0] - b[0][0]);
     const two = segs.slice(-2);
     setTwoSessions(m, two.length > 1 ? two[0] : [], two[two.length-1] || [], cur.length > 1);
+    // 1週：最近 7 天的每個時段串起來，每段之間留間隔
+    const wk = segs.filter(g => g[g.length-1][0] >= now - 7*86400);
+    if (wk.length) {
+      const total = wk.reduce((n, g) => n + g.length, 0), gap = Math.max(3, Math.round(total * 0.012));
+      m.week = [];
+      wk.forEach((g, i) => { if (i) for (let k = 0; k < gap; k++) m.week.push([tpeKey(g[0][0]), null]);
+        const step = Math.max(1, Math.round(g.length / 60));   // 每段約 60 點就夠
+        g.forEach((p, j) => { if (j % step === 0 || j === g.length - 1) m.week.push([tpeKey(p[0]), p[1]]); }); });
+      m.weekLive = true; m.wt = Date.now();
+    }
     return;
   } else {
     const h = (await getJSON(`${CNYES}/charting/history?symbol=${it.cn}&resolution=5&from=${now}&to=${now - 4*86400}`)).data;
