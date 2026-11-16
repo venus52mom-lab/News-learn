@@ -5,6 +5,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          O="Origin: https://venus52mom-lab.github.io"
-          for s in TWS:6488:STOCK TWO:6488:STOCK OTC:6488:STOCK TWS:9999:STOCK USS:ZZZZQ:STOCK HKS:9988:STOCK; do echo "== $s"; curl -s -m 20 -H "$O" "https://ws.api.cnyes.com/ws/api/v1/quote/quotes/$s" | head -c 200; echo; done
-          for u in "https://ws.api.cnyes.com/ws/api/v3/universal/quote?type=all&page=1&limit=5&q=環球晶" "https://ws.api.cnyes.com/ws/api/v2/universal/quote?type=all&page=1&limit=5&q=環球晶" "https://ess.api.cnyes.com/ess/api/v1/siteSearch/main?q=%E7%92%B0%E7%90%83%E6%99%B6&limit=5&category=TWS" "https://ess.api.cnyes.com/ess/api/v1/siteSearch/quote?q=%E7%92%B0%E7%90%83%E6%99%B6&limit=5" "https://ws.api.cnyes.com/ws/api/v1/search/quote?q=%E7%92%B0%E7%90%83%E6%99%B6"; do echo "== $u"; curl -s -m 20 -D - -o b -H "$O" "$u" | grep -i "^HTTP\|access-control-allow-origin"; head -c 700 b; echo; done
+          for q in %E7%92%B0%E7%90%83%E6%99%B6 toyota tesla %E9%A8%B0%E8%A8%8A; do echo "== $q"; curl -s -m 20 "https://ess.api.cnyes.com/ess/api/v1/siteSearch/main?q=$q&limit=5" | python3 -c "import json,sys;d=json.load(sys.stdin)['data'];print({k:(len(v) if isinstance(v,list) else v) for k,v in d.items()});[print(k,json.dumps(v[:3],ensure_ascii=False)[:600]) for k,v in d.items() if isinstance(v,list) and k!='news' and v]"; done
