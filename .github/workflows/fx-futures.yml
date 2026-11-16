@@ -4,10 +4,13 @@ name: 匯率 - 台指期、股市、新聞（每小時）
 on:
   schedule:
     - cron: "17 * * * *"
+    # 台指期日盤收盤（13:50）與夜盤收盤（05:05）後各再存一次完整走勢
+    - cron: "50 5 * * 1-5"
+    - cron: "5 21 * * 1-5"
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["fx-rates/scripts/fetch_futures.py", "fx-rates/scripts/fetch_markets.py", "fx-rates/scripts/fetch_news.py", ".github/workflows/fx-futures.yml"]
+    paths: ["fx-rates/catalog.json", "fx-rates/scripts/fetch_futures.py", "fx-rates/scripts/fetch_markets.py", "fx-rates/scripts/fetch_news.py", ".github/workflows/fx-futures.yml"]
 permissions:
   contents: write
 concurrency:
@@ -16,7 +19,7 @@ concurrency:
 jobs:
   hourly:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - run: python3 fx-rates/scripts/fetch_futures.py || true
@@ -26,5 +29,5 @@ jobs:
         run: |
           git config user.name "fx-bot"
           git config user.email "fx-bot@users.noreply.github.com"
-          git add fx-rates/data/txf.json fx-rates/data/markets.json fx-rates/data/mkt fx-rates/data/news.json
+          git add fx-rates/data/txf.json fx-rates/data/markets.json fx-rates/data/week.json fx-rates/data/fullhist_tried.json fx-rates/data/mkt fx-rates/data/news.json || true
           git diff --cached --quiet || (git commit -m "台指期備援・股市・新聞 $(TZ=Asia/Taipei date '+%F %R')" && git pull --rebase && git push)

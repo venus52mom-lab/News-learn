@@ -63,9 +63,27 @@ def rss(query, lang):
 
 
 def main():
-    news, errs = {}, {}
-    for mid, (zq, eq) in Q.items():
+    q = {k: v for k, v in Q.items()}
+    try:   # 目錄裡的所有市場項目
+        for c in json.load(open(os.path.join(ROOT, "..", "catalog.json"), encoding="utf-8"))["items"]:
+            q.setdefault(c["id"], (c.get("q") or c["n"], c.get("e") or c["s"]))
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        old = json.load(open(os.path.join(ROOT, "news.json"), encoding="utf-8")).get("news", {})
+    except Exception:  # noqa: BLE001
+        old = {}
+    turn = dt.datetime.now(TPE).hour % 3          # 每小時輪流更新三分之一，避免一次抓太多
+    ids = sorted(q)
+    news, errs, budget = dict(old), {}, 90
+    for i, mid in enumerate(ids):
+        if mid in old and old[mid] and i % 3 != turn:
+            continue
+        if budget <= 0:
+            break
+        zq, eq = q[mid]
         items, e = rss(zq, "zh")
+        budget -= 1
         if e:
             errs[mid] = e
         seen, pick = set(), []
@@ -76,6 +94,7 @@ def main():
                 pick.append(x)
         if len(pick) < 3:            # 中文不夠 → 補英文
             en, e2 = rss(eq, "en")
+            budget -= 1
             pick += en[: 3 - len(pick) + 2]
             time.sleep(0.5)
         news[mid] = pick[:5]

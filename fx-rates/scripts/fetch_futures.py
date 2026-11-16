@@ -62,29 +62,36 @@ def from_cnyes():
     return quote, daily
 
 
-def txf_intraday(sessions):
-    """最近兩個交易時段（例如：今天日盤＋現在夜盤），分兩次抓：目前時段、前一個時段。"""
-    now = int(time.time())
-    start = sessions[0][0] if sessions else now - 6 * 3600
-    if start > now:
-        start = now - 6 * 3600
+def taifex_sessions():
+    """期交所 1 分線：近月日盤（-F）與夜盤（-M），回傳 [[ts, close], ...] 的時段清單。"""
+    j = get("https://mis.taifex.com.tw/futures/api/getQuoteList",
+            {"MarketType": "0", "SymbolType": "F", "KindID": "1", "CID": "TXF", "ExpireMonth": "",
+             "RowSize": "全部", "PageNo": "", "SortColumn": "", "AscDesc": "A"})
+    try:
+        sid = [r["SymbolID"] for r in j["RtData"]["QuoteList"] if r["SymbolID"].startswith("TXF") and r["SymbolID"].endswith("-F")][0]
+    except Exception:  # noqa: BLE001
+        return []
     segs = []
-    for frm, to in ((now, start - 60), (start - 61, start - 20 * 3600)):
-        h = get(f"{CNYES}/charting/history?symbol=TWF:TXF:FUTURES&resolution=1&from={frm}&to={to}")
+    for code, mt in ((sid, "0"), (sid[:-2] + "-M", "1")):
+        c = get("https://mis.taifex.com.tw/futures/api/getChartData1M", {"SymbolID": code, "MarketType": mt})
         try:
-            pts = sorted((t, c) for t, c in zip(h["data"]["t"], h["data"]["c"]) if c)
-        except Exception:  # noqa: BLE001
+            rd = c["RtData"]
+            day = rd["Quote"]["CDate"]
+            fld = rd["Field"]
+            it, ic = fld.index("T"), fld.index("C")
             pts = []
-        # 只留最後一段連續的（中間停超過 50 分鐘就切開）
-        cut = 0
-        for i in range(len(pts) - 1, 0, -1):
-            if pts[i][0] - pts[i - 1][0] > 50 * 60:
-                cut = i
-                break
-        segs.append(pts[cut:])
+            for tk in rd["Ticks"]:
+                hhmmss = tk[it].zfill(6)
+                d = dt.datetime.strptime(day + hhmmss, "%Y%m%d%H%M%S").replace(tzinfo=TPE)
+                if mt == "1" and int(hhmmss[:2]) < 15:
+                    d += dt.timedelta(days=1)          # 夜盤過午夜
+                pts.append([int(d.timestamp()), float(tk[ic])])
+            if len(pts) > 1:
+                segs.append(sorted(pts))
+        except Exception as e:  # noqa: BLE001
+            LOG.append({"mis": code, "error": str(e)[:100]})
         time.sleep(0.4)
-    cur, prev = segs
-    return [prev, cur] if prev else [cur]
+    return segs
 
 
 def from_taifex():
@@ -135,12 +142,17 @@ def main():
             td += dt.timedelta(days=1)
         daily[td.strftime("%Y%m%d")] = quote["last"]
     full = old.get("full") or len(daily) > 1300
-    intra = []
-    if quote and src == "鉅亨網":
-        try:
-            intra = txf_intraday(quote.get("sessions"))
-        except Exception as e:  # noqa: BLE001
-            LOG.append({"intra": str(e)[:100]})
+    # 最近幾個交易時段的 1 分線（App 把「上一段＋現在這段」接起來畫）
+    segs = {s[0][0]: s for s in old.get("intra", []) if s and isinstance(s[0], list)}
+    try:
+        for sg in taifex_sessions():
+            k0 = next((k for k in segs if abs(k - sg[0][0]) < 3 * 3600), None)
+            if k0 is not None:
+                del segs[k0]
+            segs[sg[0][0]] = sg
+    except Exception as e:  # noqa: BLE001
+        LOG.append({"sessions": str(e)[:100]})
+    intra = [segs[k] for k in sorted(segs)][-3:]
     out = {"intra": intra, "full": full, "updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": src if quote else old.get("source"),
            "quote": quote or old.get("quote"), "daily": [[k, daily[k]] for k in sorted(daily)], "log": LOG[-10:]}
     with open(p, "w", encoding="utf-8") as f:

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""股市指數、美元指數、比特幣、海外期貨：每小時存一份給 App。
-手機上有鉅亨網代號的項目會再即時更新；沒有的（日經、VIX、比特幣…）就靠這份。
-來源順序：Yahoo（query1 → query2）→ 鉅亨網。
+"""目錄（catalog.json）裡的所有市場項目：每小時存一份給 App。
+有鉅亨網代號的項目，App 會在手機上再即時更新；沒有的就靠這份。
+來源：Yahoo 批次（spark，一次 15 個代號）→ 抓不到的再用鉅亨網。
 
 輸出：
-  data/markets.json      每個項目的最新報價、近 130 天日線、今天的 5 分鐘走勢
-  data/mkt/{ID}.json     完整日線歷史 [[YYYYMMDD, 收盤], ...]
+  data/markets.json   每個項目：最新報價、近 3 個月日線、今天的走勢
+  data/week.json      每個項目：近 5 個交易日 30 分鐘走勢（選「1週」時才讀）
+  data/mkt/{ID}.json  完整日線歷史 [[YYYYMMDD, 收盤], ...]
 """
 import datetime as dt
 import json
@@ -15,35 +16,53 @@ import urllib.parse
 import urllib.request
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+APP = os.path.join(ROOT, "..")
 MKT = os.path.join(ROOT, "mkt")
 TPE = dt.timezone(dt.timedelta(hours=8))
 UA = {"User-Agent": "Mozilla/5.0"}
-# ID: (Yahoo 代號, 鉅亨網代號)
-ITEMS = {
-    "DJI": ("^DJI", "GI:DJI:INDEX"), "TWII": ("^TWII", "TWS:TSE01:INDEX"), "SPX": ("^GSPC", "GI:INX:INDEX"),
-    "IXIC": ("^IXIC", "GI:IXIC:INDEX"), "SOX": ("^SOX", "GI:SOX:INDEX"), "N225": ("^N225", None),
-    "HSI": ("^HSI", "GI:HSI:INDEX"), "CSI300": ("000300.SS", None), "KOSPI": ("^KS11", "GI:KOSPI:INDEX"),
-    "EU500": ("EU500.AS", None), "VIX": ("^VIX", None), "UTEN": ("UTEN", "USS:UTEN:STOCK"),
-    "DXY": ("DX-Y.NYB", "GI:DXY:INDEX"), "BTC": ("BTC-USD", None), "NQ": ("NQ=F", None),
-    "Z3N": ("Z3N=F", None), "GC": ("GC=F", None), "SI": ("SI=F", None),
-}
 LOG = []
+FULL_PER_RUN = 25          # 每次最多替幾個新項目抓完整歷史（避免被 Yahoo 限流）
 
 
-def get(url):
-    for i in range(2):
+def get(url, tries=2):
+    for i in range(tries):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=25) as r:
                 return json.loads(r.read().decode("utf-8"))
         except Exception as e:  # noqa: BLE001
-            LOG.append({"url": url[:100], "error": str(e)[:120]})
-            time.sleep(2)
+            LOG.append({"url": url[:110], "error": str(e)[:100]})
+            time.sleep(3 * (i + 1))
     return None
 
 
-def yahoo(sym, q):
+def yq(sym):
+    return urllib.parse.quote(sym, safe="=^")
+
+
+def spark(symbols, q):
+    """Yahoo 批次：{代號: (meta, [(ts, close)])}"""
+    out = {}
+    for i in range(0, len(symbols), 15):
+        part = symbols[i:i + 15]
+        j = None
+        for host in ("query1", "query2"):
+            j = get(f"https://{host}.finance.yahoo.com/v7/finance/spark?symbols={','.join(yq(s) for s in part)}&{q}")
+            if j:
+                break
+        try:
+            for r in j["spark"]["result"]:
+                x = r["response"][0]
+                pts = [(t, c) for t, c in zip(x.get("timestamp") or [], x["indicators"]["quote"][0].get("close") or []) if c]
+                out[r["symbol"]] = (x["meta"], pts)
+        except Exception as e:  # noqa: BLE001
+            LOG.append({"spark": ",".join(part)[:80], "error": str(e)[:80]})
+        time.sleep(1)
+    return out
+
+
+def chart(sym, q):
     for host in ("query1", "query2"):
-        j = get(f"https://{host}.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym, safe='=^')}{q}")
+        j = get(f"https://{host}.finance.yahoo.com/v8/finance/chart/{yq(sym)}{q}")
         try:
             return j["chart"]["result"][0]
         except Exception:  # noqa: BLE001
@@ -51,97 +70,113 @@ def yahoo(sym, q):
     return None
 
 
-def local_day(ts, off):
+def day_key(ts, off):
     return dt.datetime.fromtimestamp(ts + off, dt.timezone.utc).strftime("%Y%m%d")
 
 
-def from_yahoo(sym, full):
-    r = yahoo(sym, "?range=1d&interval=5m")
-    if not r:
-        return None
-    m = r["meta"]
-    off = m.get("gmtoffset", 0)
-    last = m.get("regularMarketPrice")
-    prev = m.get("previousClose") or m.get("chartPreviousClose")
-    quote = {"last": last, "prev": prev, "chg": round(last - prev, 4) if last and prev else None,
-             "pct": round((last - prev) / prev * 100, 2) if last and prev else None,
-             "high": m.get("regularMarketDayHigh"), "low": m.get("regularMarketDayLow"),
-             "time": m.get("regularMarketTime"), "src": "Yahoo"}
-    q = r["indicators"]["quote"][0]
-    intra = [[t, c] for t, c in zip(r.get("timestamp") or [], q.get("close") or []) if c]
-    if intra:
-        quote["open"] = next((o for o in q.get("open") or [] if o), None)
-    time.sleep(0.8)
-    w = yahoo(sym, "?range=5d&interval=30m")
-    week = []
-    if w:
-        week = [[t, round(c, 4)] for t, c in zip(w.get("timestamp") or [], w["indicators"]["quote"][0].get("close") or []) if c]
-    time.sleep(0.8)
+def thin(pts, n):
+    if len(pts) <= n:
+        return pts
+    step = len(pts) / n
+    out = [pts[int(i * step)] for i in range(n)]
+    if out[-1] != pts[-1]:
+        out.append(pts[-1])
+    return out
+
+
+def full_history(sym):
     daily = {}
-    tries = ["?period1=0&period2=9999999999&interval=1d", "?range=max&interval=1d", "?range=10y&interval=1d", "?range=5y&interval=1d"] if full else ["?range=3mo&interval=1d"]
-    for q in tries:                # 有些代號不接受「全部歷史」，就改要 max／10 年／5 年
-        d = yahoo(sym, q)
-        if d:
-            off = d["meta"].get("gmtoffset", off)
-            for t, c in zip(d.get("timestamp") or [], d["indicators"]["quote"][0].get("close") or []):
+    for q in ("?period1=0&period2=9999999999&interval=1d", "?range=max&interval=1d", "?range=10y&interval=1d"):
+        r = chart(sym, q)
+        if r:
+            off = r["meta"].get("gmtoffset", 0)
+            for t, c in zip(r.get("timestamp") or [], r["indicators"]["quote"][0].get("close") or []):
                 if c:
-                    daily[local_day(t, off)] = round(c, 4)
-        if len(daily) > 300 or not full:
+                    daily[day_key(t, off)] = round(c, 4)
+        if len(daily) > 300:
             break
-        time.sleep(0.8)
-    return {"quote": quote, "daily": daily, "intra": intra, "week": week}
+        time.sleep(1)
+    return daily
 
 
-def from_cnyes(sym):
+def cnyes(sym):
     base = "https://ws.api.cnyes.com/ws/api/v1"
     j = get(f"{base}/quote/quotes/{sym}")
     try:
         q = j["data"][0]
-        quote = {"last": q["6"], "chg": q.get("11"), "pct": q.get("56"), "prev": q.get("21"), "open": q.get("19"),
-                 "high": q.get("12"), "low": q.get("13"), "time": q.get("200007"), "src": "鉅亨網"}
+        return {"last": q["6"], "chg": q.get("11"), "pct": q.get("56"), "prev": q.get("21"), "open": q.get("19"),
+                "high": q.get("12"), "low": q.get("13"), "time": q.get("200007"), "src": "鉅亨網"}
     except Exception:  # noqa: BLE001
         return None
-    now = int(time.time())
-    h = get(f"{base}/charting/history?symbol={sym}&resolution=D&from={now}&to=0")
-    daily = {}
-    try:
-        for t, c in zip(h["data"]["t"], h["data"]["c"]):
-            if c:
-                daily[dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%Y%m%d")] = c
-    except Exception:  # noqa: BLE001
-        pass
-    return {"quote": quote, "daily": daily, "intra": [], "week": []}
 
 
 def main():
+    cat = json.load(open(os.path.join(APP, "catalog.json"), encoding="utf-8"))["items"]
     os.makedirs(MKT, exist_ok=True)
-    out = {"updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "items": {}}
     try:
         old = json.load(open(os.path.join(ROOT, "markets.json"), encoding="utf-8")).get("items", {})
     except Exception:  # noqa: BLE001
         old = {}
-    for mid, (ysym, csym) in ITEMS.items():
+    tried_p = os.path.join(ROOT, "fullhist_tried.json")   # 抓過完整歷史但 Yahoo 沒有的（例如滬深300）
+    try:
+        tried = json.load(open(tried_p, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        tried = {}
+    syms = [c["y"] for c in cat if c.get("y")]
+    today = spark(syms, "range=1d&interval=5m")
+    week = spark(syms, "range=5d&interval=30m")
+    mo3 = spark(syms, "range=3mo&interval=1d")
+    out, wk, full_done = {}, {}, 0
+    for c in cat:
+        mid, ysym = c["id"], c.get("y")
         p = os.path.join(MKT, f"{mid}.json")
         try:
             hist = {r[0]: r[1] for r in json.load(open(p, encoding="utf-8"))}
         except Exception:  # noqa: BLE001
             hist = {}
-        res = from_yahoo(ysym, full=len(hist) < 300)
-        if (not res or not res["quote"].get("last")) and csym:
-            res = from_cnyes(csym)
-        if res:
-            hist.update(res["daily"])
+        quote, intra = None, []
+        if ysym in today:
+            m, pts = today[ysym]
+            last = m.get("regularMarketPrice") or (pts[-1][1] if pts else None)
+            prev = m.get("previousClose") or m.get("chartPreviousClose")
+            if last:
+                quote = {"last": round(last, 4), "prev": prev, "chg": round(last - prev, 4) if prev else None,
+                         "pct": round((last - prev) / prev * 100, 2) if prev else None,
+                         "high": m.get("regularMarketDayHigh"), "low": m.get("regularMarketDayLow"),
+                         "time": m.get("regularMarketTime"), "src": "Yahoo"}
+                intra = [[t, round(v, 4)] for t, v in thin(pts, 90)]
+                if pts:
+                    quote["open"] = round(pts[0][1], 4)
+        if not quote and c.get("cn"):
+            quote = cnyes(c["cn"])
+        if ysym in mo3:
+            m, pts = mo3[ysym]
+            off = m.get("gmtoffset", 0)
+            for t, v in pts:
+                hist[day_key(t, off)] = round(v, 4)
+        if ysym and len(hist) < 300 and full_done < FULL_PER_RUN and mid not in tried:
+            hist.update(full_history(ysym))
+            full_done += 1
+            if len(hist) < 300:
+                tried[mid] = 1
+        if hist:
             with open(p, "w", encoding="utf-8") as f:
                 json.dump([[k, hist[k]] for k in sorted(hist)], f, separators=(",", ":"))
-            out["items"][mid] = {"quote": res["quote"], "daily": [[k, hist[k]] for k in sorted(hist)][-130:],
-                                 "intra": res["intra"], "week": res.get("week", [])}
+        if ysym in week:
+            wk[mid] = [[t, round(v, 4)] for t, v in thin(week[ysym][1], 130)]
+        if quote:
+            out[mid] = {"quote": quote, "daily": [[k, hist[k]] for k in sorted(hist)][-66:], "intra": intra}
         elif mid in old:
-            out["items"][mid] = old[mid]          # 這次抓不到就留上次的
-        time.sleep(0.8)
-    out["log"] = LOG[-15:]
+            out[mid] = old[mid]          # 這次抓不到就留上次的
+    now = dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M")
     with open(os.path.join(ROOT, "markets.json"), "w", encoding="utf-8") as f:
-        json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
-    print(len(out["items"]), "items;", len(LOG), "errors")
+        json.dump({"updated": now, "items": out, "log": LOG[-15:]}, f, ensure_ascii=False, separators=(",", ":"))
+    if wk:
+        with open(os.path.join(ROOT, "week.json"), "w", encoding="utf-8") as f:
+            json.dump({"updated": now, "items": wk}, f, separators=(",", ":"))
+    with open(tried_p, "w", encoding="utf-8") as f:
+        json.dump(tried, f)
+    print(len(out), "items;", full_done, "full histories;", len(LOG), "errors")
 
 
 if __name__ == "__main__":
