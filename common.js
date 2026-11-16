@@ -233,7 +233,7 @@ function proxyText(url, check = () => true){
     ok(getText('https://api.codetabs.com/v1/proxy?quest=' + e)),
     ok(getText('https://cors.eu.org/' + url)),
     ok(getText(url))
-  ]), 20000);
+  ]), 15000);
 }
 function parseXml(txt){
   const d = new DOMParser().parseFromString(txt, 'text/xml');
@@ -268,7 +268,17 @@ function cleanItems(items, srcName, max = 20){
   }
   return out;
 }
+/* 先讀 GitHub 每 2 小時在伺服器整理好的新聞（穩定、快），沒有才改用即時抓取 */
+const DATA_BASE = 'https://raw.githubusercontent.com/venus52mom-lab/News-learn/data/';
+async function loadPrebuilt(lang, rk, cat){
+  const r = await timeout(fetch(`${DATA_BASE}feeds/${lang}-${rk}-${cat}.json?h=${Math.floor(Date.now() / 1800000)}`), 8000);
+  if(!r.ok) throw new Error('no prebuilt');
+  const j = await r.json();
+  if(!j.items?.length || Date.now() - new Date(j.updated).getTime() > 14 * 3600e3) throw new Error('stale');
+  return j.items;
+}
 async function loadFeed(lang, rk, cat){
+  try{ return await loadPrebuilt(lang, rk, cat); }catch(e){}
   for(const url of await sourcesFor(lang, rk, cat)){
     try{ const items = cleanItems(await fetchFeed(url), SRC_NAME(url)); if(items.length >= 3) return items; }catch(e){}
   }

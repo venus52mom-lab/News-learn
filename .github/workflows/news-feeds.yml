@@ -1,0 +1,37 @@
+name: 更新新聞資料（每 2 小時）
+
+on:
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['common.js', 'scripts/build-feeds.mjs', '.github/workflows/news-feeds.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: news-feeds
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 抓取所有國家的新聞標題
+        run: node scripts/build-feeds.mjs
+      - name: 推到 data 分支（每次覆蓋，只留最新一份）
+        run: |
+          cd out
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "news feeds $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f -q "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
