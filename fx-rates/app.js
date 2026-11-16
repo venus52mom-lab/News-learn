@@ -5,17 +5,21 @@ const CUR = {
   SGD:["新加坡幣","🇸🇬"],CHF:["瑞士法郎","🇨🇭"],JPY:["日圓","🇯🇵"],ZAR:["南非幣","🇿🇦"],SEK:["瑞典幣","🇸🇪"],
   NZD:["紐元","🇳🇿"],THB:["泰銖","🇹🇭"],PHP:["菲國比索","🇵🇭"],IDR:["印尼盾","🇮🇩"],EUR:["歐元","🇪🇺"],
   KRW:["韓元","🇰🇷"],VND:["越南盾","🇻🇳"],MYR:["馬來幣","🇲🇾"],CNY:["人民幣","🇨🇳"],
-  XAU:["黃金","🥇"],XAG:["白銀","🥈"]
+  XAU:["黃金","🥇"],XAG:["白銀","🥈"],TXF:["台指期","📈"]
 };
 const METAL = c => c === "XAU" || c === "XAG";
+const FUT = c => c === "TXF";
+const SPECIAL = c => METAL(c) || FUT(c);
+let CTX = "";               // 目前在畫哪一個（決定小數位數）
 const RATE_NAME = {cb:"現金買入",cs:"現金賣出",sb:"即期買入",ss:"即期賣出"};
 const COL = {cb:1,cs:2,sb:3,ss:4};
 const FALLBACK = {cs:["cs","ss"],ss:["ss","cs"],cb:["cb","sb"],sb:["sb","cb"]};
 
 /* ===== 設定（存在手機本機） ===== */
-const DEF = {list:["JPY","USD","AUD","THB","KRW","XAU","XAG"],rate:"cs",dir:"n",color:"tw",data:"",badge:"d"};
+const DEF = {list:["TXF","JPY","USD","AUD","THB","KRW","XAU","XAG"],rate:"cs",dir:"n",color:"tw",data:"",badge:"d"};
 let S = {...DEF};
 try { S = {...DEF, ...JSON.parse(localStorage.getItem("fx-settings")||"{}")}; } catch(e) {}
+if (!S.fut) { if (!S.list.includes("TXF")) S.list.unshift("TXF"); S.fut = 1; }
 if (!S.metals) { for (const m of ["XAU","XAG"]) if (!S.list.includes(m)) S.list.push(m); S.metals = 1; }
 const save = () => { try { localStorage.setItem("fx-settings", JSON.stringify(S)); } catch(e) {} };
 const dataBase = () => { let b = (S.data||"").trim() || "data/"; return b.endsWith("/") ? b : b + "/"; };
@@ -37,14 +41,15 @@ function usedKey(rows) {
   for (const k of FALLBACK[S.rate]) if (last[COL[k]]) return k;
   return S.rate;
 }
-const disp = v => v == null ? null : (S.dir === "n" ? v : 1000 / v);
-function series(rows) {
+const disp = (v, c) => v == null ? null : (S.dir === "n" || FUT(c) ? v : 1000 / v);
+function series(rows, c) {
   const out = [];
-  for (const r of rows || []) { const v = disp(pick(r)); if (v) out.push([r[0], v]); }
+  for (const r of rows || []) { const v = disp(pick(r), c); if (v) out.push([r[0], v]); }
   return out;
 }
 function fmt(v) {
   if (v == null || !isFinite(v)) return "—";
+  if (FUT(CTX)) return Math.round(v).toLocaleString("en-US");
   const a = Math.abs(v);
   const d = S.dir === "n"
     ? (a >= 100 ? 2 : a >= 1 ? 3 : a >= 0.1 ? 4 : a >= 0.01 ? 5 : 6)
@@ -52,7 +57,7 @@ function fmt(v) {
   return v.toLocaleString("en-US", {minimumFractionDigits:d, maximumFractionDigits:d});
 }
 const pct = (a, b) => (b - a) / a * 100;
-const ymd = s => `${s.slice(0,4)}/${s.slice(4,6)}/${s.slice(6,8)}`;
+const ymd = s => `${s.slice(0,4)}/${s.slice(4,6)}/${s.slice(6,8)}` + (s.length >= 12 ? ` ${s.slice(8,10)}:${s.slice(10,12)}` : "");
 const toDate = s => new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8));
 function cutoff(range) {
   if (range === "ALL") return "0";
@@ -62,7 +67,7 @@ function cutoff(range) {
   if (range === "3Y") d.setFullYear(d.getFullYear()-3);
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
 }
-const unitLabel = ccy => METAL(ccy) ? (S.dir === "n" ? "1 公克 → 台幣" : "1000 台幣 → 公克") : S.dir === "n" ? `1 ${ccy} → 台幣` : `1000 台幣 → ${ccy}`;
+const unitLabel = ccy => FUT(ccy) ? "點" : METAL(ccy) ? (S.dir === "n" ? "1 公克 → 台幣" : "1000 台幣 → 公克") : S.dir === "n" ? `1 ${ccy} → 台幣` : `1000 台幣 → ${ccy}`;
 
 /* ===== 畫圖 ===== */
 function cssVar(n) { return getComputedStyle(document.body).getPropertyValue(n).trim(); }
@@ -141,19 +146,22 @@ function renderHome() {
   if (!S.list.length) { ul.append(el("li","empty","還沒有幣別，按右上「編輯」加入。")); return; }
   const c3 = cutoff("3M");
   for (const ccy of S.list) {
+    CTX = ccy;
     const rows = RECENT.rates[ccy] || [];
-    const all = series(rows), pts = all.filter(p => p[0] >= c3);
+    const all = series(rows, ccy), pts = all.filter(p => p[0] >= c3);
     const li = el("li","row");
     const last = all[all.length-1], prev = all[all.length-2];
     const [nm, flag] = CUR[ccy] || [ccy, ""];
     const lastRow = rows[rows.length-1] || [];
     const fb = (lastRow[5] ? `・${lastRow[5]}` : "") + (!isYahoo() && usedKey(rows) !== S.rate ? `・${RATE_NAME[usedKey(rows)]}` : "");
-    li.innerHTML = `<div><div class="name"><span class="flag">${flag}</span>${METAL(ccy) ? nm : ccy}</div>
-      <div class="desc">${METAL(ccy) ? "台幣／公克・國際價" : nm + fb}</div></div><canvas></canvas>
+    li.innerHTML = `<div><div class="name"><span class="flag">${flag}</span>${SPECIAL(ccy) ? nm : ccy}</div>
+      <div class="desc">${FUT(ccy) ? futDesc() : METAL(ccy) ? "台幣／公克・國際價" : nm + fb}</div></div><canvas></canvas>
       <div class="right"><div class="price">${last ? fmt(last[1]) : "—"}</div><div class="badge"></div></div>`;
     const b = li.querySelector(".badge");
     let ch = null, txt = "—";
     if (last && prev && S.badge === "d") { ch = pct(prev[1], last[1]); txt = (ch>0?"+":"") + ch.toFixed(2) + "%"; }
+    if (FUT(ccy) && FQ && S.badge === "d") { ch = FQ.pct; txt = (ch>0?"+":"") + ch.toFixed(2) + "%"; }
+    if (FUT(ccy) && FQ && S.badge === "abs") { ch = FQ.chg; txt = (ch>0?"+":"") + Math.round(ch).toLocaleString("en-US"); }
     if (last && pts.length > 1 && S.badge === "p3") { ch = pct(pts[0][1], last[1]); txt = "3M " + (ch>0?"+":"") + ch.toFixed(1) + "%"; }
     if (last && prev && S.badge === "abs") { ch = last[1]-prev[1]; txt = (ch>0?"+":"") + fmt(ch); }
     b.textContent = txt;
@@ -171,6 +179,7 @@ async function loadRecent(force) {
     const r = await fetch(dataBase() + "recent.json" + (force ? "?t=" + Date.now() : ""), {cache:"no-cache"});
     if (!r.ok) throw new Error(r.status);
     RECENT = await r.json();
+    putFut(); loadFut();
   } catch (e) {
     if (!RECENT) { $("#list").innerHTML = ""; $("#list").append(el("li","empty",
       "還讀不到匯率資料。")); return; }
@@ -195,26 +204,92 @@ function openSheet(id) { $("#scrim").hidden = false; $(id).hidden = false; docum
 function closeSheets() { for (const s of document.querySelectorAll(".sheet")) s.hidden = true; $("#scrim").hidden = true; document.body.style.overflow = ""; }
 
 function openDetail(ccy) {
-  D.ccy = ccy; D.range = "3M";
+  D.ccy = ccy; D.range = FUT(ccy) ? "1D" : "3M";
+  document.querySelector('#ranges [data-r="1D"]').hidden = !FUT(ccy);
+  document.querySelector("#detail .conv").hidden = FUT(ccy);
+  if (FUT(ccy)) loadIntraday().then(() => {
+    if (D.ccy !== ccy) return;
+    if (!INTRA && D.range === "1D") document.querySelector('#ranges [data-r="3M"]').click(); else renderDetail();
+  });
   const [nm, flag] = CUR[ccy] || [ccy,""];
   $("#dTitle").textContent = `${flag} ${nm} ${ccy}`;
-  document.querySelectorAll("#ranges button").forEach(b => b.classList.toggle("on", b.dataset.r === "3M"));
+  document.querySelectorAll("#ranges button").forEach(b => b.classList.toggle("on", b.dataset.r === D.range));
   openSheet("#detail");
   renderDetail();
   loadHist(ccy).then(() => { if (D.ccy === ccy) renderDetail(); }).catch(() => {});
 }
 function rowsFor(ccy) { return HIST[ccy] || (RECENT && RECENT.rates[ccy]) || []; }
 
+/* ===== 台指期（手機直接向鉅亨網拿即時報價；失敗改讀備援檔） ===== */
+const CNYES = "https://ws.api.cnyes.com/ws/api/v1";
+let FQ = null, INTRA = null, FUT_DAILY = null;
+async function getJSON(u, ms = 8000) {
+  const c = new AbortController(); const t = setTimeout(() => c.abort(), ms);
+  try { const r = await fetch(u, {signal:c.signal, cache:"no-store"}); if (!r.ok) throw new Error(r.status); return await r.json(); }
+  finally { clearTimeout(t); }
+}
+const utcDay = ts => new Date(ts*1000).toISOString().slice(0,10).replace(/-/g,"");
+function tradeDay(ts) { // 15:00 以後的夜盤算隔天的交易日
+  const t = new Date(ts*1000 + 8*3600*1000); if (t.getUTCHours() >= 15) t.setUTCDate(t.getUTCDate()+1);
+  while (t.getUTCDay() === 0 || t.getUTCDay() === 6) t.setUTCDate(t.getUTCDate()+1);
+  return t.toISOString().slice(0,10).replace(/-/g,"");
+}
+function futDesc() {
+  if (!FQ) return "全日盤";
+  const t = new Date(FQ.time*1000 + 8*3600*1000), h = t.getUTCHours(), m = t.getUTCMinutes(), hm = h*60+m;
+  const ses = (hm >= 900 || hm < 300) ? "夜盤" : (hm >= 525 && hm <= 825) ? "日盤" : "收盤";
+  const stale = Date.now()/1000 - FQ.time > 20*60 ? "" : " ●";
+  return `全日盤・${ses} ${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}${stale}`;
+}
+function putFut() {
+  if (!FUT_DAILY || !RECENT) return;
+  const rows = FUT_DAILY.map(([d, c]) => [d, c, c, c, c, FQ ? FQ.src : ""]);
+  if (FQ) { const d = tradeDay(FQ.time); const i = rows.findIndex(r => r[0] === d); const r = [d, FQ.last, FQ.last, FQ.last, FQ.last, FQ.src]; if (i >= 0) rows[i] = r; else rows.push(r); rows.sort((a,b) => a[0] < b[0] ? -1 : 1); }
+  HIST.TXF = rows;
+  const c = cutoff("3M"), pad = new Date(); pad.setMonth(pad.getMonth()-4);
+  RECENT.rates.TXF = rows.slice(-130);
+}
+async function loadFut() {
+  if (!S.list.includes("TXF") && D.ccy !== "TXF") return;
+  try {
+    const q = (await getJSON(`${CNYES}/quote/quotes/TWF:TXF:FUTURES`)).data[0];
+    FQ = {last:q["6"], chg:q["11"], pct:q["56"], ref:q["21"], open:q["19"], high:q["12"], low:q["13"], time:q["200007"], sessions:q["800003"], src:"鉅亨網"};
+    if (!FUT_DAILY || Date.now() - (loadFut.t || 0) > 30*60*1000) {
+      const now = Math.floor(Date.now()/1000);
+      const h = (await getJSON(`${CNYES}/charting/history?symbol=TWF:TXF:FUTURES&resolution=D&from=${now}&to=0`, 15000)).data;
+      const m = {}; h.t.forEach((t, i) => { if (h.c[i]) m[utcDay(t)] = h.c[i]; });
+      FUT_DAILY = Object.keys(m).sort().map(k => [k, m[k]]); loadFut.t = Date.now();
+    }
+  } catch (e) {   // 備援：GitHub 每小時存的期交所／鉅亨網資料
+    try {
+      const j = await getJSON(dataBase() + "txf.json?t=" + Date.now());
+      if (j.quote) FQ = {...j.quote, src: (j.source || "備援") + "（備援，約每小時更新）"};
+      FUT_DAILY = j.daily;
+    } catch (e2) {}
+  }
+  putFut(); renderHome(); if (!$("#detail").hidden && D.ccy === "TXF") renderDetail();
+}
+async function loadIntraday() {
+  try {
+    const now = Math.floor(Date.now()/1000), start = FQ && FQ.sessions ? FQ.sessions[0][0] : now - 86400;
+    const h = (await getJSON(`${CNYES}/charting/history?symbol=TWF:TXF:FUTURES&resolution=1&from=${now}&to=${start}`)).data;
+    const pts = h.t.map((t, i) => [t, h.c[i]]).filter(p => p[1]).sort((a,b) => a[0]-b[0]);
+    INTRA = pts.map(([t, c]) => { const d = new Date(t*1000 + 8*3600*1000).toISOString(); return [d.slice(0,10).replace(/-/g,"") + d.slice(11,13) + d.slice(14,16), c]; });
+  } catch (e) { INTRA = null; }
+}
+
 function renderDetail() {
-  const ccy = D.ccy, rows = rowsFor(ccy), all = series(rows);
-  const need = D.range !== "3M" && !HIST[ccy];
+  const ccy = D.ccy; CTX = ccy;
+  const rows = rowsFor(ccy), all = series(rows, ccy);
+  const need = (D.range !== "3M" && D.range !== "1D" && !HIST[ccy]) || (D.range === "1D" && !INTRA);
   $("#dLoading").hidden = !need;
-  const pts = need ? [] : all.filter(p => p[0] >= cutoff(D.range));
+  $("#dLoading").textContent = D.range === "1D" ? "讀取今天的走勢…" : "載入歷史資料…";
+  const pts = D.range === "1D" ? (INTRA || []) : need ? [] : all.filter(p => p[0] >= cutoff(D.range));
   D.pts = pts;
   const k = usedKey(rows);
   const lastBank = (rows[rows.length-1] || [])[5];
   const BANK = {玉山:"玉山銀行",台銀:"臺灣銀行",台企銀:"臺灣企銀",一銀:"第一銀行",兆豐:"兆豐銀行",永豐:"永豐銀行",國泰:"國泰世華"};
-  $("#dSub").textContent = METAL(ccy) ? `國際${CUR[ccy][0]}價換算台幣・${unitLabel(ccy)}`
+  $("#dSub").textContent = FUT(ccy) ? `全日盤（夜盤＋日盤）・${futDesc().replace("全日盤・", "")}` : METAL(ccy) ? `國際${CUR[ccy][0]}價換算台幣・${unitLabel(ccy)}`
     : `${isYahoo() ? "市場匯率（Yahoo）" : (lastBank ? (BANK[lastBank] || lastBank) + "・" : "") + RATE_NAME[k]}・${unitLabel(ccy)}`;
   // 換銀行的位置（畫虛線）
   D.switches = [];
@@ -229,7 +304,7 @@ function renderDetail() {
   if (pts.length) {
     const v = pts.map(p=>p[1]), hi = Math.max(...v), lo = Math.min(...v), avg = v.reduce((a,b)=>a+b,0)/v.length;
     const hiP = pts[v.indexOf(hi)], loP = pts[v.indexOf(lo)];
-    const label = {"3M":"3個月","1Y":"1年","3Y":"3年","ALL":"全部"}[D.range];
+    const label = {"1D":"今天","3M":"3個月","1Y":"1年","3Y":"3年","ALL":"全部"}[D.range];
     st.innerHTML = `<div class="stat"><span>${label}最高</span><b>${fmt(hi)}</b><span>${ymd(hiP[0])}</span></div>
       <div class="stat"><span>${label}最低</span><b>${fmt(lo)}</b><span>${ymd(loP[0])}</span></div>
       <div class="stat"><span>平均</span><b>${fmt(avg)}</b><span>${ymd(pts[0][0]).slice(0,7)} 起</span></div>`;
@@ -237,7 +312,14 @@ function renderDetail() {
   }
   // 四種牌價
   const last = rows[rows.length-1], rq = $("#dRates"); rq.innerHTML = "";
-  if (last && METAL(ccy)) {
+  if (FUT(ccy) && FQ) {
+    const t = new Date(FQ.time * 1000);
+    for (const [lab, v] of [["最新", fmt(FQ.last)], ["漲跌", (FQ.chg>0?"+":"") + fmt(FQ.chg) + `（${FQ.pct>0?"+":""}${(+FQ.pct).toFixed(2)}%）`],
+                            ["參考價（前一日結算）", fmt(FQ.ref)], ["開盤", fmt(FQ.open)], ["最高", fmt(FQ.high)], ["最低", fmt(FQ.low)]])
+      rq.append(el("div","stat",`<span>${lab}</span><b>${v}</b><span>${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}</span>`));
+    const n = el("div","muted small",`資料來源：${FQ.src}。台指期近月，全日盤：前一天 15:00 夜盤開始，到當天 13:45 日盤結束。`); n.style.gridColumn = "1/-1"; rq.append(n);
+  }
+  else if (last && METAL(ccy)) {
     const g = last[2];
     for (const [lab, mul] of [["1 公克", 1], ["1 台錢（3.75 公克）", 3.75], ["1 台兩（37.5 公克）", 37.5], ["1 盎司（31.1 公克）", 31.1035]])
       rq.append(el("div","stat",`<span>${lab}</span><b>${(g*mul).toLocaleString("en-US",{maximumFractionDigits: g*mul >= 100 ? 0 : 2})} 元</b><span>${ymd(last[0])}</span>`));
@@ -339,7 +421,7 @@ document.querySelectorAll("#ranges button").forEach(b => b.onclick = () => {
   D.range = b.dataset.r;
   document.querySelectorAll("#ranges button").forEach(x => x.classList.toggle("on", x === b));
   renderDetail();
-  if (!HIST[D.ccy]) loadHist(D.ccy).then(renderDetail).catch(() => { $("#dLoading").textContent = "讀不到歷史資料"; });
+  if (!HIST[D.ccy] && !FUT(D.ccy)) loadHist(D.ccy).then(renderDetail).catch(() => { $("#dLoading").textContent = "讀不到歷史資料"; });
 });
 const cv = $("#chart");
 cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); scrub(e); });
@@ -355,6 +437,7 @@ for (const sh of document.querySelectorAll(".sheet")) {
 }
 window.addEventListener("resize", () => { renderHome(); if (!$("#detail").hidden) renderDetail(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) loadRecent(true); });
+setInterval(() => { if (!document.hidden) { loadFut(); if (!$("#detail").hidden && D.ccy === "TXF" && D.range === "1D") loadIntraday().then(renderDetail); } }, 30000);
 
 renderHome();
 loadRecent();
