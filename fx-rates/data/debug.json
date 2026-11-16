@@ -1,10 +1,10 @@
 {
- "time": "2026-11-16 16:59",
+ "time": "2026-11-16 17:00",
  "graph": 0,
  "gap_days": 0,
  "today": 19,
- "XAU": 5692,
- "XAG": 5692,
+ "XAU": 22,
+ "XAG": 22,
  "esun_ccys": [
   "AUD",
   "CAD",
@@ -47,8 +47,15 @@
   "VND": 2482,
   "MYR": 2482,
   "CNY": 2482,
-  "XAU": 5692,
-  "XAG": 5692
+  "XAU": 5690,
+  "XAG": 5689
  },
- "log": []
+ "log": [
+  {
+   "despike_removed": 2
+  },
+  {
+   "despike_removed": 3
+  }
+ ]
 }
