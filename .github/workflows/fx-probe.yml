@@ -21,5 +21,5 @@ jobs:
         run: |
           git config user.name "fx-bot"
           git config user.email "fx-bot@users.noreply.github.com"
-          git add fx-rates/data/probe.json fx-rates/data/probe_raw || true
+          git add fx-rates/data/probe.json
           git diff --cached --quiet || (git commit -m "匯率來源測試 $(TZ=Asia/Taipei date '+%F %R')" && git pull --rebase && git push)
