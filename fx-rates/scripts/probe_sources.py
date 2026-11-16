@@ -4,7 +4,10 @@ import datetime as dt, json, os, re, time, urllib.request
 
 UA = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
       "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8"}
+RAW = ["玉山 E.SUN", "FindRate 日圓", "FindRate 手機", "FindRate 台銀", "玉山 JS"]
 SRC = {
+  "FindRate 手機":   "https://m.findrate.tw/currency.php?c=JPY",
+  "FindRate 台銀":   "https://www.findrate.tw/bank/8/",
   # 銀行
   "永豐 SinoPac":    "https://mma.sinopac.com/ws/share/rate/ws_exchange.ashx?exchangeType=REMIT",
   "永豐 SinoPac 現鈔": "https://mma.sinopac.com/ws/share/rate/ws_exchange.ashx?exchangeType=CASH",
@@ -63,8 +66,40 @@ for name, url in SRC.items():
         rec["api_hints"] = sorted(set(re.findall(r"""["'](/[^"' ]*(?:api|Api|API|rate|Rate|json|ashx|ajax)[^"' ]*)["']""", txt)))[:25]
     except Exception as e:  # noqa: BLE001
         rec["error"] = str(e)[:300]
+    if name in RAW and "error" not in rec:
+        os.makedirs("fx-rates/data/probe_raw", exist_ok=True)
+        with open(f"fx-rates/data/probe_raw/{re.sub(r'[^A-Za-z]', '_', name)}.html", "w", encoding="utf-8") as f:
+            f.write(txt)
     out["results"][name] = rec
     time.sleep(0.5)
+
+# 玉山網頁的 JS（找 API 用法）
+try:
+    page = open("fx-rates/data/probe_raw/____E_SUN.html", encoding="utf-8").read()
+    js = [u for u in re.findall(r'src="([^"]+\.js[^"]*)"', page)]
+    out["esun_js"] = js
+    for u in js:
+        full = u if u.startswith("http") else "https://www.esunbank.com" + u
+        try:
+            st, ct, raw, sec = get(full)
+            t = raw.decode("utf-8", "replace")
+            if "ExchangeRate" in t or "RateInfo" in t:
+                with open("fx-rates/data/probe_raw/esun_" + re.sub(r"[^A-Za-z0-9]", "_", u)[-60:] + ".js", "w", encoding="utf-8") as f:
+                    f.write(t)
+        except Exception as e:  # noqa: BLE001
+            pass
+except Exception as e:  # noqa: BLE001
+    out["esun_js_error"] = str(e)
+# 玉山 API 試幾種 POST
+for path in ["ForeignExchangeRates", "RateInfo", "LastRateInfo", "GetRateQuoteTime"]:
+    for body in [b"{}", b'{"Currency":"JPY","Day":"90"}']:
+        try:
+            req = urllib.request.Request(f"https://www.esunbank.com/api/client/ExchangeRate/{path}?sc_lang=zh-TW", data=body,
+                                         headers={**UA, "Content-Type": "application/json", "Referer": "https://www.esunbank.com/zh-tw/personal/deposit/rate/forex/foreign-exchange-rates"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                out["results"][f"玉山POST {path} {body.decode()}"] = {"status": r.status, "head": r.read()[:1500].decode("utf-8", "replace")}
+        except Exception as e:  # noqa: BLE001
+            out["results"][f"玉山POST {path} {body.decode()}"] = {"error": str(e)[:200]}
 
 os.makedirs("fx-rates/data", exist_ok=True)
 with open("fx-rates/data/probe.json", "w", encoding="utf-8") as f:
