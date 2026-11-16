@@ -99,11 +99,29 @@ def findrate_day(ccy, day):
     return out
 
 
-def pick_bank(banks):
+def pick_bank(banks, need_cash=True):
+    """依偏好順序挑銀行；需要現鈔牌價時，先挑有現鈔賣出的銀行。"""
+    if need_cash:
+        for b in BANK_PREF + sorted(banks):
+            if b in banks and banks[b][1]:
+                return b, banks[b]
     for b in BANK_PREF:
         if b in banks:
             return b, banks[b]
-    return None, None
+    return (next(iter(banks.items())) if banks else (None, None))
+
+
+def findrate_now(ccy):
+    """比率網即時頁：{銀行: [cb, cs, sb, ss]}（今天的資料）"""
+    html = http(f"https://www.findrate.tw/{ccy}/")
+    t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
+    out = {}
+    for bank, cb, cs, sb, ss in re.findall(
+            r"([\u4e00-\u9fffA-Za-z]{2,10}) (\S+) (\S+) (\S+) (\S+) \d{1,2}:\d{2}", t):
+        vals = [num(cb), num(cs), num(sb), num(ss)]
+        if any(vals) and bank not in out:
+            out[bank] = vals
+    return out
 
 
 def findrate_graph(ccy):
@@ -186,40 +204,56 @@ def update(max_minutes=45):
             stats["graph"] += 1
             time.sleep(0.6)
 
-    # 2) 補洞：最後一筆之後到昨天，用比率網每日歷史頁（玉山優先）
+    # 2) 補洞：臺灣銀行資料結束後到昨天，用比率網每日歷史頁（有現鈔牌價的銀行優先，玉山第一）
+    empty_p = os.path.join(ROOT, "empty_days.json")
+    try:
+        empty = json.load(open(empty_p, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        empty = {}
     for ccy in CCYS:
         h = store[ccy]
-        start = (dt.datetime.strptime(max(h), "%Y%m%d").date() + dt.timedelta(days=1)) if h else today - dt.timedelta(days=120)
+        bot_days = [k for k, r in h.items() if r[5] == "台銀"]
+        has_cash = any(h[k][2] for k in bot_days[-20:])
+        # 以前挑到沒有現鈔牌價的銀行 → 刪掉重抓
+        for k in [k for k, r in h.items() if r[5] != "台銀" and has_cash and not r[2]]:
+            del h[k]
+        start = (dt.datetime.strptime(max(bot_days), "%Y%m%d").date() + dt.timedelta(days=1)) if bot_days \
+            else today - dt.timedelta(days=120)
+        skip = set(empty.get(ccy, []))
         day = start
         while day < today and time.time() - T0 < max_minutes * 60:
-            if day.weekday() < 5:
-                bank, vals = pick_bank(findrate_day(ccy, day))
+            d = day.strftime("%Y%m%d")
+            if day.weekday() < 5 and d not in h and d not in skip:
+                bank, vals = pick_bank(findrate_day(ccy, day), need_cash=has_cash)
                 if vals:
-                    d = day.strftime("%Y%m%d")
                     h[d] = [d, *vals, SHORT.get(bank, bank[:2])]
                     stats["gap_days"] += 1
+                elif (today - day).days > 3:
+                    empty.setdefault(ccy, []).append(d)   # 假日，記起來不再重抓
                 time.sleep(0.6)
             day += dt.timedelta(days=1)
         save_hist(ccy, h)
+    with open(empty_p, "w", encoding="utf-8") as f:
+        json.dump(empty, f, separators=(",", ":"))
 
     # 3) 今天：玉山即時牌告；玉山沒有的幣別改抓比率網今天的頁面
     live = esun_now()
-    for ccy in CCYS:
-        row = live.get(ccy)
-        if not row and today.weekday() < 5:
-            bank, vals = pick_bank(findrate_day(ccy, today))
-            if vals:
-                d = today.strftime("%Y%m%d")
-                row = [d, *vals, SHORT.get(bank, bank[:2])]
-            time.sleep(0.6)
-        if row:
+    if today.weekday() < 5:
+        for ccy in CCYS:
             h = store[ccy]
-            if h:  # 假日牌價沒變就不新增
-                last = h[max(h)]
-                if last[0] < row[0] and last[1:5] == row[1:5]:
-                    continue
-            h[row[0]] = row
-            stats["today"] += 1
+            has_cash = any(r[2] for r in list(h.values())[-30:])
+            row = live.get(ccy)
+            if row and has_cash and not row[2]:
+                row = None        # 玉山沒有這個幣別的現鈔牌價，改找別家
+            if not row:
+                bank, vals = pick_bank(findrate_now(ccy), need_cash=has_cash)
+                if vals:
+                    d = today.strftime("%Y%m%d")
+                    row = [d, *vals, SHORT.get(bank, bank[:2])]
+                time.sleep(0.6)
+            if row and row[0] == today.strftime("%Y%m%d"):
+                h[row[0]] = row
+                stats["today"] += 1
 
     for ccy in CCYS:
         if store[ccy]:
