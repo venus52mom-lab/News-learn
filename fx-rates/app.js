@@ -244,7 +244,9 @@ function renderHome() {
     const it = ITEMS[id]; if (!it) continue;
     const {last, chg, pct: p, pts} = info(id);
     const useIntra = S.spark === "1D" && LIVE(id) && MK[id] && MK[id].intraS;
-    const spark = useIntra ? MK[id].intraS : S.spark === "1D" ? pts.slice(-6) : pts.filter(x => x[0] >= c3);
+    let spark = useIntra ? MK[id].intraS : S.spark === "1D" ? pts.slice(-6) : pts.filter(x => x[0] >= c3);
+    const noHist = spark.length < 2 && MK[id] && MK[id].intraS;   // 沒有歷史（滬深300、歐洲500）→ 先用當日走勢
+    if (noHist) spark = MK[id].intraS;
     const li = el("li", "wrap");
     li.dataset.id = id;
     li.innerHTML = `<div class="acts"><button class="a-list"><b>☰</b>列表</button><button class="a-del"><b>🗑</b>移除</button></div>
@@ -269,7 +271,7 @@ function renderHome() {
     swipeify(li);
     dragify(li, li.querySelector(".drag"), ul);
     ul.append(li);
-    const base = useIntra && MK[id].quote && MK[id].quote.prev ? MK[id].quote.prev : undefined;
+    const base = (useIntra || noHist) && MK[id].quote && MK[id].quote.prev ? MK[id].quote.prev : undefined;
     requestAnimationFrame(() => drawLine(row.querySelector("canvas"), spark, {baseline:true, lw:1.4, base, segLabels:false}));
   }
   renderAdd();
