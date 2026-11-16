@@ -1,0 +1,73 @@
+{
+ "time": "2026-11-16 13:52",
+ "log": [
+  {
+   "url": "https://rate.bot.com.tw/xrt/flcsv/0/2026-11-09",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "url": "https://rate.bot.com.tw/xrt/flcsv/0/2026-11-10",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "url": "https://rate.bot.com.tw/xrt/flcsv/0/2026-11-11",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "url": "https://rate.bot.com.tw/xrt/flcsv/0/2026-11-12",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "url": "https://rate.bot.com.tw/xrt/flcsv/0/2026-11-13",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "url": "https://rate.bot.com.tw/xrt/flcsv/0/2026-11-16",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "url": "https://rate.bot.com.tw/xrt/flcsv/0/day",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "probe": "https://rate.bot.com.tw/xrt/flcsv/0/day",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "probe": "https://rate.bot.com.tw/xrt/fltxt/0/day",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "probe": "https://rate.bot.com.tw/xrt?Lang=zh-TW",
+   "status": 200,
+   "bytes": 1912,
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challeng"
+  },
+  {
+   "probe": "https://query1.finance.yahoo.com/v8/finance/chart/JPYTWD=X?range=5d&interval=1d",
+   "status": 200,
+   "bytes": 1711,
+   "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"JPYTWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":107"
+  }
+ ],
+ "rows_changed": 0,
+ "ccys_with_data": []
+}
