@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f1ea">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>新聞廣播 · 每日新聞學語言</title>
+<script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css?v=5">
+<style>
+.prog{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;margin-bottom:8px}
+.prog select{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:6px 6px;font-size:14px;min-width:0}
+.prog .del{border:none;background:none;color:var(--mute);font-size:20px;cursor:pointer}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.opt{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--soft);margin-top:8px}
+.opt select{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:5px 8px;font-size:14px}
+.go{width:100%;margin-top:14px;padding:12px;font-size:16px;border-radius:12px}
+.seg{padding:8px 12px;margin:0 -12px;border-radius:10px;cursor:pointer;font-size:15px;line-height:1.7}
+.seg.h{font-weight:500;color:var(--c);margin-top:10px;font-size:14px}
+.seg.now{background:var(--cbg)}
+.seg small{display:block;color:var(--mute);font-size:12.5px}
+#log{font-size:13px;color:var(--soft)}
+</style>
+</head>
+<body data-cat="local">
+<header><div class="wrap">
+  <div class="top">
+    <h1><small>News Radio</small>新聞廣播</h1>
+    <div style="text-align:right"><div id="date"></div><div class="hbtns"><button id="themeBtn" class="ghb"></button></div></div>
+  </div>
+  <div id="pnav" style="padding-bottom:10px"></div>
+</div></header>
+
+<main class="wrap" style="padding-bottom:140px">
+  <div class="panel">
+    <div class="sec-t" style="margin-top:0">📋 節目單 <small style="color:var(--mute);font-weight:400">哪個地區 · 哪個領域 · 幾則</small></div>
+    <div id="progs"></div>
+    <button class="btn" id="addProg">＋ 加一個節目</button>
+    <div class="sec-t">🎧 播報語言</div>
+    <div class="opt">翻譯成 <select id="target"></select></div>
+    <label class="opt"><input type="checkbox" id="optOrig"> 每則先唸原文標題，再唸翻譯（學語言用）</label>
+    <label class="opt"><input type="checkbox" id="optGloss" checked> 遇到外國縮寫、機構、人名，加上台灣人看得懂的說明（翻成中文時）</label>
+    <div class="opt">語速 <select id="rate"><option value="0.8">0.8x</option><option value="1">1x</option><option value="1.15">1.15x</option><option value="1.3">1.3x</option><option value="1.5">1.5x</option></select></div>
+    <button class="btn solid go" id="build">🎙 產生今天的廣播並開始播放</button>
+    <div class="note">新聞抓好、翻好之後只放在記憶體裡，播完或關掉頁面就消失，不會存到手機或 GitHub。這裡只記住你的節目單設定。<br>
+      手機關螢幕或切到其他 App 時會繼續播放（iPhone 建議從主畫面圖示開啟），鎖定畫面上可以暫停、跳下一則。</div>
+  </div>
+  <div id="log"></div>
+  <div id="script"></div>
+</main>
+
+<div class="dock hidden" id="dock"><div class="wrap">
+  <button id="prev">⏮</button>
+  <button class="pp" id="pp">▶</button>
+  <button id="next">⏭</button>
+  <div class="now-t" id="now">—</div>
+</div></div>
+
+<script src="common.js?v=5"></script>
+<script>
+const DEFAULT = {progs:[{src:'zh|tw', cat:'local', n:20}, {src:'zh|tw', cat:'fin', n:20}, {src:'en|us', cat:'world', n:20}, {src:'en|us', cat:'fin', n:20}],
+                 target:'zh|tw', orig:false, gloss:true, rate:1};
+let cfg = {...DEFAULT, ...store.get('nl_radio', {})};
+const saveCfg = () => store.set('nl_radio', cfg);
+const srcOptions = () => {
+  const L = allLangs(), out = [];
+  for(const [lk, l] of Object.entries(L)) for(const rk of Object.keys(l.regions)){
+    const r = regionOf(lk, rk);
+    out.push({v:`${lk}|${rk}`, t: lk === 'zh' ? '🇹🇼 台灣（中文）' : `${r.label}（${l.name}）`, lang:lk, r});
+  }
+  return out;
+};
+const catLabel = (cat, src) => cat === 'local' ? (src.startsWith('zh|') ? '本土' : '本地') : CATS[cat].name;
+
+function renderProgs(){
+  const opts = srcOptions();
+  $('#progs').innerHTML = cfg.progs.map((p, i) => `<div class="prog">
+      <select data-k="src" data-i="${i}">${opts.map(o => `<option value="${o.v}" ${o.v === p.src ? 'selected' : ''}>${esc(o.t)}</option>`).join('')}</select>
+      <select data-k="cat" data-i="${i}">${Object.keys(CATS).map(c => `<option value="${c}" ${c === p.cat ? 'selected' : ''}>${catLabel(c, p.src)}</option>`).join('')}</select>
+      <select data-k="n" data-i="${i}">${[5,10,15,20].map(n => `<option value="${n}" ${n === p.n ? 'selected' : ''}>${n} 則</option>`).join('')}</select>
+      <button class="del" data-del="${i}">×</button></div>`).join('') || '<div class="note">還沒有節目，按下面加一個。</div>';
+  const tg = $('#target');
+  tg.innerHTML = opts.map(o => `<option value="${o.v}">${o.lang === 'zh' ? '中文（台灣華語）' : esc(allLangs()[o.lang].name) + '（' + esc(o.r.accent) + '）'}</option>`).join('');
+  tg.value = cfg.target;
+  $('#optOrig').checked = cfg.orig; $('#optGloss').checked = cfg.gloss; $('#rate').value = String(cfg.rate);
+}
+$('#progs').addEventListener('change', e => { const s = e.target, i = +s.dataset.i; cfg.progs[i][s.dataset.k] = s.dataset.k === 'n' ? +s.value : s.value; saveCfg(); renderProgs(); });
+$('#progs').addEventListener('click', e => { const d = e.target.dataset.del; if(d !== undefined){ cfg.progs.splice(+d, 1); saveCfg(); renderProgs(); } });
+$('#addProg').onclick = () => { cfg.progs.push({src:'en|uk', cat:'local', n:10}); saveCfg(); renderProgs(); };
+$('#target').onchange = e => { cfg.target = e.target.value; saveCfg(); };
+$('#optOrig').onchange = e => { cfg.orig = e.target.checked; saveCfg(); };
+$('#optGloss').onchange = e => { cfg.gloss = e.target.checked; saveCfg(); };
+$('#rate').onchange = e => { cfg.rate = +e.target.value; saveCfg(); player.setRate(cfg.rate); };
+
+/* ====== 播放器 ====== */
+let segs = [];
+const player = new Player((i, playing) => {
+  $('#pp').textContent = playing ? '❚❚' : '▶';
+  document.querySelectorAll('.seg').forEach(s => s.classList.toggle('now', +s.dataset.i === i));
+  const now = document.querySelector('.seg.now');
+  if(now && playing && document.visibilityState === 'visible') now.scrollIntoView({block:'center', behavior:'smooth'});
+  $('#now').textContent = i < 0 ? '播放完畢 👏' : (segs[i]?.label || '');
+});
+$('#pp').onclick = () => { if(!player.items.length) return; player.audio.src ? player.toggle() : player.play(player.i); };
+$('#prev').onclick = () => player.jump(Math.max(0, player.i - 1));
+$('#next').onclick = () => player.jump(player.i + 1);
+$('#script').addEventListener('click', e => { const s = e.target.closest('.seg'); if(s) player.jump(+s.dataset.i); });
+
+/* ====== 產生廣播稿 ====== */
+const sayIn = async (zhText, tl) => tl === 'zh-TW' ? zhText : (await translate(zhText, 'zh-TW', tl)).t;
+async function buildScript(){
+  const btn = $('#build'), log = $('#log');
+  if(!cfg.progs.length){ log.textContent = '請先加入至少一個節目。'; return; }
+  // iPhone 規定：要在按下按鈕的當下先「解鎖」播放，之後才能自動播放、背景播放
+  player.unlock();
+  btn.disabled = true; btn.textContent = '準備中…';
+  player.stop(); segs = []; $('#script').innerHTML = ''; $('#dock').classList.add('hidden');
+  const [tLang, tReg] = cfg.target.split('|');
+  const tgtTts = regionOf(tLang, tReg).tts, tl = tLang === 'zh' ? 'zh-TW' : tLang;
+  const toZh = tl === 'zh-TW';
+  // 1. 抓新聞
+  log.textContent = '📡 抓取新聞中…';
+  const progs = await Promise.all(cfg.progs.map(async p => {
+    const [lang, rk] = p.src.split('|');
+    try{ return {...p, lang, rk, items:(await loadFeed(lang, rk, p.cat)).slice(0, p.n)}; }
+    catch(e){ return {...p, lang, rk, items:[], fail:true}; }
+  }));
+  const total = progs.reduce((s, p) => s + p.items.length, 0);
+  if(!total){ log.textContent = '抓不到任何新聞，請檢查網路後再試。'; btn.disabled = false; btn.textContent = '🎙 產生今天的廣播並開始播放'; return; }
+  // 2. 翻譯（只在記憶體）
+  let done = 0;
+  const tasks = [];
+  progs.forEach(p => p.items.forEach(it => tasks.push(async () => {
+    const sl = p.lang === 'zh' ? 'zh-TW' : p.lang;
+    it.tr = sl === tl ? it.title : (await translate(it.title, sl, tl).catch(() => ({t:it.title}))).t;
+    if(cfg.gloss && toZh && p.lang !== 'zh'){
+      const en = p.lang === 'en' ? it.title : (await translate(it.title, sl, 'en').catch(() => ({t:''}))).t;
+      it.gloss = findGloss(en);
+    }
+    log.textContent = `🌐 翻譯中 ${++done} / ${total}`;
+  })));
+  await pool(tasks, 4);
+  // 3. 組廣播稿
+  const d = new Date(), wk = new Intl.DateTimeFormat('zh-TW', {timeZone:'Asia/Taipei', weekday:'long'}).format(d);
+  const md = new Intl.DateTimeFormat('zh-TW', {timeZone:'Asia/Taipei', month:'long', day:'numeric'}).format(d);
+  const intro = await sayIn(`今天是${md}${wk}，歡迎收聽每日新聞廣播，總共有${total}則新聞。`, tl);
+  segs.push({text:intro, tts:tgtTts, label:'開場', head:true});
+  for(const p of progs){
+    if(!p.items.length) continue;
+    const r = regionOf(p.lang, p.rk), place = p.lang === 'zh' ? '台灣' : r.place;
+    segs.push({text: await sayIn(`接下來是${place}的${catLabel(p.cat, p.src)}新聞，共${p.items.length}則。`, tl), tts:tgtTts, label:`${p.lang === 'zh' ? '🇹🇼 台灣' : r.label}・${catLabel(p.cat, p.src)}`, head:true});
+    for(let k = 0; k < p.items.length; k++){
+      const it = p.items[k];
+      const num = toZh ? `第${k + 1}則。` : '';
+      if(cfg.orig && p.lang !== tLang) segs.push({text:it.title, tts:r.tts, label:it.title, sub:'原文', orig:true});
+      const note = it.gloss?.length ? '（註：' + it.gloss.map(g => `${g.key}是${g.zh}${g.note ? '，' + g.note : ''}`).join('；') + '。）' : '';
+      segs.push({text: num + it.tr + (note ? ' ' + note : ''), tts:tgtTts, label:it.tr, sub:it.source, note});
+    }
+  }
+  segs.push({text: await sayIn('以上是今天的新聞，謝謝收聽。', tl), tts:tgtTts, label:'結尾', head:true});
+  // 4. 顯示並播放
+  $('#script').innerHTML = segs.map((s, i) => s.head
+    ? `<div class="seg h" data-i="${i}">${esc(s.label)}</div>`
+    : `<div class="seg" data-i="${i}">${s.orig ? '🔤 ' : ''}${esc(s.label)}${s.note ? `<small>📎 ${esc(s.note.replace(/^（註：|。）$/g, ''))}</small>` : ''}${s.sub && !s.orig ? `<small>${esc(s.sub)}</small>` : ''}</div>`).join('');
+  const failed = progs.filter(p => p.fail).map(p => srcOptions().find(o => o.v === p.src)?.t + ' ' + catLabel(p.cat, p.src));
+  log.innerHTML = `✅ 共 ${total} 則，點任何一則可以跳到那裡播放。${failed.length ? `<br>⚠️ 抓不到：${esc(failed.join('、'))}` : ''}`;
+  player.load(segs, `每日新聞廣播 ${md}`);
+  player.setRate(cfg.rate);
+  $('#dock').classList.remove('hidden');
+  player.play(0);
+  btn.disabled = false; btn.textContent = '🔄 重新產生廣播';
+}
+$('#build').onclick = buildScript;
+
+$('#pnav').innerHTML = pageNav('radio.html');
+$('#themeBtn').onclick = cycleTheme; applyTheme();
+$('#date').textContent = today.replace(/-/g, '.');
+renderProgs();
+</script>
+</body>
+</html>

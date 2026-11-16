@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f1ea">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>電子書朗讀 · 每日新聞學語言</title>
+<script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css?v=5">
+<style>
+.drop{display:block;border:2px dashed var(--line);border-radius:16px;padding:28px 16px;text-align:center;color:var(--soft);background:var(--paper);cursor:pointer}
+.drop b{display:block;font-size:17px;color:var(--ink);margin-bottom:4px}
+.drop input{display:none}
+.book h2{font-family:"Noto Serif TC",serif;font-size:21px;margin:18px 0 4px}
+.tools2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13.5px;color:var(--soft);margin:10px 0}
+.tools2 select,.tools2 button{border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:8px;padding:4px 8px;font-size:13.5px;cursor:pointer}
+.book .para .o{font-family:"Noto Serif TC",serif;font-size:17.5px;line-height:1.95}
+.pager{display:flex;justify-content:space-between;align-items:center;margin:18px 0;font-size:13.5px;color:var(--soft)}
+.pager button{border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:8px;padding:6px 14px;cursor:pointer}
+</style>
+</head>
+<body data-cat="tech">
+<header><div class="wrap">
+  <div class="top">
+    <h1><small>E-Book Reader</small>電子書朗讀</h1>
+    <div style="text-align:right"><div id="date"></div><div class="hbtns"><button id="themeBtn" class="ghb"></button></div></div>
+  </div>
+  <div id="pnav" style="padding-bottom:10px"></div>
+</div></header>
+
+<main class="wrap" style="padding-top:16px;padding-bottom:140px">
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept=".pdf,.docx,.txt,.md,.text,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    <b>📂 選擇手機裡的檔案</b>
+    支援 PDF、Word（.docx）、純文字（.txt）<br><small style="color:var(--mute)">檔案只在你的手機裡處理，不會上傳到任何地方；關掉頁面就清除。</small>
+  </label>
+  <div id="status" class="note"></div>
+  <div id="book" class="book"></div>
+</main>
+
+<div class="dock hidden" id="dock"><div class="wrap">
+  <button id="prev">⏮</button>
+  <button class="pp" id="pp">▶</button>
+  <button id="next">⏭</button>
+  <div class="now-t" id="now">按 ▶ 開始朗讀</div>
+  <select id="rate"><option value="0.8">0.8x</option><option value="1" selected>1x</option><option value="1.2">1.2x</option><option value="1.5">1.5x</option></select>
+</div></div>
+
+<script src="common.js?v=5"></script>
+<script>
+const PER_PAGE = 120;
+let doc = null;            // {name, paras:[], lang, region, mixed, page, trs:{}}
+const LANG_ZH = {zh:'中文', en:'英文', ja:'日文', ko:'韓文', fr:'法文', de:'德文', es:'西班牙文', it:'義大利文', id:'印尼文', th:'泰文'};
+
+/* ====== 讀檔 ====== */
+function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+async function readPdf(buf){
+  if(!window.pdfjsLib){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+  const lines = [];
+  for(let p = 1; p <= pdf.numPages; p++){
+    $('#status').textContent = `📄 讀取 PDF 第 ${p} / ${pdf.numPages} 頁…`;
+    const tc = await (await pdf.getPage(p)).getTextContent();
+    let cur = '', lastY = null;
+    for(const it of tc.items){
+      const y = it.transform?.[5];
+      if(lastY !== null && Math.abs(y - lastY) > 2 && cur){ lines.push(cur); cur = ''; }
+      cur += it.str; lastY = y;
+      if(it.hasEOL){ lines.push(cur); cur = ''; lastY = null; }
+    }
+    if(cur) lines.push(cur);
+    lines.push('');
+  }
+  return linesToParas(lines);
+}
+function linesToParas(lines){
+  const clean = lines.map(l => l.replace(/\s+/g, ' ').trim());
+  const maxLen = Math.max(20, ...clean.map(l => l.length).sort((a, b) => b - a).slice(0, 50));
+  const paras = []; let cur = '';
+  const cjk = s => /[぀-ヿ一-鿿가-힯฀-๿]$/.test(s);
+  for(const l of clean){
+    if(!l){ if(cur) paras.push(cur); cur = ''; continue; }
+    if(/^\d{1,4}$/.test(l)) continue;   // 頁碼
+    if(cur){
+      if(cur.endsWith('-') && /[a-z]$/i.test(cur.slice(0, -1))) cur = cur.slice(0, -1) + l;
+      else cur += (cjk(cur) ? '' : ' ') + l;
+    } else cur = l;
+    if(/[.。!?！？」』”"：:]$/.test(l) && l.length < maxLen * 0.8){ paras.push(cur); cur = ''; }
+  }
+  if(cur) paras.push(cur);
+  return paras.filter(p => p.trim().length > 0);
+}
+async function readDocx(buf){
+  if(!window.mammoth) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+  const r = await mammoth.extractRawText({arrayBuffer:buf});
+  return r.value.split(/\n+/).map(s => s.trim()).filter(Boolean);
+}
+function readTxt(buf){
+  let t = new TextDecoder('utf-8').decode(buf);
+  if((t.match(/�/g) || []).length > 5){
+    for(const enc of ['big5', 'gb18030', 'shift_jis', 'euc-kr']){
+      try{ const t2 = new TextDecoder(enc).decode(buf); if((t2.match(/�/g) || []).length < 3){ t = t2; break; } }catch(e){}
+    }
+  }
+  return t.replace(/\r/g, '').split(/\n\s*\n|\n(?=\s{2,})/).map(s => s.replace(/\n/g, /[一-鿿]/.test(s) ? '' : ' ').replace(/\s+/g, ' ').trim()).filter(Boolean);
+}
+$('#file').onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  player.unlock(); player.stop();
+  const name = f.name, ext = name.split('.').pop().toLowerCase();
+  $('#book').innerHTML = ''; $('#dock').classList.add('hidden');
+  $('#status').textContent = '📖 讀取中…';
+  let paras;
+  try{
+    const buf = await f.arrayBuffer();
+    if(ext === 'pdf') paras = await readPdf(buf);
+    else if(ext === 'docx') paras = await readDocx(buf);
+    else if(ext === 'doc'){ $('#status').textContent = '舊版 Word（.doc）無法讀取，請在 Word 另存成 .docx 或 PDF 再上傳。'; return; }
+    else paras = readTxt(buf);
+  }catch(err){ $('#status').textContent = '讀取失敗：這個檔案可能有密碼保護、是掃描圖片，或格式不支援。'; return; }
+  // 長段落切小一點，方便跟讀
+  paras = paras.flatMap(p => p.length > 600 ? splitChunks(p, 400) : [p]);
+  if(!paras.length){ $('#status').textContent = '這個檔案裡找不到文字（如果是掃描的 PDF，裡面只有圖片，沒辦法朗讀）。'; return; }
+  // 偵測語言
+  $('#status').textContent = '🔎 偵測語言中…';
+  const sample = paras.join(' ').slice(0, 600);
+  let lang = scriptLang(sample, 'en');
+  try{ const d = await translate(sample, 'auto', 'en'); if(d.detected) lang = d.detected.split('-')[0]; }catch(err){}
+  if(lang === 'zh' || lang.startsWith('zh')) lang = 'zh';
+  if(!allLangs()[lang]){
+    // 沒在清單裡的語言：用 Google 語音直接念
+    BUILTIN[lang] = {hidden:true, name:lang, short:lang.toUpperCase(), regions:{x:{cc:'UN', place:lang, accent:lang, tts:lang}}};
+  }
+  doc = {name, paras, lang, region: Object.keys(allLangs()[lang].regions)[0], mixed:true, page:0, trs:{}};
+  $('#status').textContent = '';
+  renderBook();
+};
+
+/* ====== 顯示 ====== */
+function langOptions(){
+  return Object.entries(allLangs()).map(([k, l]) => Object.keys(l.regions).map(rk => {
+    const r = regionOf(k, rk); return `<option value="${k}|${rk}">${k === 'zh' ? '中文（台灣華語）' : esc(l.name) + '（' + esc(r.accent) + '）'}</option>`;
+  }).join('')).join('');
+}
+function renderBook(){
+  const pages = Math.ceil(doc.paras.length / PER_PAGE), p = doc.page;
+  const from = p * PER_PAGE, list = doc.paras.slice(from, from + PER_PAGE);
+  const chars = doc.paras.reduce((s, x) => s + x.length, 0);
+  $('#book').innerHTML = `
+    <h2>${esc(doc.name.replace(/\.[^.]+$/, ''))}</h2>
+    <div class="note">${doc.paras.length} 段 · 約 ${chars.toLocaleString()} 字 · 偵測到：${LANG_ZH[doc.lang] || doc.lang}</div>
+    <div class="tools2">
+      朗讀語言 <select id="langSel">${langOptions()}</select>
+      <label style="display:flex;gap:4px;align-items:center"><input type="checkbox" id="mixed" ${doc.mixed ? 'checked' : ''}>中英日韓混合時自動切換</label>
+      <button id="trPage">🈶 翻譯這一頁成中文</button>
+    </div>
+    ${pager(pages, p)}
+    ${list.map((t, k) => `<div class="para" data-k="${from + k}"><div class="o">${esc(t)}</div>${doc.trs[from + k] ? `<div class="t">${esc(doc.trs[from + k])}</div>` : ''}</div>`).join('')}
+    ${pager(pages, p)}`;
+  $('#langSel').value = `${doc.lang}|${doc.region}`;
+  $('#langSel').onchange = e => { [doc.lang, doc.region] = e.target.value.split('|'); restartIfPlaying(); };
+  $('#mixed').onchange = e => { doc.mixed = e.target.checked; restartIfPlaying(); };
+  $('#trPage').onclick = translatePage;
+  document.querySelectorAll('.pager button').forEach(b => b.onclick = () => { doc.page = +b.dataset.p; renderBook(); window.scrollTo(0, 0); });
+  document.querySelectorAll('#book .para').forEach(el => el.onclick = () => startAt(+el.dataset.k));
+  $('#dock').classList.remove('hidden');
+  markNow();
+}
+const pager = (pages, p) => pages > 1 ? `<div class="pager"><button data-p="${p - 1}" ${p === 0 ? 'disabled' : ''}>← 上一頁</button><span>第 ${p + 1} / ${pages} 頁</span><button data-p="${p + 1}" ${p >= pages - 1 ? 'disabled' : ''}>下一頁 →</button></div>` : '';
+async function translatePage(){
+  const btn = $('#trPage'), from = doc.page * PER_PAGE, ks = doc.paras.slice(from, from + PER_PAGE).map((_, k) => from + k).filter(k => !doc.trs[k]);
+  if(doc.lang === 'zh'){ btn.textContent = '已經是中文'; return; }
+  let n = 0; btn.disabled = true;
+  await pool(ks.map(k => async () => {
+    try{ doc.trs[k] = (await translate(doc.paras[k], doc.lang, 'zh-TW')).t; }catch(e){ return; }
+    const el = document.querySelector(`#book .para[data-k="${k}"]`);
+    if(el && !el.querySelector('.t')) el.insertAdjacentHTML('beforeend', `<div class="t">${esc(doc.trs[k])}</div>`);
+    btn.textContent = `翻譯中 ${++n} / ${ks.length}`;
+  }), 3);
+  btn.textContent = '✓ 已翻譯'; btn.disabled = false;
+}
+
+/* ====== 朗讀 ====== */
+const player = new Player((i, playing) => { $('#pp').textContent = playing ? '❚❚' : '▶'; markNow(i, playing); });
+function ttsFor(text){
+  let lang = doc.lang;
+  if(doc.mixed) lang = scriptLang(text, doc.lang);
+  if(lang === doc.lang) return regionOf(doc.lang, doc.region).tts;
+  return lang === 'zh' ? 'zh-TW' : (regionOf(lang, '')?.tts || lang);
+}
+function startAt(k){
+  if(!doc) return;
+  player.load(doc.paras.map((t, i) => ({text:t, tts:ttsFor(t), label:t.slice(0, 60), k:i})), doc.name);
+  player.setRate(+$('#rate').value);
+  player.play(k);
+}
+function restartIfPlaying(){ if(player.playing) startAt(player.i); }
+function markNow(i = player.i, playing = player.playing){
+  if(!doc) return;
+  if(i < 0){ $('#now').textContent = '讀完了 👏'; return; }
+  const want = Math.floor(i / PER_PAGE);
+  if(playing && want !== doc.page && document.visibilityState === 'visible'){ doc.page = want; renderBook(); }
+  document.querySelectorAll('#book .para').forEach(el => el.classList.toggle('now', +el.dataset.k === i && player.items.length > 0));
+  const el = document.querySelector('#book .para.now');
+  if(el && playing && document.visibilityState === 'visible') el.scrollIntoView({block:'center', behavior:'smooth'});
+  $('#now').textContent = player.items.length ? `第 ${i + 1} / ${doc.paras.length} 段` : '按 ▶ 或點任一段開始朗讀';
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && doc) markNow(); });
+$('#pp').onclick = () => { if(!doc) return; player.items.length ? player.toggle() : startAt(doc.page * PER_PAGE); };
+$('#prev').onclick = () => player.jump(Math.max(0, player.i - 1));
+$('#next').onclick = () => player.jump(player.i + 1);
+$('#rate').onchange = e => player.setRate(+e.target.value);
+
+$('#pnav').innerHTML = pageNav('reader.html');
+$('#themeBtn').onclick = cycleTheme; applyTheme();
+$('#date').textContent = today.replace(/-/g, '.');
+</script>
+</body>
+</html>
