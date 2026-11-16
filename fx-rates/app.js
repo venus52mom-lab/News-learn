@@ -101,6 +101,15 @@ function drawLine(cv, pts, opt = {}) {
     ctx.beginPath(); ctx.moveTo(0,Y(base)); ctx.lineTo(W-padR,Y(base)); ctx.stroke(); ctx.setLineDash([]); }
   ctx.beginPath(); pts.forEach((p,i) => i ? ctx.lineTo(X(i),Y(p[1])) : ctx.moveTo(X(i),Y(p[1])));
   ctx.strokeStyle = color; ctx.lineWidth = opt.lw || 1.6; ctx.lineJoin = "round"; ctx.stroke();
+  // 換資料來源的位置
+  if (opt.marks && opt.marks.length) {
+    ctx.setLineDash([2,4]); ctx.strokeStyle = "#8e8e93"; ctx.lineWidth = 1;
+    for (const m of opt.marks) {
+      const i = pts.findIndex(p => p[0] >= m); if (i <= 0) continue;
+      ctx.beginPath(); ctx.moveTo(X(i), 0); ctx.lineTo(X(i), H); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
   // 右側刻度
   if (opt.axis) {
     ctx.fillStyle = "#8e8e93"; ctx.font = "11px -apple-system,sans-serif"; ctx.textAlign = "left";
@@ -118,10 +127,10 @@ function renderHome() {
   document.body.classList.toggle("us", S.color === "us");
   const now = new Date();
   $("#today").textContent = `${now.getMonth()+1}月${now.getDate()}日`;
-  $("#rateLabel").textContent = `${isYahoo() ? "市場匯率（Yahoo）" : "台灣銀行・" + RATE_NAME[S.rate]}${S.dir === "n" ? "" : "・每千台幣"}`;
+  $("#rateLabel").textContent = `${isYahoo() ? "市場匯率（Yahoo）" : "銀行牌告・" + RATE_NAME[S.rate]}${S.dir === "n" ? "" : "・每千台幣"}`;
   document.querySelector(".foot").textContent = isYahoo()
-    ? "目前臺灣銀行網站擋掉自動抓取，暫用 Yahoo Finance 市場中間價（不是銀行買賣牌價，實際換匯會差一點）。縮圖為近 3 個月走勢，點右側數字可切換顯示。"
-    : "資料來源：臺灣銀行牌告匯率。縮圖為近 3 個月走勢，點右側數字可切換顯示。";
+    ? "暫用 Yahoo Finance 市場中間價（不是銀行買賣牌價）。"
+    : "今天的牌價來自玉山銀行（玉山沒有的幣別用其他銀行，名稱標在幣別下方）。2026/6/26 以前的走勢是臺灣銀行牌價（比率網整理），之後是玉山銀行。縮圖為近 3 個月，點右側數字可切換顯示。";
   $("#updated").textContent = RECENT ? `更新 ${RECENT.updated.slice(5)}` : "";
   const ul = $("#list"); ul.innerHTML = "";
   if (!RECENT) { ul.append(el("li","empty","載入中…")); return; }
@@ -134,7 +143,8 @@ function renderHome() {
     const li = el("li","row");
     const last = all[all.length-1], prev = all[all.length-2];
     const [nm, flag] = CUR[ccy] || [ccy, ""];
-    const fb = !isYahoo() && usedKey(rows) !== S.rate ? `・${RATE_NAME[usedKey(rows)]}` : "";
+    const lastRow = rows[rows.length-1] || [];
+    const fb = (lastRow[5] ? `・${lastRow[5]}` : "") + (!isYahoo() && usedKey(rows) !== S.rate ? `・${RATE_NAME[usedKey(rows)]}` : "");
     li.innerHTML = `<div><div class="name"><span class="flag">${flag}</span>${ccy}</div>
       <div class="desc">${nm}${fb}</div></div><canvas></canvas>
       <div class="right"><div class="price">${last ? fmt(last[1]) : "—"}</div><div class="badge"></div></div>`;
@@ -199,9 +209,15 @@ function renderDetail() {
   const pts = need ? [] : all.filter(p => p[0] >= cutoff(D.range));
   D.pts = pts;
   const k = usedKey(rows);
-  $("#dSub").textContent = `${isYahoo() ? "市場匯率（Yahoo）" : "臺灣銀行・" + RATE_NAME[k]}・${unitLabel(ccy)}`;
+  const lastBank = (rows[rows.length-1] || [])[5];
+  const BANK = {玉山:"玉山銀行",台銀:"臺灣銀行",台企銀:"臺灣企銀",一銀:"第一銀行",兆豐:"兆豐銀行",永豐:"永豐銀行",國泰:"國泰世華"};
+  $("#dSub").textContent = `${isYahoo() ? "市場匯率（Yahoo）" : (lastBank ? (BANK[lastBank] || lastBank) + "・" : "") + RATE_NAME[k]}・${unitLabel(ccy)}`;
+  // 換銀行的位置（畫虛線）
+  D.switches = [];
+  for (let i = 1; i < rows.length; i++) if (rows[i][5] && rows[i-1][5] && rows[i][5] !== rows[i-1][5] && rows[i][0] >= (pts[0]||[""])[0]) D.switches.push([rows[i][0], rows[i-1][5], rows[i][5]]);
+  D.switches = D.switches.filter((x, i, a) => i === 0 || a[i-1][2] !== x[2] || a[i-1][1] !== x[1]).slice(-3);
   const cv = $("#chart");
-  D.geo = drawLine(cv, thin(pts, Math.round(cv.clientWidth*2)), {baseline:true, axis:true, padR:58, padT:10, padB:10, lw:2});
+  D.geo = drawLine(cv, thin(pts, Math.round(cv.clientWidth*2)), detailOpt());
   D.thin = thin(pts, Math.round(cv.clientWidth*2));
   showPoint(null);
   // 統計
@@ -213,13 +229,14 @@ function renderDetail() {
     st.innerHTML = `<div class="stat"><span>${label}最高</span><b>${fmt(hi)}</b><span>${ymd(hiP[0])}</span></div>
       <div class="stat"><span>${label}最低</span><b>${fmt(lo)}</b><span>${ymd(loP[0])}</span></div>
       <div class="stat"><span>平均</span><b>${fmt(avg)}</b><span>${ymd(pts[0][0]).slice(0,7)} 起</span></div>`;
+    if (D.switches.length) st.insertAdjacentHTML("beforeend", `<div class="muted small" style="grid-column:1/-1">虛線處換了資料來源：${D.switches.map(x => `${ymd(x[0])} 起由${x[1]}改為${x[2]}`).join("；")}。不同銀行牌價略有差異。</div>`);
   }
   // 四種牌價
   const last = rows[rows.length-1], rq = $("#dRates"); rq.innerHTML = "";
   if (last && isYahoo()) rq.append(el("div","stat",`<span>市場中間價（1 ${ccy}）</span><b>${last[2]}</b><span>${ymd(last[0])}</span>`));
   else if (last) for (const kk of ["cs","ss","cb","sb"]) {
     const v = last[COL[kk]];
-    rq.append(el("div","stat",`<span>${RATE_NAME[kk]}（1 ${ccy}）</span><b>${v ? v : "無報價"}</b><span>${ymd(last[0])}</span>`));
+    rq.append(el("div","stat",`<span>${RATE_NAME[kk]}（1 ${ccy}）</span><b>${v ? v : "無報價"}</b><span>${ymd(last[0])}${last[5] ? "・" + last[5] : ""}</span>`));
   }
   // 換算
   $("#cvFxLabel").textContent = `${CUR[ccy]?.[0]||ccy} ${ccy}`;
@@ -239,13 +256,14 @@ function scrub(e) {
   const g = D.geo, pts = D.thin; if (!g || !pts || pts.length < 2) return;
   const r = $("#chart").getBoundingClientRect(), x = e.clientX - r.left;
   const i = Math.max(0, Math.min(pts.length-1, Math.round(x / (g.W - 58) * (pts.length-1))));
-  drawLine($("#chart"), pts, {baseline:true, axis:true, padR:58, padT:10, padB:10, lw:2});
+  drawLine($("#chart"), pts, detailOpt());
   const ctx = $("#chart").getContext("2d"), X = g.X(i), Y = g.Y(pts[i][1]);
   ctx.strokeStyle = "#8e8e93"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X,0); ctx.lineTo(X,g.H); ctx.stroke();
   ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(X,Y,4.5,0,7); ctx.fill();
   showPoint(i);
 }
-function endScrub() { if (D.geo) { drawLine($("#chart"), D.thin, {baseline:true, axis:true, padR:58, padT:10, padB:10, lw:2}); showPoint(null); } }
+function endScrub() { if (D.geo) { drawLine($("#chart"), D.thin, detailOpt()); showPoint(null); } }
+function detailOpt() { return {baseline:true, axis:true, padR:58, padT:10, padB:10, lw:2, marks:(D.switches||[]).map(x => x[0])}; }
 
 function curRate() { const rows = rowsFor(D.ccy); const l = rows[rows.length-1]; return l ? pick(l) : null; }
 function convert(from) {
