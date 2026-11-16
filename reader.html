@@ -39,6 +39,8 @@
     <b>📂 選擇手機裡的檔案</b>
     支援 PDF、Word（.docx）、純文字（.txt）<br><small style="color:var(--mute)">檔案只在你的手機裡處理，不會上傳到任何地方；關掉頁面就清除。</small>
   </label>
+  <div class="sec-t">🎧 沒有檔案？先試聽範例</div>
+  <div id="samples"></div>
   <div id="status" class="note"></div>
   <div id="book" class="book"></div>
 </main>
@@ -245,6 +247,62 @@ $('#pp').onclick = () => { if(!doc) return; player.items.length ? player.toggle(
 $('#prev').onclick = () => player.jump(Math.max(0, player.i - 1));
 $('#next').onclick = () => player.jump(player.i + 1);
 $('#rate').onchange = e => player.setRate(+e.target.value);
+
+/* ====== 試聽範例（自己寫的短文，另有公版的《傲慢與偏見》開頭） ====== */
+const SAMPLES = [
+  {name:'🇬🇧 英文 · 台北的早晨', lang:'en', region:'uk', paras:[
+    'A Morning in Taipei',
+    'The city wakes up early. By six o’clock, the breakfast shops are already busy, and the smell of warm soy milk drifts into the street.',
+    'Office workers line up for egg pancakes, students check their phones, and scooters gather at every traffic light like a small, impatient army.',
+    'In the park, a group of retirees practices tai chi. Their movements are slow and calm, as if the noise of the city cannot reach them.',
+    'Then the MRT doors open, the crowd pours in, and another ordinary, wonderful day in Taipei begins.']},
+  {name:'🇺🇸 英文經典 · 傲慢與偏見（開頭）', lang:'en', region:'us', paras:[
+    'Pride and Prejudice, by Jane Austen. Chapter One.',
+    'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.',
+    'However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters.']},
+  {name:'🇯🇵 日文 · 台北の朝', lang:'ja', region:'jp', paras:[
+    '台北の朝',
+    '台北の朝は早い。六時になると、朝ごはんの店はもう人でいっぱいで、温かい豆乳の香りが通りに広がる。',
+    '会社員は卵焼きのクレープを買うために列に並び、学生はスマートフォンを見ながら信号を待っている。',
+    '公園では、お年寄りたちが太極拳をしている。その動きはゆっくりで、町の騒がしさとは別の世界のようだ。']},
+  {name:'🇫🇷 法文 · Un matin à Taipei', lang:'fr', region:'fr', paras:[
+    'Un matin à Taipei',
+    'La ville se réveille tôt. Dès six heures, les petits restaurants du matin sont déjà pleins, et l’odeur du lait de soja chaud se répand dans la rue.',
+    'Les employés font la queue pour acheter une crêpe aux œufs, tandis que les étudiants regardent leur téléphone en attendant le feu vert.',
+    'Dans le parc, des retraités pratiquent le tai-chi, lentement, calmement, comme si le bruit de la ville ne pouvait pas les atteindre.']},
+  {name:'🇩🇪 德文 · Ein Morgen in Taipeh', lang:'de', region:'de', paras:[
+    'Ein Morgen in Taipeh',
+    'Die Stadt wacht früh auf. Schon um sechs Uhr sind die Frühstückslokale voll, und der Duft von warmer Sojamilch zieht durch die Straße.',
+    'Büroangestellte stehen für Eierpfannkuchen an, und Studenten schauen auf ihr Handy, während sie auf die grüne Ampel warten.',
+    'Im Park machen ältere Menschen Tai-Chi. Ihre Bewegungen sind langsam und ruhig, als könnte der Lärm der Stadt sie nicht erreichen.']},
+  {name:'🇪🇸 西班牙文 · Una mañana en Taipéi', lang:'es', region:'es', paras:[
+    'Una mañana en Taipéi',
+    'La ciudad se despierta temprano. A las seis, los puestos de desayuno ya están llenos y el olor a leche de soja caliente llena la calle.',
+    'Los oficinistas hacen fila para comprar tortillas de huevo, y los estudiantes miran el móvil mientras esperan el semáforo.',
+    'En el parque, un grupo de jubilados practica taichí con movimientos lentos y tranquilos, como si el ruido de la ciudad no pudiera alcanzarlos.']},
+  {name:'🇰🇷 韓文 · 타이베이의 아침', lang:'ko', region:'kr', paras:[
+    '타이베이의 아침',
+    '타이베이의 아침은 일찍 시작된다. 여섯 시가 되면 아침 식당은 이미 사람들로 가득하고, 따뜻한 두유 냄새가 거리에 퍼진다.',
+    '회사원들은 계란전병을 사려고 줄을 서고, 학생들은 휴대폰을 보며 신호등을 기다린다.',
+    '공원에서는 어르신들이 태극권을 한다. 그 움직임은 느리고 차분해서, 도시의 소음이 닿지 않는 것 같다.']},
+  {name:'🔀 多語混合 · 試試自動偵測', lang:'zh', region:'tw', paras:[
+    '這是一段多語言示範，每一段會自動換成那個語言的發音。',
+    'Good morning! This paragraph is in English, so it should be read with an English voice.',
+    'おはようございます。この段落は日本語なので、日本語の声で読まれます。',
+    'Bonjour ! Ce paragraphe est en français, il sera donc lu avec une voix française.',
+    '안녕하세요! 이 문단은 한국어이므로 한국어 목소리로 읽힙니다.',
+    'Guten Morgen! Dieser Absatz ist auf Deutsch und wird mit einer deutschen Stimme gelesen.',
+    '最後回到中文。怎麼樣？是不是每一段都換了不同的口音？']}
+];
+function loadSample(i){
+  const s = SAMPLES[i];
+  player.stop();
+  doc = {name:s.name.replace(/^\S+\s/, '') + '.txt', paras:s.paras.slice(), lang:s.lang, region:s.region, auto:true, page:0, trs:{}};
+  renderBook();
+  $('#book').scrollIntoView({behavior:'smooth', block:'start'});
+}
+$('#samples').innerHTML = SAMPLES.map((s, i) => `<button class="chip" style="cursor:pointer;padding:5px 12px" data-sample="${i}">${esc(s.name)}</button>`).join('');
+$('#samples').onclick = e => { const b = e.target.closest('[data-sample]'); if(b) loadSample(+b.dataset.sample); };
 
 $('#pnav').innerHTML = pageNav('reader.html');
 $('#themeBtn').onclick = cycleTheme; applyTheme();

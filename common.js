@@ -785,5 +785,39 @@ async function findCountry(q){
   const idx = ccIndex();
   let hit = idx.find(x => x.cc === q.toUpperCase()) || matchIn(idx, q, ['zh','cn','en'], normPlace);
   if(!hit){ try{ hit = matchIn(idx, (await translate(q, 'auto', 'en')).t, ['en'], normPlace); }catch(e){} }
-  return hit ? {cc:hit.cc, place:PLACE_FIX[hit.cc] || hit.zh} : null;
+  if(hit) return {cc:hit.cc, place:PLACE_FIX[hit.cc] || hit.zh};
+  const w = await wikidataCountry(q);
+  return w ? {cc:w.cc, place:countryName(w.cc), sub:w.sub} : null;
+}
+
+/* 輸入的地名不是國家（例如 魁北克、巴伐利亞、香港）時，到維基數據找它屬於哪個國家 */
+const wd = async params => (await timeout(fetch('https://www.wikidata.org/w/api.php?format=json&origin=*&' + params).then(r => r.json()), 10000));
+const claimId = (ent, p) => ent?.claims?.[p]?.[0]?.mainsnak?.datavalue?.value?.id;
+const claimStr = (ent, p) => ent?.claims?.[p]?.[0]?.mainsnak?.datavalue?.value;
+async function wikidataCountry(q){
+  try{
+    const s = await wd('action=wbsearchentities&language=zh&uselang=zh-tw&limit=5&search=' + encodeURIComponent(q));
+    const ids = (s.search || []).map(x => x.id); if(!ids.length) return null;
+    const ents = (await wd('action=wbgetentities&props=claims&ids=' + ids.join('|'))).entities || {};
+    for(const id of ids){
+      const e = ents[id]; if(!e) continue;
+      const own = claimStr(e, 'P297'); if(own) return {cc:own, viaWD:true};
+      const cid = claimId(e, 'P17'); if(!cid) continue;
+      const c = (await wd('action=wbgetentities&props=claims&ids=' + cid)).entities?.[cid];
+      const cc = claimStr(c, 'P297'); if(cc) return {cc, viaWD:true, sub:q};
+    }
+  }catch(e){}
+  return null;
+}
+/* 國家的官方語言（ISO 639-1） */
+async function officialLangs(cc){
+  try{
+    const s = await wd('action=query&list=search&srlimit=1&srsearch=' + encodeURIComponent('haswbstatement:P297=' + cc));
+    const id = s.query?.search?.[0]?.title; if(!id) return [];
+    const e = (await wd('action=wbgetentities&props=claims&ids=' + id)).entities[id];
+    const lids = (e.claims?.P37 || []).map(c => c.mainsnak?.datavalue?.value?.id).filter(Boolean);
+    if(!lids.length) return [];
+    const ls = (await wd('action=wbgetentities&props=claims&ids=' + lids.join('|'))).entities || {};
+    return lids.map(l => claimStr(ls[l], 'P218')).filter(Boolean);
+  }catch(e){ return []; }
 }
