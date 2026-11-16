@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>匯率</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="匯率">
+<meta name="theme-color" content="#000000">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="home">
+  <header class="top">
+    <div>
+      <h1>匯率</h1>
+      <div class="sub" id="today"></div>
+    </div>
+    <div class="pill">
+      <button id="btnEdit" aria-label="編輯">編輯</button>
+      <button id="btnSettings" aria-label="設定">•••</button>
+    </div>
+  </header>
+  <div class="section-title"><span id="rateLabel">台灣銀行・現金賣出</span><span class="muted" id="updated"></span></div>
+  <ul id="list"></ul>
+  <p class="foot muted">資料來源：臺灣銀行牌告匯率。縮圖為近 3 個月走勢，點右側數字可切換顯示。</p>
+</main>
+
+<!-- 詳細頁 -->
+<section id="detail" class="sheet" hidden>
+  <div class="grab"></div>
+  <header class="dhead">
+    <div>
+      <div class="dtitle" id="dTitle"></div>
+      <div class="muted" id="dSub"></div>
+    </div>
+    <button class="close" id="dClose" aria-label="關閉">✕</button>
+  </header>
+  <div class="dprice"><span id="dPrice"></span><span id="dChg"></span></div>
+  <div class="muted small" id="dScrub">&nbsp;</div>
+  <div class="ranges" id="ranges">
+    <button data-r="3M" class="on">3個月</button>
+    <button data-r="1Y">1年</button>
+    <button data-r="3Y">3年</button>
+    <button data-r="ALL">全部</button>
+  </div>
+  <div class="chartwrap"><canvas id="chart"></canvas><div class="loading" id="dLoading" hidden>載入歷史資料…</div></div>
+  <div class="stats" id="dStats"></div>
+  <div class="conv">
+    <div class="convrow"><input id="cvTwd" inputmode="decimal" value="10000"><span>台幣 TWD</span></div>
+    <div class="convrow"><input id="cvFx" inputmode="decimal"><span id="cvFxLabel"></span></div>
+    <div class="muted small" id="cvNote"></div>
+  </div>
+  <div class="rates4" id="dRates"></div>
+</section>
+
+<!-- 編輯 -->
+<section id="edit" class="sheet" hidden>
+  <div class="grab"></div>
+  <header class="dhead"><div class="dtitle">我的幣別</div><button class="close done" id="eClose">完成</button></header>
+  <p class="muted small">拖曳 ☰ 排序，點 − 移除；下方點 ＋ 加入。</p>
+  <ul id="eMine" class="elist"></ul>
+  <div class="section-title">可加入（臺灣銀行牌告幣別）</div>
+  <ul id="eAll" class="elist"></ul>
+</section>
+
+<!-- 設定 -->
+<section id="settings" class="sheet" hidden>
+  <div class="grab"></div>
+  <header class="dhead"><div class="dtitle">設定</div><button class="close done" id="sClose">完成</button></header>
+  <div class="group">
+    <div class="glabel">使用哪個牌價</div>
+    <div class="seg" id="segRate">
+      <button data-v="cs">現金賣出</button><button data-v="ss">即期賣出</button>
+      <button data-v="cb">現金買入</button><button data-v="sb">即期買入</button>
+    </div>
+    <p class="muted small">出國換現鈔看「現金賣出」；網銀換外幣存款看「即期賣出」；外幣換回台幣看「買入」。銀行沒報價的幣別會自動改用另一種。</p>
+  </div>
+  <div class="group">
+    <div class="glabel">顯示方式</div>
+    <div class="seg" id="segDir">
+      <button data-v="n">1 外幣 = ? 台幣</button><button data-v="i">1000 台幣 = ? 外幣</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="glabel">漲跌顏色</div>
+    <div class="seg" id="segColor">
+      <button data-v="tw">紅漲綠跌</button><button data-v="us">綠漲紅跌</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="glabel">資料網址</div>
+    <input id="sData" class="txt" placeholder="data/" autocapitalize="off" autocorrect="off">
+    <p class="muted small">通常留空。只有在 App 跟資料放不同網站時才需要填。</p>
+  </div>
+  <button class="wide" id="sRefresh">重新整理資料</button>
+</section>
+<div id="scrim" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
