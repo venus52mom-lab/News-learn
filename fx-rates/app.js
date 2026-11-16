@@ -146,8 +146,22 @@ function metalIntra(id, range) {   // 黃金／白銀：紐約期貨的分鐘走
   if (!ratio) return [];
   return arr.filter(p => p[1] != null).map(([k, v]) => [k, inv(id) ? 1000 / (v * ratio) : v * ratio]);
 }
+function txfWeek() {   // 台指期 1 週：全日盤 → 能讀到的時段 → 只有日盤 → 每日收盤
+  const m = MK.TXF || {};
+  if (m.week && realPts(m.week).length > 1) return {pts: m.week, note: m.weekNote || ""};
+  const segs = (m.srv || []).filter(g => g && g.length > 1);
+  const day = segs.filter(g => +tpeKey(g[0][0]).slice(8, 10) < 15 && +tpeKey(g[0][0]).slice(8, 10) >= 8);
+  if (day.length) {
+    const pts = []; day.forEach((g, i) => { if (i) for (let k = 0; k < 3; k++) pts.push([tpeKey(g[0][0]), null]); g.forEach(p => pts.push([tpeKey(p[0]), p[1]])); });
+    return {pts, note: "⚠️ 目前讀取的是「台指期日盤」（全日盤一週走勢暫時讀不到）"};
+  }
+  const d = daily("TXF").filter(p => p[0] >= cutoff("1W"));
+  if (d.length > 1) return {pts: d, note: "⚠️ 目前顯示的是台指期最近一週「每日收盤」（分時走勢暫時讀不到）"};
+  return {pts: [], note: ""};
+}
 function rangePts(id, range) {
   const k = K(id);
+  if (k === "txf" && range === "1W") return txfWeek().pts;
   if (range === "1D" || range === "1W") {
     if (LIVE(id)) { const m = MK[id] || {}; return (range === "1D" ? m.intra : m.week) || []; }
     if (k === "fx") return fxSnap(id, range);
@@ -473,7 +487,11 @@ async function loadWeeks(ids) {   // 1週：鉅亨網 30 分鐘線（沒有鉅�
     try { const j = await getJSON(dataBase() + "week.json?t=" + Date.now(), 15000); WEEKF = {t: Date.now()};
       for (const [id, arr] of Object.entries(j.items || {})) { const m = MK[id] || (MK[id] = {}); if (!m.weekLive) m.week = arr.map(([t, c]) => [tpeKey(t), c]); } } catch (e) { WEEKF = {t: Date.now()}; }
   }
-  await Promise.allSettled(ids.filter(id => K(id) === "txf").map(id => cnyesIntra(id)));
+  await Promise.allSettled(ids.filter(id => K(id) === "txf").map(async id => {
+    try { await cnyesIntra(id); } catch (e) {}
+    const m = MK[id] || (MK[id] = {});
+    if (!m.srv) { try { m.srv = (await getJSON(dataBase() + "txf.json?t=" + Date.now())).intra || []; m.srvT = Date.now(); } catch (e) {} }
+  }));
   await Promise.allSettled(ids.filter(id => ITEMS[id] && ITEMS[id].cn && K(id) !== "txf").map(async id => {
     const m = MK[id] || (MK[id] = {}); if (m.weekLive && Date.now() - m.wt < 10*60*1000) return;
     const now = Math.floor(Date.now()/1000);
@@ -546,6 +564,8 @@ async function cnyesIntra(id) {
         const step = Math.max(1, Math.round(g.length / 60));   // 每段約 60 點就夠
         g.forEach((p, j) => { if (j % step === 0 || j === g.length - 1) m.week.push([tpeKey(p[0]), p[1]]); }); });
       m.weekLive = true; m.wt = Date.now();
+      const days = new Set(wk.map(g => tpeKey(g[0][0]).slice(0, 8))).size;
+      m.weekNote = days < 5 ? `目前只讀得到最近 ${wk.length} 個時段（日盤＋夜盤），之後每天會自動補上，約一週後完整。` : "";
     }
     return;
   } else {
@@ -631,6 +651,8 @@ function renderDetail() {
   const id = D.id, it = ITEMS[id], k = it.kind;
   const all = daily(id), m = MK[id] || {};
   const need = !hasRange(id, D.range);
+  const nt = k === "txf" && D.range === "1W" ? txfWeek().note : "";
+  $("#dNote").textContent = nt; $("#dNote").hidden = !nt; $("#dNote").className = nt.startsWith("⚠️") ? "dnote warn" : "dnote";
   $("#dLoading").hidden = !need;
   $("#dLoading").textContent = D.range === "1D" ? "讀取今天的走勢…" : D.range === "1W" ? "讀取這週的走勢…" : "載入歷史資料…";
   const ptsRaw = need ? [] : rangePts(id, D.range);
@@ -837,4 +859,8 @@ async function loadCatalog() { try { applyCatalog(await getJSON("catalog.json?v=
 document.querySelectorAll("#sparkSeg button").forEach(b => b.onclick = e => { e.stopPropagation(); S.spark = b.dataset.v; save(); renderHome(); });
 renderHome();
 loadCatalog().then(() => { renderHome(); loadAll(); });
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+if ("serviceWorker" in navigator) {   // 有新版就自動換上（不用自己清快取）
+  navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).then(r => r.update()).catch(() => {});
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (!reloaded && navigator.serviceWorker.controller) { reloaded = true; location.reload(); } });
+}

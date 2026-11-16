@@ -154,3 +154,6 @@ textarea.txt{resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:
 .search input{width:100%;background:#1c1c1e;border:1px solid #3a3a3c;border-radius:10px;color:#fff;padding:11px 12px;font-size:16px}
 #addHint .wide{margin:6px 0}
 .warnline{color:#ffd60a;font-weight:700;font-size:14px;margin:8px 0}
+
+.dnote{font-size:13px;color:#c7c7cc;background:#2c2c2e;border-radius:9px;padding:8px 10px;margin:0 0 8px;line-height:1.45}
+.dnote.warn{color:#ffd60a;border:1.5px solid #ff9f0a;background:#3a2a00;font-weight:700}
