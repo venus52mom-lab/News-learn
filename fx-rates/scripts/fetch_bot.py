@@ -230,6 +230,23 @@ def market_fx(ccy, full):
     return {k: float(f"{usd_twd[k] / v:.6g}") for k, v in usd_c.items() if k in usd_twd and v}
 
 
+def despike(h, win=4, limit=0.2):
+    """去掉明顯錯誤的資料點：跟前後幾天的中位數差超過 20% 的刪掉。"""
+    keys = sorted(h)
+    vals = [h[k][2] for k in keys]
+    bad = 0
+    for i, k in enumerate(keys):
+        around = sorted(v for v in vals[max(0, i - win):i] + vals[i + 1:i + 1 + win] if v)
+        if len(around) >= 3 and vals[i]:
+            med = around[len(around) // 2]
+            if abs(vals[i] / med - 1) > limit:
+                del h[k]
+                bad += 1
+    if bad:
+        DIAG.append({"despike_removed": bad})
+    return h
+
+
 def metal_twd_per_gram(m, full):
     """黃金 GC=F／白銀 SI=F（美元／盎司）× 美元匯率 ÷ 31.1 = 台幣／公克"""
     ysym, ssym = {"XAU": ("GC=F", "xauusd"), "XAG": ("SI=F", "xagusd")}[m]
@@ -402,6 +419,7 @@ def update(max_minutes=45):
             stats[m + "_src"] = "currency-api"
         for d, v in rows.items():
             h[d] = [d, v, v, v, v, "國際"]
+        h = despike(h)
         if h:
             save_hist(m, h)
             store[m] = h
