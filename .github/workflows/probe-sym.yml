@@ -1,0 +1,12 @@
+name: probe-sym
+on: {push: {paths: [".github/workflows/probe-sym.yml"]}}
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          O="Origin: https://venus52mom-lab.github.io"
+          for u in "https://query1.finance.yahoo.com/v8/finance/chart/7203.T?range=5d&interval=1d" "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?range=5d&interval=1d" "https://query1.finance.yahoo.com/v1/finance/search?q=toyota&quotesCount=3&newsCount=0" "https://query2.finance.yahoo.com/v1/finance/search?q=2330&quotesCount=3&newsCount=0"; do echo "== $u"; curl -s -m 20 -D - -o b -H "$O" -A "Mozilla/5.0 (iPhone)" "$u" | grep -i "^HTTP\|access-control"; head -c 400 b; echo; done
+          for s in HKS:0700:STOCK JPS:7203:STOCK TWS:2330:STOCK USS:AAPL:STOCK TWS:00631L:ETF TWS:0050:ETF TWS:00631L:STOCK TWG:6488:STOCK USS:BRK.B:STOCK USS:SPY:ETF USS:SPY:STOCK; do echo "== $s"; curl -s -m 20 -H "$O" "https://ws.api.cnyes.com/ws/api/v1/quote/quotes/$s" | head -c 250; echo; done
+          echo "== cnyes search"; curl -s -m 20 -H "$O" -D - "https://ws.api.cnyes.com/ws/api/v1/universal/quote?type=all&limit=5&q=toyota" | head -c 900; echo
+          curl -s -m 20 "https://ess.api.cnyes.com/ess/api/v1/siteSearch/main?q=2330&limit=5" | head -c 900; echo
