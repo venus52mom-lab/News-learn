@@ -30,7 +30,7 @@
       <button id="mNew"><span>＋</span>新增觀察列表</button>
       <hr>
       <div class="mlabel">縮圖顯示範圍</div>
-      <div class="seg mini" id="sparkSeg"><button data-v="1D">當日</button><button data-v="3M">3個月</button><button data-v="1Y">1年</button><button data-v="3Y">3年</button></div>
+      <div class="seg mini" id="sparkSeg"><button data-v="1D">當日</button><button data-v="1W">1週</button><button data-v="3M">3個月</button><button data-v="1Y">1年</button><button data-v="3Y">3年</button></div>
       <hr>
       <button id="mSettings"><span>⚙︎</span>設定（牌價種類、顏色…）</button>
     </div>
@@ -55,7 +55,8 @@
   <div class="dprice"><span id="dPrice"></span><span id="dChg"></span></div>
   <div class="muted small" id="dScrub">&nbsp;</div>
   <div class="ranges" id="ranges">
-    <button data-r="1D" hidden>今天</button>
+    <button data-r="1D">當日</button>
+    <button data-r="1W">1週</button>
     <button data-r="3M" class="on">3個月</button>
     <button data-r="1Y">1年</button>
     <button data-r="3Y">3年</button>
@@ -83,32 +84,50 @@
 <section id="settings" class="sheet" hidden>
   <div class="grab"></div>
   <header class="dhead"><div class="dtitle">設定</div><button class="close done" id="sClose">完成</button></header>
+  <p class="muted small">設定只存在這支手機，跟朋友共用網址也不會互相影響。</p>
+
+  <h3 class="sh">觀察列表</h3>
+  <div class="group"><div class="glabel">縮圖顯示範圍</div>
+    <div class="seg" id="segSpark"><button data-v="1D">當日</button><button data-v="1W">1週</button><button data-v="3M">3個月</button><button data-v="1Y">1年</button><button data-v="3Y">3年</button></div></div>
+  <div class="group"><div class="glabel">右側數字顯示</div>
+    <div class="seg" id="segBadge"><button data-v="d">今日漲跌幅 %</button><button data-v="abs">今日漲跌</button><button data-v="p3">縮圖區間漲跌 %</button></div>
+    <p class="muted small">也可以直接點首頁右側的數字切換。</p></div>
+  <div class="group"><div class="glabel">點進去先看</div>
+    <div class="seg" id="segDRange"><button data-v="auto">自動（股市期貨看當日、外匯金銀看 3 個月）</button><button data-v="1D">當日</button><button data-v="1W">1週</button><button data-v="3M">3個月</button><button data-v="1Y">1年</button></div></div>
+
+  <h3 class="sh">外匯牌價</h3>
+  <div class="group"><div class="glabel">使用哪個牌價</div>
+    <div class="seg" id="segRate"><button data-v="cs">現金賣出</button><button data-v="ss">即期賣出</button><button data-v="cb">現金買入</button><button data-v="sb">即期買入</button></div>
+    <p class="muted small">出國換現鈔看「現金賣出」；網銀換外幣存款看「即期賣出」；外幣換回台幣看「買入」。銀行沒有報價的會自動改用另一種。</p></div>
+  <div class="group"><div class="glabel">顯示方式（外匯、金銀）</div>
+    <div class="seg" id="segDir"><button data-v="n">1 外幣 = ? 台幣</button><button data-v="i">1000 台幣 = ? 外幣</button></div></div>
+
+  <h3 class="sh">外觀與更新</h3>
+  <div class="group"><div class="glabel">漲跌顏色</div>
+    <div class="seg" id="segColor"><button data-v="tw">紅漲綠跌（台股）</button><button data-v="us">綠漲紅跌（美股）</button></div></div>
+  <div class="group"><div class="glabel">App 開著時自動更新</div>
+    <div class="seg" id="segRefresh"><button data-v="15">15 秒</button><button data-v="30">30 秒</button><button data-v="60">1 分鐘</button><button data-v="0">關閉</button></div>
+    <p class="muted small">只影響手機即時報價（台指期、道瓊、加權…）。其他資料由系統每 30 分鐘～1 小時更新。</p></div>
+  <div class="group"><div class="glabel">詳細頁的相關新聞</div>
+    <div class="seg" id="segNews"><button data-v="3">3 則</button><button data-v="5">5 則</button><button data-v="0">不顯示</button></div></div>
+
+  <h3 class="sh">備份與還原</h3>
   <div class="group">
-    <div class="glabel">使用哪個牌價</div>
-    <div class="seg" id="segRate">
-      <button data-v="cs">現金賣出</button><button data-v="ss">即期賣出</button>
-      <button data-v="cb">現金買入</button><button data-v="sb">即期買入</button>
-    </div>
-    <p class="muted small">出國換現鈔看「現金賣出」；網銀換外幣存款看「即期賣出」；外幣換回台幣看「買入」。銀行沒報價的幣別會自動改用另一種。</p>
+    <p class="muted small">換手機、清除瀏覽器資料前，先複製「設定碼」存到備忘錄；之後貼回來就能還原所有觀察列表。也可以把設定碼傳給朋友，讓他一次套用你的列表。</p>
+    <div class="btnrow"><button class="wide2" id="sBackup">複製設定碼</button><button class="wide2" id="sRestore">貼上後還原</button></div>
+    <textarea id="sCode" class="txt" rows="3" placeholder="在這裡貼上 FX1: 開頭的設定碼，再按「貼上後還原」"></textarea>
+    <div id="sMsg" class="smsg"></div>
+    <button class="wide danger" id="sReset">恢復預設觀察列表</button>
   </div>
-  <div class="group">
-    <div class="glabel">顯示方式</div>
-    <div class="seg" id="segDir">
-      <button data-v="n">1 外幣 = ? 台幣</button><button data-v="i">1000 台幣 = ? 外幣</button>
-    </div>
-  </div>
-  <div class="group">
-    <div class="glabel">漲跌顏色</div>
-    <div class="seg" id="segColor">
-      <button data-v="tw">紅漲綠跌</button><button data-v="us">綠漲紅跌</button>
-    </div>
-  </div>
-  <div class="group">
-    <div class="glabel">資料網址</div>
-    <input id="sData" class="txt" placeholder="data/" autocapitalize="off" autocorrect="off">
-    <p class="muted small">通常留空。只有在 App 跟資料放不同網站時才需要填。</p>
-  </div>
-  <button class="wide" id="sRefresh">重新整理資料</button>
+
+  <h3 class="sh">資料來源</h3>
+  <p class="muted small" style="line-height:1.6">外匯：玉山銀行官網（沒有的幣別用比率網上其他銀行；2026/6/26 以前為臺灣銀行牌價）。台指期與部分指數：鉅亨網（手機即時）。日經、VIX、比特幣、海外期貨等：Yahoo Finance（每小時）。黃金白銀：紐約期貨 × 美元匯率換算。新聞：Google 新聞。任何一個來源抓不到時會自動改用備援。</p>
+  <details class="adv"><summary>進階</summary>
+    <div class="group"><div class="glabel">資料網址</div>
+      <input id="sData" class="txt" placeholder="data/" autocapitalize="off" autocorrect="off">
+      <p class="muted small">通常留空。只有在 App 跟資料放不同網站時才需要填。</p></div>
+    <button class="wide" id="sRefresh">重新整理全部資料</button>
+  </details>
 </section>
 <div id="scrim" hidden></div>
 <script src="app.js"></script>

@@ -62,6 +62,31 @@ def from_cnyes():
     return quote, daily
 
 
+def txf_intraday(sessions):
+    """最近兩個交易時段（例如：今天日盤＋現在夜盤），分兩次抓：目前時段、前一個時段。"""
+    now = int(time.time())
+    start = sessions[0][0] if sessions else now - 6 * 3600
+    if start > now:
+        start = now - 6 * 3600
+    segs = []
+    for frm, to in ((now, start - 60), (start - 61, start - 20 * 3600)):
+        h = get(f"{CNYES}/charting/history?symbol=TWF:TXF:FUTURES&resolution=1&from={frm}&to={to}")
+        try:
+            pts = sorted((t, c) for t, c in zip(h["data"]["t"], h["data"]["c"]) if c)
+        except Exception:  # noqa: BLE001
+            pts = []
+        # 只留最後一段連續的（中間停超過 50 分鐘就切開）
+        cut = 0
+        for i in range(len(pts) - 1, 0, -1):
+            if pts[i][0] - pts[i - 1][0] > 50 * 60:
+                cut = i
+                break
+        segs.append(pts[cut:])
+        time.sleep(0.4)
+    cur, prev = segs
+    return [prev, cur] if prev else [cur]
+
+
 def from_taifex():
     """期交所即時行情：夜盤時段（MarketType=1）有價就用夜盤，否則日盤。"""
     best = None
@@ -110,7 +135,13 @@ def main():
             td += dt.timedelta(days=1)
         daily[td.strftime("%Y%m%d")] = quote["last"]
     full = old.get("full") or len(daily) > 1300
-    out = {"full": full, "updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": src if quote else old.get("source"),
+    intra = []
+    if quote and src == "鉅亨網":
+        try:
+            intra = txf_intraday(quote.get("sessions"))
+        except Exception as e:  # noqa: BLE001
+            LOG.append({"intra": str(e)[:100]})
+    out = {"intra": intra, "full": full, "updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": src if quote else old.get("source"),
            "quote": quote or old.get("quote"), "daily": [[k, daily[k]] for k in sorted(daily)], "log": LOG[-10:]}
     with open(p, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))

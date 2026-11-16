@@ -140,3 +140,12 @@ body.editing .acts{display:none}
 .trout.ok{background:#1f2a3a;border-left:4px solid #0a84ff}
 .trout .tag{display:inline-block;font-size:11px;font-weight:800;color:#0a84ff;margin-right:6px}
 .trout.warn{background:#3a2a00;border:2px solid #ff9f0a;color:#ffd60a;font-weight:800;font-size:16px}
+
+.sh{font-size:20px;font-weight:800;margin:26px 0 4px}
+.btnrow{display:flex;gap:8px;margin:8px 0}
+.wide2{flex:1;padding:12px;border-radius:12px;background:#2c2c2e;color:#0a84ff;font-weight:600;font-size:15px}
+textarea.txt{resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.smsg{min-height:20px;margin:6px 0 10px;font-weight:700;color:#ffd60a}
+.wide.danger{color:#ff453a;margin-top:6px}
+.adv{margin-top:20px}.adv summary{color:var(--muted);font-size:15px;padding:8px 0}
+.ranges button{font-size:13px}

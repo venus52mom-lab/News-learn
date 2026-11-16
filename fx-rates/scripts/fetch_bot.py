@@ -297,6 +297,33 @@ def write_recent(store):
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
 
 
+def write_snapshots(store, today):
+    """data/intraday.json：{CCY: [[YYYYMMDDHHMM, 現金買入, 現金賣出, 即期買入, 即期賣出], ...]}，保留 8 天。"""
+    p = os.path.join(ROOT, "intraday.json")
+    try:
+        snap = json.load(open(p, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        snap = {}
+    if today.weekday() >= 5:
+        return
+    stamp = now_tpe().strftime("%Y%m%d%H%M")
+    keep = (now_tpe() - dt.timedelta(days=8)).strftime("%Y%m%d")
+    td = today.strftime("%Y%m%d")
+    for ccy in CCYS:
+        h = store.get(ccy) or {}
+        r = h.get(td)
+        if not r:
+            continue
+        rows = [x for x in snap.get(ccy, []) if x[0] >= keep]
+        if not rows or rows[-1][1:] != r[1:5] or stamp[:8] != rows[-1][0][:8]:
+            rows.append([stamp, *r[1:5]])
+        elif stamp[:8] == rows[-1][0][:8]:
+            rows.append([stamp, *r[1:5]])   # 牌價沒變也記，讓線畫到現在
+        snap[ccy] = rows
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(snap, f, separators=(",", ":"))
+
+
 def write_diag(extra):
     with open(os.path.join(ROOT, "debug.json"), "w", encoding="utf-8") as f:
         json.dump({"time": now_tpe().strftime("%Y-%m-%d %H:%M"), **extra, "log": DIAG[-40:]},
@@ -426,6 +453,7 @@ def update(max_minutes=45):
         stats[m] = len(rows)
 
     write_recent(store)
+    write_snapshots(store, today)
     write_diag({**stats, "esun_ccys": sorted(live), "today_sources": used, "fails": fails,
                 "minutes": round((time.time() - T0) / 60, 1), "rows": {c: len(store.get(c) or {}) for c in CCYS + METALS}})
     print(stats, "esun:", sorted(live))

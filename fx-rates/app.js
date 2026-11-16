@@ -48,8 +48,8 @@ const DEFAULT_LISTS = [
   {n:"期貨", items:["TXF","NQ","Z3N"]},
   {n:"金銀", items:["XAU","XAG","GC","SI"]},
 ];
-const DEF = {lists: DEFAULT_LISTS, cur:0, rate:"cs", dir:"n", color:"tw", data:"", badge:"d", spark:"3M", v:2};
-const RNAME = {"1D":"當日","3M":"3個月","1Y":"1年","3Y":"3年","ALL":"全部"};
+const DEF = {lists: DEFAULT_LISTS, cur:0, rate:"cs", dir:"n", color:"tw", data:"", badge:"d", spark:"3M", dRange:"auto", refresh:30, newsN:3, v:2};
+const RNAME = {"1D":"當日","1W":"1週","3M":"3個月","1Y":"1年","3Y":"3年","ALL":"全部"};
 let S = JSON.parse(JSON.stringify(DEF));
 try {
   const old = JSON.parse(localStorage.getItem("fx-settings") || "{}");
@@ -91,6 +91,7 @@ const ymd = s => `${s.slice(0,4)}/${s.slice(4,6)}/${s.slice(6,8)}` + (s.length >
 function cutoff(range) {
   if (range === "ALL" || range === "1D") return "0";
   const d = new Date();
+  if (range === "1W") d.setDate(d.getDate()-7);
   if (range === "3M") d.setMonth(d.getMonth()-3);
   if (range === "1Y") d.setFullYear(d.getFullYear()-1);
   if (range === "3Y") d.setFullYear(d.getFullYear()-3);
@@ -118,6 +119,42 @@ function daily(id) {
   }
   return pts;
 }
+/** 任一範圍的走勢點：當日／1週 用分鐘資料，其他用日線。台指期當日含「日盤＋夜盤」，中間以 null 隔開 */
+let FXI = null;   // 外匯牌價當日快照（intraday.json）
+function fxSnap(id, range) {
+  const rows = (FXI && FXI[id]) || []; if (!rows.length) return [];
+  const lastDay = rows[rows.length-1][0].slice(0, 8), from = cutoff("1W");
+  const out = [];
+  for (const r of rows) {
+    if (range === "1D" ? r[0].slice(0, 8) !== lastDay : r[0].slice(0, 8) < from) continue;
+    let v = pick(r); if (!v) continue; if (inv(id)) v = 1000 / v; out.push([r[0], v]);
+  }
+  return out;
+}
+function metalIntra(id, range) {   // 黃金／白銀：紐約期貨的分鐘走勢 × 目前台幣換算比例
+  const src = MK[id === "XAU" ? "GC" : "SI"]; if (!src) return [];
+  const arr = range === "1D" ? src.intra : src.week; if (!arr || !arr.length) return [];
+  const d = daily(id); if (!d.length || !src.quote || !src.quote.last) return [];
+  let ratio = (HIST[id] || (RECENT && RECENT.rates[id]) || []).slice(-1)[0]; ratio = ratio ? ratio[2] / src.quote.last : null;
+  if (!ratio) return [];
+  return arr.filter(p => p[1] != null).map(([k, v]) => [k, inv(id) ? 1000 / (v * ratio) : v * ratio]);
+}
+function rangePts(id, range) {
+  const k = K(id);
+  if (range === "1D" || range === "1W") {
+    if (LIVE(id)) { const m = MK[id] || {}; return (range === "1D" ? m.intra : m.week) || []; }
+    if (k === "fx") return fxSnap(id, range);
+    if (k === "metal") return metalIntra(id, range);
+  }
+  return daily(id).filter(p => p[0] >= cutoff(range));
+}
+function hasRange(id, range) {
+  const k = K(id), m = MK[id] || {};
+  if (range === "1D" || range === "1W") return rangePts(id, range).length > 1;
+  if (range === "3M") return true;
+  return k === "fx" || k === "metal" ? !!HIST[id] : k === "txf" ? !!m.daily : !!m.full;
+}
+
 /** 最新值與漲跌 */
 function info(id) {
   const pts = daily(id), last = pts[pts.length-1], prev = pts[pts.length-2];
@@ -239,14 +276,13 @@ function renderHome() {
   $("#btnMenu").hidden = EDITING; $("#btnDone").hidden = !EDITING;
   const ul = $("#list"); ul.innerHTML = "";
   if (!L.items.length && !EDITING) ul.append(el("li","empty","這個列表還是空的。<br>按右上「•••」→「編輯觀察列表」加入項目。"));
-  const c3 = cutoff(S.spark === "1D" ? "3M" : S.spark);
   for (const id of L.items) {
     const it = ITEMS[id]; if (!it) continue;
     const {last, chg, pct: p, pts} = info(id);
-    const useIntra = S.spark === "1D" && LIVE(id) && MK[id] && MK[id].intraS;
-    let spark = useIntra ? MK[id].intraS : S.spark === "1D" ? pts.slice(-6) : pts.filter(x => x[0] >= c3);
-    const noHist = spark.length < 2 && MK[id] && MK[id].intraS;   // 沒有歷史（滬深300、歐洲500）→ 先用當日走勢
-    if (noHist) spark = MK[id].intraS;
+    let spark = rangePts(id, S.spark), useIntra = S.spark === "1D";
+    if (realPts(spark).length < 2 && S.spark !== "3M") { spark = rangePts(id, "3M"); useIntra = false; }   // 還沒有資料就先用 3 個月
+    const noHist = realPts(spark).length < 2 && MK[id] && MK[id].intra;   // 沒有歷史（滬深300、歐洲500）→ 先用當日走勢
+    if (noHist) spark = MK[id].intra;
     const li = el("li", "wrap");
     li.dataset.id = id;
     li.innerHTML = `<div class="acts"><button class="a-list"><b>☰</b>列表</button><button class="a-del"><b>🗑</b>移除</button></div>
@@ -259,7 +295,7 @@ function renderHome() {
     let ch = null, txt = "—";
     if (S.badge === "d" && p != null) { ch = p; txt = (ch>0?"+":"") + ch.toFixed(2) + "%"; }
     if (S.badge === "abs" && chg != null) { ch = chg; txt = (ch>0?"+":"") + fmtFor(id, ch); }
-    if (S.badge === "p3") { const rg = S.spark === "1D" ? "3M" : S.spark, q = pts.filter(x => x[0] >= cutoff(rg)); if (q.length > 1 && last) { ch = pct(q[0][1], last); txt = rg + " " + (ch>0?"+":"") + ch.toFixed(1) + "%"; } }
+    if (S.badge === "p3") { const q = realPts(rangePts(id, S.spark === "1D" ? "1W" : S.spark)); if (q.length > 1 && last) { ch = pct(q[0][1], last); txt = RNAME[S.spark === "1D" ? "1W" : S.spark] + " " + (ch>0?"+":"") + ch.toFixed(1) + "%"; } }
     b.textContent = txt;
     b.classList.add(ch == null || Math.abs(ch) < 1e-9 ? "flat" : ch > 0 ? "up" : "down");
     b.addEventListener("click", e => { if (EDITING) return; e.stopPropagation(); S.badge = {d:"p3",p3:"abs",abs:"d"}[S.badge]; save(); renderHome(); });
@@ -271,10 +307,11 @@ function renderHome() {
     swipeify(li);
     dragify(li, li.querySelector(".drag"), ul);
     ul.append(li);
-    const base = (useIntra || noHist) && MK[id].quote && MK[id].quote.prev ? MK[id].quote.prev : undefined;
+    const base = (useIntra || noHist) && LIVE(id) && MK[id].quote && MK[id].quote.prev ? MK[id].quote.prev : undefined;
     requestAnimationFrame(() => drawLine(row.querySelector("canvas"), spark, {baseline:true, lw:1.4, base, segLabels:false}));
   }
   renderAdd();
+  if (S.spark === "1W" && !renderHome.wk && L.items.some(id => ITEMS[id] && ITEMS[id].cn && !(MK[id] && MK[id].weekLive && Date.now() - MK[id].wt < 10*60*1000))) { renderHome.wk = true; loadWeeks(L.items).then(() => { renderHome.wk = false; }); }
   if ((S.spark === "1Y" || S.spark === "3Y") && !renderHome.loading) {
     const need = L.items.filter(id => (K(id) === "fx" || K(id) === "metal") ? !HIST[id] : K(id) === "mkt" ? !(MK[id] && MK[id].full) : false);
     if (need.length) { renderHome.loading = true; Promise.allSettled(need.map(loadHist)).then(() => { renderHome.loading = false; renderHome(); }); }
@@ -387,9 +424,21 @@ async function loadMarkets() {
       if (!cur.full) cur.daily = m.daily;
       if (!cur.quote || cur.quote.src !== "鉅亨網") cur.quote = m.quote;
       if (!cur.intraLive && m.intra && m.intra.length) { cur.intra = m.intra.map(([t, c]) => [tpeKey(t), c]); cur.intraS = cur.intra; }
+      if (!cur.weekLive && m.week && m.week.length) cur.week = m.week.map(([t, c]) => [tpeKey(t), c]);
     }
   } catch (e) {}
   renderHome();
+}
+async function loadSnap() { try { FXI = await getJSON(dataBase() + "intraday.json?t=" + Date.now()); } catch (e) {} renderHome(); }
+async function loadWeeks(ids) {   // 1週：鉅亨網 30 分鐘線（沒有鉅亨網代號的用每小時存的 Yahoo 資料）
+  await Promise.allSettled(ids.filter(id => ITEMS[id] && ITEMS[id].cn).map(async id => {
+    const m = MK[id] || (MK[id] = {}); if (m.weekLive && Date.now() - m.wt < 10*60*1000) return;
+    const now = Math.floor(Date.now()/1000);
+    const h = (await getJSON(`${CNYES}/charting/history?symbol=${ITEMS[id].cn}&resolution=30&from=${now}&to=${now - 8*86400}`, 15000)).data;
+    const pts = h.t.map((t, i) => [t, h.c[i]]).filter(p => p[1]).sort((a,b) => a[0]-b[0]).filter(p => p[0] >= now - 7*86400);
+    if (pts.length > 1) { m.week = pts.map(([t, c]) => [tpeKey(t), c]); m.weekLive = true; m.wt = Date.now(); }
+  }));
+  renderHome(); if (!$("#detail").hidden && D.range === "1W") renderDetail();
 }
 async function loadHist(id) {
   const k = K(id);
@@ -428,18 +477,16 @@ async function cnyesDaily(sym, days) {
 async function cnyesIntra(id) {
   const it = ITEMS[id], m = MK[id] || (MK[id] = {}), now = Math.floor(Date.now()/1000);
   let pts;
-  if (it.kind === "txf") {   // 最近兩個時段（日盤＋夜盤），中間留間隔
-    const h = (await getJSON(`${CNYES}/charting/history?symbol=${it.cn}&resolution=1&from=${now}&to=${now - 4*86400}`, 15000)).data;
-    const all = h.t.map((t, i) => [t, h.c[i]]).filter(p => p[1]).sort((a,b) => a[0]-b[0]);
-    const segs = [[]];
-    all.forEach((p, i) => { if (i && p[0] - all[i-1][0] > 50*60) segs.push([]); segs[segs.length-1].push(p); });
-    const two = segs.filter(g => g.length > 5).slice(-2);
-    if (two.length) {
-      const gap = Math.max(4, Math.round((two[0].length + (two[1] || []).length) * 0.04));
-      m.intra = two[0].map(([t, c]) => [tpeKey(t), c]);
-      if (two[1]) { for (let k = 0; k < gap; k++) m.intra.push([tpeKey(two[1][0][0]), null]); m.intra.push(...two[1].map(([t, c]) => [tpeKey(t), c])); }
-      m.intraS = m.intra; m.intraLive = true;
-    }
+  if (it.kind === "txf") {   // 最近兩個時段（例如今天日盤＋現在夜盤）：鉅亨網一次只給一段，所以分兩次抓
+    let start = m.quote && m.quote.sessions ? m.quote.sessions[0][0] : now - 6*3600; if (start > now) start = now - 6*3600;
+    const seg = async (frm, to) => {
+      const h = (await getJSON(`${CNYES}/charting/history?symbol=${it.cn}&resolution=1&from=${frm}&to=${to}`, 15000)).data;
+      const pts = h.t.map((t, i) => [t, h.c[i]]).filter(p => p[1]).sort((a,b) => a[0]-b[0]);
+      let cut = 0; for (let i = pts.length - 1; i > 0; i--) if (pts[i][0] - pts[i-1][0] > 50*60) { cut = i; break; }
+      return pts.slice(cut);
+    };
+    const [cur, prev] = await Promise.all([seg(now, start - 60), seg(start - 61, start - 20*3600).catch(() => [])]);
+    setTwoSessions(m, prev, cur, true);
     return;
   } else {
     const h = (await getJSON(`${CNYES}/charting/history?symbol=${it.cn}&resolution=5&from=${now}&to=${now - 4*86400}`)).data;
@@ -468,12 +515,21 @@ async function refreshLive() {
     } catch (e) {
       if (it.kind === "txf") {   // 台指期備援
         try { const j = await getJSON(dataBase() + "txf.json?t=" + Date.now());
-          if (j.quote) m.quote = {...j.quote, prev: j.quote.ref, src: (j.source || "備援") + "（備援，約每小時更新）"}; m.daily = j.daily; } catch (e2) {}
+          if (j.quote) m.quote = {...j.quote, prev: j.quote.ref, src: (j.source || "備援") + "（備援，約每小時更新）"}; m.daily = j.daily;
+          if (j.intra && j.intra.length && !m.intraLive) setTwoSessions(m, j.intra.length > 1 ? j.intra[0] : [], j.intra[j.intra.length-1], false); } catch (e2) {}
       }
     }
   }));
   renderHome();
   if (!$("#detail").hidden && D.id && LIVE(D.id)) renderDetail();
+}
+function setTwoSessions(m, prev, cur, live) {
+  const two = [prev, cur].filter(g => g && g.length > 1);
+  if (!two.length) return;
+  const gap = Math.max(4, Math.round((two[0].length + (two[1] || []).length) * 0.05));
+  m.intra = two[0].map(([t, c]) => [tpeKey(t), c]);
+  if (two[1]) { for (let k = 0; k < gap; k++) m.intra.push([tpeKey(two[1][0][0]), null]); m.intra.push(...two[1].map(([t, c]) => [tpeKey(t), c])); }
+  m.intraS = m.intra; if (live) m.intraLive = true;
 }
 function futDesc() {
   const q = MK.TXF && MK.TXF.quote; if (!q) return "全日盤";
@@ -488,23 +544,24 @@ function openSheet(id) { $("#scrim").hidden = false; $(id).hidden = false; docum
 function closeSheets() { for (const s of document.querySelectorAll(".sheet")) s.hidden = true; $("#scrim").hidden = true; $("#menu").hidden = true; document.body.style.overflow = ""; }
 function openDetail(id) {
   const it = ITEMS[id];
-  D.id = id; D.range = LIVE(id) ? "1D" : "3M";
-  document.querySelector('#ranges [data-r="1D"]').hidden = !LIVE(id);
+  D.id = id; D.range = S.dRange === "auto" ? (LIVE(id) ? "1D" : "3M") : S.dRange;
   document.querySelector("#detail .conv").hidden = LIVE(id);
   $("#dTitle").textContent = `${it.flag || ""} ${it.name}${it.kind === "fx" ? " " + it.sub : ""}`;
   document.querySelectorAll("#ranges button").forEach(b => b.classList.toggle("on", b.dataset.r === D.range));
   openSheet("#detail");
   renderDetail();
   if (LIVE(id) && it.cn) refreshLive();
-  if (LIVE(id) && !(MK[id] && MK[id].intra)) setTimeout(() => { if (D.id === id && D.range === "1D" && !(MK[id] && MK[id].intra)) document.querySelector('#ranges [data-r="3M"]').click(); }, 4000);
+  if (D.range === "1W") loadWeeks([id]);
+  if (D.range !== "1D" && D.range !== "1W" && D.range !== "3M") loadHist(id).then(renderDetail).catch(() => {});
+  setTimeout(() => { if (D.id === id && (D.range === "1D" || D.range === "1W") && !hasRange(id, D.range)) document.querySelector('#ranges [data-r="3M"]').click(); }, 5000);
 }
 function renderDetail() {
   const id = D.id, it = ITEMS[id], k = it.kind;
   const all = daily(id), m = MK[id] || {};
-  const need = D.range === "1D" ? !m.intra : (D.range !== "3M" && !(k === "fx" || k === "metal" ? HIST[id] : m.full));
+  const need = !hasRange(id, D.range);
   $("#dLoading").hidden = !need;
-  $("#dLoading").textContent = D.range === "1D" ? "讀取今天的走勢…" : "載入歷史資料…";
-  const ptsRaw = D.range === "1D" ? (m.intra || []) : need ? [] : all.filter(p => p[0] >= cutoff(D.range));
+  $("#dLoading").textContent = D.range === "1D" ? "讀取今天的走勢…" : D.range === "1W" ? "讀取這週的走勢…" : "載入歷史資料…";
+  const ptsRaw = need ? [] : rangePts(id, D.range);
   const pts = realPts(ptsRaw);
   D.pts = pts;
   const rows = (k === "fx" || k === "metal") ? (HIST[id] || (RECENT && RECENT.rates[id]) || []) : [];
@@ -525,10 +582,10 @@ function renderDetail() {
   const st = $("#dStats"); st.innerHTML = "";
   if (pts.length) {
     const v = pts.map(p=>p[1]), hi = Math.max(...v), lo = Math.min(...v), avg = v.reduce((a,b)=>a+b,0)/v.length;
-    const label = {"1D":"今天","3M":"3個月","1Y":"1年","3Y":"3年","ALL":"全部"}[D.range];
+    const label = D.range === "1D" ? "今天" : RNAME[D.range];
     st.innerHTML = `<div class="stat"><span>${label}最高</span><b>${fmtFor(id, hi)}</b><span>${ymd(pts[v.indexOf(hi)][0])}</span></div>
       <div class="stat"><span>${label}最低</span><b>${fmtFor(id, lo)}</b><span>${ymd(pts[v.indexOf(lo)][0])}</span></div>
-      <div class="stat"><span>平均</span><b>${fmtFor(id, avg)}</b><span>${ymd(pts[0][0]).slice(0, D.range === "1D" ? 16 : 7)} 起</span></div>`;
+      <div class="stat"><span>平均</span><b>${fmtFor(id, avg)}</b><span>${ymd(pts[0][0]).slice(0, D.range === "1D" || D.range === "1W" ? 16 : 7)} 起</span></div>`;
     if (D.switches.length) st.insertAdjacentHTML("beforeend", `<div class="muted small" style="grid-column:1/-1">虛線處換了資料來源：${D.switches.map(x => `${ymd(x[0])} 起由${x[1]}改為${x[2]}`).join("；")}。不同銀行牌價略有差異。</div>`);
   }
   const rq = $("#dRates"); rq.innerHTML = "";
@@ -556,13 +613,13 @@ function showPoint(i) {
   const pts = D.thin || [], all = D.pts, id = D.id;
   if (!all.length) { $("#dPrice").textContent = "—"; $("#dChg").textContent = ""; $("#dScrub").innerHTML = "&nbsp;"; return; }
   const q = MK[id] && MK[id].quote;
-  const first = D.range === "1D" && q && q.prev ? [null, q.prev] : all[0];
+  const first = D.range === "1D" && LIVE(id) && q && q.prev ? [null, q.prev] : all[0];
   const p = i == null ? all[all.length-1] : pts[i];
   const ch = pct(first[1], p[1]);
   $("#dPrice").textContent = fmtFor(id, p[1]);
   const c = $("#dChg"); c.textContent = `${ch>0?"+":""}${fmtFor(id, p[1]-first[1])}（${ch>0?"+":""}${ch.toFixed(2)}%）`;
   c.className = ch > 0 ? "up-t" : ch < 0 ? "down-t" : "muted";
-  $("#dScrub").textContent = (i == null ? `最新 ${ymd(p[0])}` : ymd(p[0])) + (D.range === "1D" ? (q && q.prev ? "・相對昨收" : "") : "・相對區間起點");
+  $("#dScrub").textContent = (i == null ? `最新 ${ymd(p[0])}` : ymd(p[0])) + (D.range === "1D" && LIVE(id) && q && q.prev ? "・相對昨收" : "・相對區間起點");
 }
 function scrub(e) {
   const g = D.geo, pts = D.thin; if (!g || !pts || pts.length < 2) return;
@@ -579,7 +636,7 @@ function endScrub() { if (D.geo) { drawLine($("#chart"), D.thin, detailOpt()); s
 function detailOpt() {
   const q = MK[D.id] && MK[D.id].quote;
   return {baseline:true, axis:true, padR:58, padT:16, padB:10, lw:2, id:D.id, segLabels:true, marks:(D.switches||[]).map(x => x[0]),
-          base: D.range === "1D" && q && q.prev ? q.prev : undefined};
+          base: D.range === "1D" && LIVE(D.id) && q && q.prev ? q.prev : undefined};
 }
 function curRate() { const rows = HIST[D.id] || (RECENT && RECENT.rates[D.id]) || []; const l = rows[rows.length-1]; return l ? pick(l) : null; }
 function convert(from) {
@@ -601,7 +658,8 @@ function renderNews(id) {
   const list = NEWS && NEWS.news && NEWS.news[id];
   if (!list) { box.innerHTML = `<div class="news-h">相關新聞</div><p class="muted small">${NEWS ? "目前沒有相關新聞" : "讀取中…"}</p>`; if (!NEWS) loadNews().then(() => { if (D.id === id) renderNews(id); }); return; }
   const today = list.filter(n => Date.now()/1000 - n.ts < 24*3600);
-  const show = (today.length >= 3 ? today : list).slice(0, 3);
+  const N = S.newsN; if (!N) { box.innerHTML = ""; return; }
+  const show = (today.length >= N ? today : list).slice(0, N);
   box.innerHTML = `<div class="news-h">相關新聞<small>${today.length ? "最近 24 小時" : "最新"}・約每小時更新</small></div>`;
   show.forEach((n, i) => {
     const a = el("div", "news");
@@ -639,12 +697,23 @@ async function translate(text) {
 
 /* ===================== 設定 ===================== */
 function renderSettings() {
-  for (const [id, key] of [["#segRate","rate"],["#segDir","dir"],["#segColor","color"]])
+  for (const [id, key] of [["#segSpark","spark"],["#segBadge","badge"],["#segDRange","dRange"],["#segRate","rate"],["#segDir","dir"],["#segColor","color"],["#segRefresh","refresh"],["#segNews","newsN"]])
     document.querySelectorAll(id + " button").forEach(b => {
-      b.classList.toggle("on", b.dataset.v === S[key]);
-      b.onclick = () => { S[key] = b.dataset.v; save(); renderSettings(); renderHome(); };
+      b.classList.toggle("on", String(b.dataset.v) === String(S[key]));
+      b.onclick = () => { const v = b.dataset.v; S[key] = /^\d+$/.test(v) ? +v : v; save(); renderSettings(); renderHome(); if (key === "refresh") startTimer(); };
     });
   $("#sData").value = S.data || "";
+  $("#sCode").value = "";
+}
+function backupCode() {
+  const keep = {lists:S.lists, rate:S.rate, dir:S.dir, color:S.color, badge:S.badge, spark:S.spark, dRange:S.dRange, refresh:S.refresh, newsN:S.newsN};
+  return "FX1:" + btoa(unescape(encodeURIComponent(JSON.stringify(keep))));
+}
+function restoreCode(code) {
+  const j = JSON.parse(decodeURIComponent(escape(atob(code.trim().replace(/^FX1:/, "")))));
+  if (!Array.isArray(j.lists) || !j.lists.length) throw new Error("bad");
+  j.lists = j.lists.slice(0, MAX_LISTS).map(l => ({n: String(l.n || "列表").slice(0, 8), items: (l.items || []).filter(id => ITEMS[id])}));
+  S = {...S, ...j, cur:0}; save();
 }
 
 /* ===================== 綁定 ===================== */
@@ -657,12 +726,20 @@ $("#btnDone").onclick = () => { EDITING = false; renderHome(); refreshLive(); };
 $("#sClose").onclick = () => { const v = $("#sData").value.trim(); if (v !== (S.data||"")) { S.data = v; save(); for (const k in HIST) delete HIST[k]; loadAll(); } closeSheets(); renderHome(); };
 $("#dClose").onclick = closeSheets; $("#pClose").onclick = closeSheets; $("#scrim").onclick = closeSheets;
 $("#sRefresh").onclick = () => { for (const k in HIST) delete HIST[k]; loadAll(); closeSheets(); };
+$("#sBackup").onclick = async () => { const c = backupCode(); $("#sCode").value = c; $("#sMsg").textContent = "";
+  try { await navigator.clipboard.writeText(c); $("#sMsg").textContent = "✓ 已複製設定碼，可以貼到備忘錄保存"; } catch (e) { $("#sCode").select(); $("#sMsg").textContent = "請長按上面的文字，手動拷貝"; } };
+$("#sRestore").onclick = () => { try { restoreCode($("#sCode").value); $("#sMsg").textContent = "✓ 已還原"; renderSettings(); renderHome(); refreshLive(); }
+  catch (e) { $("#sMsg").textContent = "⚠️ 設定碼不正確，請貼上完整的「FX1:」開頭文字"; } };
+$("#sReset").onclick = () => { if (!confirm("把觀察列表恢復成預設的 4 個列表？（目前的列表會被取代）")) return;
+  S.lists = JSON.parse(JSON.stringify(DEFAULT_LISTS)); S.cur = 0; save(); renderHome(); refreshLive(); $("#sMsg").textContent = "✓ 已恢復預設列表"; };
 document.querySelectorAll("#ranges button").forEach(b => b.onclick = () => {
   D.range = b.dataset.r;
   document.querySelectorAll("#ranges button").forEach(x => x.classList.toggle("on", x === b));
   renderDetail();
-  if (D.range !== "1D" && D.range !== "3M") loadHist(D.id).then(renderDetail).catch(() => { $("#dLoading").textContent = "讀不到歷史資料"; });
+  if (D.range !== "1D" && D.range !== "1W" && D.range !== "3M") loadHist(D.id).then(renderDetail).catch(() => { $("#dLoading").textContent = "讀不到歷史資料"; });
   if (D.range === "1D" && ITEMS[D.id].cn) cnyesIntra(D.id).then(renderDetail).catch(() => {});
+  if (D.range === "1W") loadWeeks([D.id]);
+  if ((D.range === "1D" || D.range === "1W") && !hasRange(D.id, D.range)) setTimeout(() => { if (!hasRange(D.id, D.range)) $("#dLoading").textContent = K(D.id) === "fx" ? "這個幣別今天還沒有分時牌價（上班日 9:00 後每 30 分鐘記一筆）" : "暫時讀不到這段走勢"; }, 5000);
 });
 const cvs = $("#chart");
 cvs.addEventListener("pointerdown", e => { cvs.setPointerCapture(e.pointerId); scrub(e); });
@@ -677,9 +754,11 @@ for (const sh of document.querySelectorAll(".sheet")) {   // 下滑關閉
 }
 window.addEventListener("resize", () => { renderHome(); if (!$("#detail").hidden) renderDetail(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) loadAll(); });
-setInterval(() => { if (!document.hidden && !EDITING) refreshLive(); }, 30000);
+let TIMER = null;
+function startTimer() { clearInterval(TIMER); if (S.refresh > 0) TIMER = setInterval(() => { if (!document.hidden && !EDITING) { refreshLive(); if (S.spark === "1W" || D.range === "1W") loadWeeks(LIST().items); } }, S.refresh * 1000); }
+startTimer();
 
-function loadAll() { loadRecent(); loadMarkets().then(refreshLive); loadNews(); }
+function loadAll() { loadRecent(); loadSnap(); loadMarkets().then(refreshLive); loadNews(); }
 document.querySelectorAll("#sparkSeg button").forEach(b => b.onclick = e => { e.stopPropagation(); S.spark = b.dataset.v; save(); renderHome(); });
 renderHome();
 loadAll();

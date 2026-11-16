@@ -72,6 +72,11 @@ def from_yahoo(sym, full):
     if intra:
         quote["open"] = next((o for o in q.get("open") or [] if o), None)
     time.sleep(0.8)
+    w = yahoo(sym, "?range=5d&interval=30m")
+    week = []
+    if w:
+        week = [[t, round(c, 4)] for t, c in zip(w.get("timestamp") or [], w["indicators"]["quote"][0].get("close") or []) if c]
+    time.sleep(0.8)
     daily = {}
     tries = ["?period1=0&period2=9999999999&interval=1d", "?range=max&interval=1d", "?range=10y&interval=1d", "?range=5y&interval=1d"] if full else ["?range=3mo&interval=1d"]
     for q in tries:                # 有些代號不接受「全部歷史」，就改要 max／10 年／5 年
@@ -84,7 +89,7 @@ def from_yahoo(sym, full):
         if len(daily) > 300 or not full:
             break
         time.sleep(0.8)
-    return {"quote": quote, "daily": daily, "intra": intra}
+    return {"quote": quote, "daily": daily, "intra": intra, "week": week}
 
 
 def from_cnyes(sym):
@@ -105,7 +110,7 @@ def from_cnyes(sym):
                 daily[dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%Y%m%d")] = c
     except Exception:  # noqa: BLE001
         pass
-    return {"quote": quote, "daily": daily, "intra": []}
+    return {"quote": quote, "daily": daily, "intra": [], "week": []}
 
 
 def main():
@@ -129,7 +134,7 @@ def main():
             with open(p, "w", encoding="utf-8") as f:
                 json.dump([[k, hist[k]] for k in sorted(hist)], f, separators=(",", ":"))
             out["items"][mid] = {"quote": res["quote"], "daily": [[k, hist[k]] for k in sorted(hist)][-130:],
-                                 "intra": res["intra"]}
+                                 "intra": res["intra"], "week": res.get("week", [])}
         elif mid in old:
             out["items"][mid] = old[mid]          # 這次抓不到就留上次的
         time.sleep(0.8)
