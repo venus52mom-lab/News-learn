@@ -1,6 +1,43 @@
 {
- "time": "2026-11-16 15:55",
+ "time": "2026-11-16 15:58",
  "results": {
+  "FindRate 手機": {
+   "url": "https://m.findrate.tw/currency.php?c=JPY",
+   "status": 200,
+   "type": "text/html; charset=UTF-8",
+   "bytes": 29517,
+   "sec": 0.3,
+   "challenge": false,
+   "has_JPY": true,
+   "has_日圓": true,
+   "has_現金": true,
+   "around_JPY": " </a> </li> <li> <a href=\"/currency.php?c=USD\"> <div class=\"li_icon nine\"></div> 匯率換算 </a> </li> <li> <a href=\"\"> <div class=\"li_icon info\"></div> 到價提醒 </a> </li> <li class=\"iconbox\"> <a href=\"https://www.addtoany.com/add_to/facebook?linkurl=https://m.findrate.tw/currency.php?c=JPY\" class=\"fb\" title=\"Facebook\" rel=\"nofollow\" target=\"_blank\"><i class=\"fa fa-facebook fa-2x\" aria-hidden=\"true\"></i></a> <a href=\"https://www.addtoany.com/add_to/wechat?linkurl=https://m.findrate.tw/currency.php?c=JPY\" class=\"wechat\" title=\"WeChat\" rel=\"nofollow\" target=\"_blank\"><i class=\"fa fa-weixin fa-2x\" aria-hidden=\"true\"></i></a> <a href=\"https://www.addtoany.com/add_to/google_plus?linkurl=https://m.findrate.tw/currency.php?c=JPY\" class=\"google\" title=\"Google+\" rel=\"nofollow\" target=\"_blank\"><i class=\"fa fa-google-plus fa-2x\" aria-hidden=\"true\"></i></a> </li> </",
+   "head": "<!DOCTYPE html> <html prefix='og: https://ogp.me/ns#' lang=\"zh-TW\" class=\"agent-chrome\"> <head> <title>日幣換算，日幣換台幣，台幣換日幣匯率 - 比率網</title> <meta charset=\"utf-8\"> <meta name=\"publisher\" content=\"比率網Findrate\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\"> <script src=\"https://m.findrate.tw/js//jquery.js\" type=\"text/javascript\"></script> <script src=\"/js/app/global.js\" type=\"text/javascript\"></script> <script src=\"/js/app/tool/scrollbar/jquery.mCustomScrollbar.min.js\" type=\"text/javascript\"></script> <script src=\"/js/app/rate.js\" type=\"text/javascript\"></script> <meta http-equiv=\"X-UA-Compatibl",
+   "api_hints": [
+    "/js/app/rate.js",
+    "/js/app/rate_vue_api.js",
+    "/style/app/exchange_rate/global.css",
+    "/style/app/exchange_rate/reminder_box.css"
+   ]
+  },
+  "FindRate 台銀": {
+   "url": "https://www.findrate.tw/bank/8/",
+   "status": 200,
+   "type": "text/html; charset=UTF-8",
+   "bytes": 35386,
+   "sec": 0.5,
+   "challenge": false,
+   "has_JPY": true,
+   "has_日圓": true,
+   "has_現金": true,
+   "around_JPY": "93039a3f.jpg\"> <span>美金 (USD)</span> </a> </td> <td class=\"purchase number\"> <span>32.631</span> </td> <td class=\"sell number\"> <span>33.213</span> </td> </tr> <tr class=\"data\"> <td> <a href=\"/currency.php?c=JPY\" class=\"a_currency\"> <img src=\"/pic/00/00/04/59-0e290de0ac7988fc.jpg\"> <span>日幣 (JPY)</span> </a> </td> <td class=\"purchase number\"> <span>0.2021</span> </td> <td class=\"sell number\"> <span>0.2111</span> </td> </tr> <tr class=\"data\"> <td> <a href=\"/currency.php?c=EUR\" class=\"a_currency\"> <img src=\"/pic/00/00/04/54-271066b06491b9f2.jpg\"> ",
+   "head": "<!DOCTYPE html> <html prefix='og: https://ogp.me/ns#' lang=\"zh-TW\"> <head> <title>最新富邦銀行牌告匯率 , 富邦銀行銀行匯率換算 - 比率網</title> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\"> <script src=\"/js/fanswoo-framework/tool/jquery-1.12.4.js\" type=\"text/javascript\"></script> <script src=\"https://m.findrate.tw/js/jquery.js\" type=\"text/javascript\"></script> <script src=\"/js/app/global.js\" type=\"text/javascript\"></script> <script src=\"/js/app/tool/scrollbar/jquery.mCustomScrollbar.min.js\" type=\"text/javascript\"></script> <link rel=\"stylesheet\" type=\"text/css\" href=\"/js/app/tool/scrollba",
+   "api_hints": [
+    "/js/app/rate.js",
+    "/style/app/exchange_rate/global.css",
+    "/style/app/exchange_rate/reminder_box.css"
+   ]
+  },
   "永豐 SinoPac": {
    "url": "https://mma.sinopac.com/ws/share/rate/ws_exchange.ashx?exchangeType=REMIT",
    "status": 200,
@@ -12,7 +49,7 @@
    "has_日圓": true,
    "has_現金": false,
    "around_JPY": "br />Bank Sell\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue3\",\"OrderIndex\":\"03\",\"FieldWidth\":\"10\"},{\"HeadText\":\"\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"N\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue4\",\"OrderIndex\":\"04\",\"FieldWidth\":\"10\"},{\"HeadText\":\"\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"N\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue1Img\",\"OrderIndex\":\"05\",\"FieldWidth\":\"10\"}],\"SubInfo\":[{\"DataValue1\":\"美元(USD)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/USD.png\",\"DataValue2\":\"32.8850\",\"DataValue3\":\"32.9900\",\"DataValue4\":\"USD\"},{\"DataValue1\":\"日圓(JPY)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/JPY.png\",\"DataValue2\":\"0.2048\",\"DataValue3\":\"0.2085\",\"DataValue4\":\"JPY\"},{\"DataValue1\":\"港幣(HKD)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/HKD.png\",\"DataValue2\":\"4.1699\",\"DataValue3\":\"4.2262\",\"DataValue4\":\"HKD\"},{\"DataValue1\":\"歐元(EUR)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/EUR.png\",\"DataValue2\":\"36.1037\",\"DataValue3\":\"36.4784\",\"DataValue4\":\"EUR\"},{\"DataValue1\":\"英鎊(GBP)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/GBP.png\",\"DataValue2\":\"43.2792\",\"DataValue3\":\"43.7161\",\"DataValue4\":\"GBP\"},{\"DataValue1\":\"瑞士法郎(CHF)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/CHF.png\",\"DataValue2\":\"39.1087\",\"DataValue3\":\"39.3756\",\"DataValue4\":\"CHF\"},{\"DataValue1\":\"澳幣(AUD)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/AUD.png\",\"DataValue2\":\"22.1514\",\"DataValue3\":\"22.3903\",\"DataValue4\":\"AUD\"},{\"DataValue1\":\"新加坡幣(SGD)\",\"DataValue1Img\":\"/",
-   "head": "[{\"TitleInfo\":\"<font color=#b9160f>報價時間：2026-11-16 15:30:37<br><br>本資訊僅供參考，實際成交匯率以本行牌告交易當下所議定的匯率為準(牌告更新自營業時間9:00至15:30止)。</font>\",\"QueryDate\":\"2026/11/16 15:55:39\",\"HeadInfo\":[{\"HeadText\":\"幣別\",\"HeadAlign\":\"2\",\"DataAlign\":\"1\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue1\",\"OrderIndex\":\"01\",\"FieldWidth\":\"20\"},{\"HeadText\":\"銀行買進<br />Bank Buy\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue2\",\"OrderIndex\":\"02\",\"FieldWidth\":\"10\"},{\"HeadText\":\"銀行賣出<br />Bank Sell\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue3\",\"OrderIndex\":\"03\",\"FieldWidth\":\"10\"},{\"HeadText\":\"\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"N\",\"De",
+   "head": "[{\"TitleInfo\":\"<font color=#b9160f>報價時間：2026-11-16 15:30:37<br><br>本資訊僅供參考，實際成交匯率以本行牌告交易當下所議定的匯率為準(牌告更新自營業時間9:00至15:30止)。</font>\",\"QueryDate\":\"2026/11/16 15:58:53\",\"HeadInfo\":[{\"HeadText\":\"幣別\",\"HeadAlign\":\"2\",\"DataAlign\":\"1\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue1\",\"OrderIndex\":\"01\",\"FieldWidth\":\"20\"},{\"HeadText\":\"銀行買進<br />Bank Buy\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue2\",\"OrderIndex\":\"02\",\"FieldWidth\":\"10\"},{\"HeadText\":\"銀行賣出<br />Bank Sell\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue3\",\"OrderIndex\":\"03\",\"FieldWidth\":\"10\"},{\"HeadText\":\"\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"N\",\"De",
    "api_hints": [
     "/mma8/mobile/images/Rate_Info/AUD.png",
     "/mma8/mobile/images/Rate_Info/CAD.png",
@@ -37,13 +74,13 @@
    "status": 200,
    "type": "application/json; charset=UTF-8",
    "bytes": 3402,
-   "sec": 1.0,
+   "sec": 1.7,
    "challenge": false,
    "has_JPY": true,
    "has_日圓": true,
    "has_現金": false,
    "around_JPY": "br />Bank Sell\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue3\",\"OrderIndex\":\"03\",\"FieldWidth\":\"10\"},{\"HeadText\":\"\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"N\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue4\",\"OrderIndex\":\"04\",\"FieldWidth\":\"10\"},{\"HeadText\":\"\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"N\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue1Img\",\"OrderIndex\":\"05\",\"FieldWidth\":\"10\"}],\"SubInfo\":[{\"DataValue1\":\"美元(USD)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/USD.png\",\"DataValue2\":\"32.6850\",\"DataValue3\":\"33.1900\",\"DataValue4\":\"USD\"},{\"DataValue1\":\"日圓(JPY)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/JPY.png\",\"DataValue2\":\"0.2018\",\"DataValue3\":\"0.2100\",\"DataValue4\":\"JPY\"},{\"DataValue1\":\"港幣(HKD)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/HKD.png\",\"DataValue2\":\"4.1299\",\"DataValue3\":\"4.2662\",\"DataValue4\":\"HKD\"},{\"DataValue1\":\"歐元(EUR)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/EUR.png\",\"DataValue2\":\"35.7537\",\"DataValue3\":\"36.8284\",\"DataValue4\":\"EUR\"},{\"DataValue1\":\"英鎊(GBP)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/GBP.png\",\"DataValue2\":\"-\",\"DataValue3\":\"-\",\"DataValue4\":\"GBP\"},{\"DataValue1\":\"瑞士法郎(CHF)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/CHF.png\",\"DataValue2\":\"-\",\"DataValue3\":\"-\",\"DataValue4\":\"CHF\"},{\"DataValue1\":\"澳幣(AUD)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/AUD.png\",\"DataValue2\":\"-\",\"DataValue3\":\"-\",\"DataValue4\":\"AUD\"},{\"DataValue1\":\"新加坡幣(SGD)\",\"DataValue1Img\":\"/mma8/mobile/images/Rate_Info/SGD.png",
-   "head": "[{\"TitleInfo\":\"<font color=#b9160f>報價時間：2026-11-16 15:30:37<br><br>本資訊僅供參考，實際成交匯率以本行牌告交易當下所議定的匯率為準(牌告更新自營業時間9:00至15:30止)。</font>\",\"QueryDate\":\"2026/11/16 15:55:40\",\"HeadInfo\":[{\"HeadText\":\"幣別\",\"HeadAlign\":\"2\",\"DataAlign\":\"1\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue1\",\"OrderIndex\":\"01\",\"FieldWidth\":\"20\"},{\"HeadText\":\"銀行買進<br />Bank Buy\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue2\",\"OrderIndex\":\"02\",\"FieldWidth\":\"10\"},{\"HeadText\":\"銀行賣出<br />Bank Sell\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue3\",\"OrderIndex\":\"03\",\"FieldWidth\":\"10\"},{\"HeadText\":\"\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"N\",\"De",
+   "head": "[{\"TitleInfo\":\"<font color=#b9160f>報價時間：2026-11-16 15:30:37<br><br>本資訊僅供參考，實際成交匯率以本行牌告交易當下所議定的匯率為準(牌告更新自營業時間9:00至15:30止)。</font>\",\"QueryDate\":\"2026/11/16 15:58:55\",\"HeadInfo\":[{\"HeadText\":\"幣別\",\"HeadAlign\":\"2\",\"DataAlign\":\"1\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue1\",\"OrderIndex\":\"01\",\"FieldWidth\":\"20\"},{\"HeadText\":\"銀行買進<br />Bank Buy\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue2\",\"OrderIndex\":\"02\",\"FieldWidth\":\"10\"},{\"HeadText\":\"銀行賣出<br />Bank Sell\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"Y\",\"DetailShow\":\"N\",\"FieldKey\":\"DataValue3\",\"OrderIndex\":\"03\",\"FieldWidth\":\"10\"},{\"HeadText\":\"\",\"HeadAlign\":\"2\",\"DataAlign\":\"2\",\"MainShow\":\"N\",\"De",
    "api_hints": [
     "/mma8/mobile/images/Rate_Info/AUD.png",
     "/mma8/mobile/images/Rate_Info/CAD.png",
@@ -67,13 +104,13 @@
    "url": "https://www.esunbank.com/zh-tw/personal/deposit/rate/forex/foreign-exchange-rates",
    "status": 200,
    "type": "text/html; charset=utf-8",
-   "bytes": 318172,
-   "sec": 2.2,
+   "bytes": 318271,
+   "sec": 2.5,
    "challenge": false,
    "has_JPY": true,
    "has_日圓": true,
    "has_現金": true,
-   "around_JPY": "15:55:20+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"港幣 現金匯率 銀行買入\",\"description\":\"港幣 現金匯率 銀行買入\",\"currency\":\"HKD\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"4.095\",\"priceCurrency\":\"HKD\",\"validFrom\":\"2026-11-16T15:55:20+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"港幣 現金匯率 銀行賣出\",\"description\":\"港幣 現金匯率 銀行賣出\",\"currency\":\"HKD\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"4.255\",\"priceCurrency\":\"HKD\",\"validFrom\":\"2026-11-16T15:55:20+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"日圓 即期匯率 銀行買入\",\"description\":\"日圓 即期匯率 銀行買入\",\"currency\":\"JPY\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"0.2046\",\"priceCurrency\":\"JPY\",\"validFrom\":\"2026-11-16T15:55:20+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"日圓 即期匯率 銀行賣出\",\"description\":\"日圓 即期匯率 銀行賣出\",\"currency\":\"JPY\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"0.2086\",\"priceCurrency\":\"JPY\",\"validFrom\":\"2026-11-16T15:55:20+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"日圓 網銀/App優惠 銀行買入\",\"description\":\"日圓 網銀/App優惠 銀行買入\",\"currency\":\"JPY\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"0.2058\",\"priceCurrency\":\"JPY\",\"validFrom\":\"2026-11-16T15:55:20+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"日圓 網銀/App優惠 銀行賣出\",\"description\":\"日圓 網銀/App優惠 銀行賣出\",\"currency\":\"JPY\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"0.2074\",\"priceCurrency\":\"JPY\",\"validFrom\":\"2026-11-16T15:55:20+08:00\"}},{\"@type\":\"Exchan",
+   "around_JPY": "15:58:40+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"港幣 現金匯率 銀行買入\",\"description\":\"港幣 現金匯率 銀行買入\",\"currency\":\"HKD\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"4.095\",\"priceCurrency\":\"HKD\",\"validFrom\":\"2026-11-16T15:58:40+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"港幣 現金匯率 銀行賣出\",\"description\":\"港幣 現金匯率 銀行賣出\",\"currency\":\"HKD\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"4.255\",\"priceCurrency\":\"HKD\",\"validFrom\":\"2026-11-16T15:58:40+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"日圓 即期匯率 銀行買入\",\"description\":\"日圓 即期匯率 銀行買入\",\"currency\":\"JPY\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"0.2045\",\"priceCurrency\":\"JPY\",\"validFrom\":\"2026-11-16T15:58:40+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"日圓 即期匯率 銀行賣出\",\"description\":\"日圓 即期匯率 銀行賣出\",\"currency\":\"JPY\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"0.2085\",\"priceCurrency\":\"JPY\",\"validFrom\":\"2026-11-16T15:58:40+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"日圓 網銀/App優惠 銀行買入\",\"description\":\"日圓 網銀/App優惠 銀行買入\",\"currency\":\"JPY\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"0.2057\",\"priceCurrency\":\"JPY\",\"validFrom\":\"2026-11-16T15:58:40+08:00\"}},{\"@type\":\"ExchangeRateSpecification\",\"name\":\"日圓 網銀/App優惠 銀行賣出\",\"description\":\"日圓 網銀/App優惠 銀行賣出\",\"currency\":\"JPY\",\"currentExchangeRate\":{\"@type\":\"UnitPriceSpecification\",\"price\":\"0.2073\",\"priceCurrency\":\"JPY\",\"validFrom\":\"2026-11-16T15:58:40+08:00\"}},{\"@type\":\"Exchan",
    "head": "﻿ <!DOCTYPE html> <html lang=\"zh-Hant-TW\"> <head> <meta charset=\"UTF-8\"> <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"> <link rel=\"shortcut icon\" href=\"/bank/rwd/images/esun.ico\"> <link rel=\"bookmark\" href=\"/bank/rwd/images/esun.ico\"> <script type=\"text/javascript\" nonce=\"da596333238042069913925d12a8b705\"> var digitalData = { site: 'esunbank-zh-tw', page: { pageInfo: { pageID: '{E13C161C-73C6-41FC-B47A-E49EC756DC36}', language: 'zh-TW', NonceValue:'da5963332380420699139",
    "api_hints": [
     "/api/client/ExchangeRate/ForeignExchangeRates?sc_lang=zh-TW",
@@ -112,7 +149,7 @@
    "status": 200,
    "type": "text/html; charset=utf-8",
    "bytes": 200716,
-   "sec": 1.7,
+   "sec": 2.5,
    "challenge": false,
    "has_JPY": true,
    "has_日圓": true,
@@ -134,12 +171,12 @@
    "status": 200,
    "type": "text/html; charset=utf-8",
    "bytes": 37763,
-   "sec": 0.6,
+   "sec": 1.2,
    "challenge": false,
    "has_JPY": true,
    "has_日圓": false,
    "has_現金": false,
-   "around_JPY": "Button\" onclick=\"DetailQuery('10','2')\"/> </div> <!-- 請按我 <input name=\"button23\" type=\"button\" class=\"MainButton3\" onClick=\"DetailQuery('10','2');\" value=\"請按我\" />--> </td> </tr> <tr> <td class=\"ListTitleFont\"> <img src=\"../zh_TW/images/Japan.gif\" width=\"24\" height=\"16\" align=\"middle\" alt=\"日 圓(JPY)\">&nbsp;日 圓(JPY) </td> <td align=\"center\" class=\"ListTitleFont\"><!--即期或現鈔-->即期</td> <td align=\"right\" class=\"ListTitleFont\"> 0.20450 </td> <td align=\"right\" class=\"ListTitleFont\"> 0.20850 </td> <td align=\"center\" class=\"ListTitleFont\"><!-- 請按我 --> <div style=\"width:130px;margin:0 auto;\"> <input type=\"button\" value=\"請按我\" class=\"MainButton\" onclick=\"DetailQuery('11','1')\"/> </div> <!-- 請按我 <input name=\"button23\" type=\"button\" class=\"MainButton3\" onClick=\"",
+   "around_JPY": "Button\" onclick=\"DetailQuery('10','2')\"/> </div> <!-- 請按我 <input name=\"button23\" type=\"button\" class=\"MainButton3\" onClick=\"DetailQuery('10','2');\" value=\"請按我\" />--> </td> </tr> <tr> <td class=\"ListTitleFont\"> <img src=\"../zh_TW/images/Japan.gif\" width=\"24\" height=\"16\" align=\"middle\" alt=\"日 圓(JPY)\">&nbsp;日 圓(JPY) </td> <td align=\"center\" class=\"ListTitleFont\"><!--即期或現鈔-->即期</td> <td align=\"right\" class=\"ListTitleFont\"> 0.20440 </td> <td align=\"right\" class=\"ListTitleFont\"> 0.20840 </td> <td align=\"center\" class=\"ListTitleFont\"><!-- 請按我 --> <div style=\"width:130px;margin:0 auto;\"> <input type=\"button\" value=\"請按我\" class=\"MainButton\" onclick=\"DetailQuery('11','1')\"/> </div> <!-- 請按我 <input name=\"button23\" type=\"button\" class=\"MainButton3\" onClick=\"",
    "head": "﻿ <!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"> <html> <head> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"> <meta http-equiv=\"refresh\" content=\"60\"> <title>第一銀行</title> <LINK HREF='../jsfile/style.css' REL='stylesheet' TYPE='text/css'> </head> <script src=\"../include/common_js.jsp\"></script> <script src=\"../jsfile/calendar.js\"></script> <script src=\"../jsfile/popup.js\"></script> <script language=\"JavaScript\" type=\"text/JavaScript\"> var url = new URL(window.location.href); var isRedirect = ''; isRedirect",
    "api_hints": []
   },
@@ -147,14 +184,14 @@
    "url": "https://www.ctbcbank.com/twrbo/zh_tw/dep_index/dep_ratequery/dep_foreign_rates.html",
    "status": 202,
    "type": "text/html; charset=utf-8",
-   "bytes": 18675,
-   "sec": 1.1,
+   "bytes": 18661,
+   "sec": 1.2,
    "challenge": false,
    "has_JPY": false,
    "has_日圓": false,
    "has_現金": false,
    "around_JPY": "",
-   "head": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html> <head> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"> </head> <body><meta id=\"C610Ac7sMVKeYTgEfrZGFQ\" content=\"{qr0kJpVqq|.lwVjzotTwtpP7UiaIMJ2LO5dRMenBocS87ynOvu3xwQP66cDQLJP2oPt8EYgvbOmFETfPosqRRG.ScUctNwn9btQHyR22otYQxR_T6tYIWl2nchD8RVdvDRPQKJuMo9zQKzdHn3nEsSd3C3vQUyaForzID3ZMUTPtcAbEP22w6mSIoJfHoYbwUm_Q6wyJom0In3bt1l2RKf2kvmYQlmaAvSHHlRe1nGsxf7NUbYwHmxuUowEHlTeAOSlRA7brPlERVJ2DCzU32x6mbRitqgbcc9{9VDNdoPG3WALTWPEhHqqSmoZmxaqnooZiicL9qUZsJAGHlkg8JAJdDkVJkaaScuUSx8AP56dvJIAHgud0J8g6yGd4WIgT5o49xiqZVx_9Kvf_8oyL1bStwlx3st1074266144r0c-1qq8qa3XWu",
+   "head": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> <html> <head> <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"> </head> <body><meta id=\"C610Ac7sMVKeYTgEfrZGFQ\" content=\"{qr0q|.t_ZAu9Oss7x3C0vFpeTIuqUYUeYEC9.UAxpETlFDog93fV.Q1tY379tGAjec7mh.VjwML94bU4gpdfdglt2E.mPbrFSI79Pu1.SqdVP4pXZIgfO7A4WmX25g1h2t79ku1hmDypdVDJNDPYdJ1xrxf9bop3amP01llwgICrcMsLeEf9jMrRJI90PA1NTqC9PFp7aIaSOkUEyQTlPH1RexvlKYrRSkMp3TDklUwmzuqvSJw92PqbzkRqx5Kul3irZCK62MEYYSUopxHmf9mPq3xfQVWZ0c5G._cdgD_AINqXWtr0q8DCgCKnSUE0WPpcSqE0QjA1Sot0QOpGr0qqkYV7qr0qkKIW.hsjSze_jfQ61F0FUFG2Z2_XQzayj.vN9S33KU6XhnQGqqm32011ksL9qq{FKMxLPDXm3eLgaukpiWWCnv",
    "api_hints": []
   },
   "台新 Taishin": {
@@ -162,7 +199,7 @@
    "status": 200,
    "type": "text/html; charset=UTF-8",
    "bytes": 178723,
-   "sec": 2.4,
+   "sec": 4.4,
    "challenge": false,
    "has_JPY": false,
    "has_日圓": true,
@@ -176,14 +213,28 @@
   },
   "華南 HNCB": {
    "url": "https://www.hncb.com.tw/wps/portal/HNCB/exchange-rate",
-   "error": "<urlopen error timed out>"
+   "status": 200,
+   "type": "text/html; charset=UTF-8",
+   "bytes": 186317,
+   "sec": 2.3,
+   "challenge": false,
+   "has_JPY": false,
+   "has_日圓": true,
+   "has_現金": true,
+   "around_JPY": " // 將資料放入對應的 key 中 result[typeKey].push(item); return result; }, {}); return exRateData; } function processCurrencyExRateForHomePage(exRateData) { var resultObject = {}; exRateData.spot.forEach(function (item) { var currency = item.DESC_CHI; var BUY_AMT_BOARD = parseFloat(item.BUY_AMT_BOARD).toFixed(4); var SELL_AMT_BOARD = parseFloat(item.SELL_AMT_BOARD).toFixed(4); if (currency.includes(\"現鈔\")) { currency = currency.replace(\"現鈔\", \"\"); if (\"日圓\" == currency) {//XML裡有日幣跟日圓 currency = \"日幣\"; } resultObject[currency] = resultObject[currency] || {}; resultObject[currency].banknoteBuyRate = BUY_AMT_BOARD; resultObject[currency].banknoteSellRate = SELL_AMT_BOARD; } else { resultObject[currency] = resultObject[currency] || {}; resultObject[currency].spotBuyRate = BUY_AMT_BOARD; resultObject[currency].spotSellRate = SELL_AMT_BOARD; resultObject[currency].DESC_CHI = item.DESC_CHI; resultObject[currency].DESC_ENG = item.DESC_ENG; resultObject[currency].DATE = item.DATE; resultObject[currency].TIME = item.TIME; } }); return resultObject; } function combineHtmlByCurrency(currencyArray, curre",
+   "head": "<!DOCTYPE html> <html class=\"no-js\" lang=\"zh-hant\"> <head> <meta charset=\"utf-8\"> <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"> <meta name=\"title\" content=\"華南銀行\"> <meta name=\"keywords\" content=\"貸款,外匯,信託,財富管理,信用卡,保險,基金,ETF\"> <meta name=\"description\" content=\"華南銀行官網提供貸款、外匯、信託、信用卡、保險、基金、ETF等熱門商品介紹；並提供您網銀及網銀App等相關登入使用資訊，讓您有更好的數位金融體驗。\"> <meta name=\"author\" content=\"華南銀行\"> <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> <meta name=\"theme-color\" content=\"#e4e9ec\"> <link rel=\"stylesheet\" href=\"/wps/contenthandler/!ut/p/digest!tVQr1We2sxqVBJe_GCgxDw/sp/mashup:ra:collection?soffset=0&amp;eoffset=12&amp;them",
+   "api_hints": [
+    "/hncb/asset_v2/manifest.json",
+    "/hncb/rest/exRate/all",
+    "/wps/portal/HNCB/per_finance/deposit/other/large_denomination_time_deposits_rate"
+   ]
   },
   "彰銀 CHB": {
    "url": "https://www.bankchb.com/frontend/G0100_query.jsp",
    "status": 200,
    "type": "text/html;charset=UTF-8",
    "bytes": 427679,
-   "sec": 1.4,
+   "sec": 0.4,
    "challenge": false,
    "has_JPY": true,
    "has_日圓": false,
@@ -197,7 +248,7 @@
    "status": 200,
    "type": "text/html; charset=utf-8",
    "bytes": 115728,
-   "sec": 4.0,
+   "sec": 3.4,
    "challenge": false,
    "has_JPY": false,
    "has_日圓": false,
@@ -213,7 +264,7 @@
    "status": 200,
    "type": "text/html; charset=utf-8",
    "bytes": 255388,
-   "sec": 1.9,
+   "sec": 2.3,
    "challenge": false,
    "has_JPY": false,
    "has_日圓": false,
@@ -247,7 +298,7 @@
    "status": 200,
    "type": "text/html",
    "bytes": 9222,
-   "sec": 4.0,
+   "sec": 8.8,
    "challenge": false,
    "has_JPY": false,
    "has_日圓": false,
@@ -261,7 +312,7 @@
    "status": 200,
    "type": "text/html;charset=UTF-8",
    "bytes": 13370,
-   "sec": 1.5,
+   "sec": 1.6,
    "challenge": false,
    "has_JPY": false,
    "has_日圓": false,
@@ -275,7 +326,7 @@
    "status": 200,
    "type": "text/html",
    "bytes": 1916,
-   "sec": 0.2,
+   "sec": 0.1,
    "challenge": true,
    "has_JPY": false,
    "has_日圓": false,
@@ -288,8 +339,8 @@
    "url": "https://www.findrate.tw/JPY/",
    "status": 200,
    "type": "text/html; charset=UTF-8",
-   "bytes": 40840,
-   "sec": 0.3,
+   "bytes": 40833,
+   "sec": 0.2,
    "challenge": false,
    "has_JPY": true,
    "has_日圓": true,
@@ -302,7 +353,7 @@
    "url": "https://www.findrate.tw/",
    "status": 200,
    "type": "text/html; charset=UTF-8",
-   "bytes": 23674,
+   "bytes": 23692,
    "sec": 0.2,
    "challenge": false,
    "has_JPY": true,
@@ -331,7 +382,7 @@
    "status": 200,
    "type": "application/json; charset=utf-8",
    "bytes": 190852,
-   "sec": 1.9,
+   "sec": 2.0,
    "challenge": false,
    "has_JPY": false,
    "has_日圓": false,
@@ -367,6 +418,33 @@
    "around_JPY": "8,\"COP\":100.829531,\"CRC\":13.671841,\"CUP\":0.729057,\"CVE\":3.03908,\"CZK\":0.672727,\"DJF\":5.398699,\"DKK\":0.205783,\"DOP\":1.849388,\"DZD\":4.163642,\"EGP\":1.624665,\"ERN\":0.455661,\"ETB\":4.917326,\"EUR\":0.027555,\"FJD\":0.069162,\"FKP\":0.023,\"FOK\":0.205782,\"GBP\":0.022995,\"GEL\":0.078844,\"GGP\":0.023,\"GHS\":0.356315,\"GIP\":0.023,\"GMD\":2.274649,\"GNF\":268.514324,\"GTQ\":0.232635,\"GYD\":6.362014,\"HKD\":0.238479,\"HNL\":0.818491,\"HRK\":0.207663,\"HTG\":3.986824,\"HUF\":10.057797,\"IDR\":553.250055,\"ILS\":0.097539,\"IMP\":0.023,\"INR\":2.868102,\"IQD\":46.030615,\"IRR\":57951.219512,\"ISK\":3.757723,\"JEP\":0.023,\"JMD\":4.825463,\"JOD\":0.021538,\"JPY\":4.858541,\"KES\":3.953674,\"KGS\":2.659958,\"KHR\":123.561606,\"KID\":0.044827,\"KMF\":13.559418,\"KRW\":40.58094,\"KWD\":0.009404,\"KYD\":0.025314,\"KZT\":13.545171,\"LAK\":681.101289,\"LBP\":2718.775922,\"LKR\":10.122887,\"LRD\":5.178531,\"LSL\":0.514805,\"LYD\":0.195947,\"MAD\":0.301492,\"MDL\":0.553937,\"MGA\":140.025041,\"MKD\":1.666223,\"MMK\":63.877151,\"MNT\":109.735476,\"MOP\":0.245637,\"MRU\":1.236898,\"MUR\":1.447721,\"MVR\":0.469899,\"MWK\":52.825257,\"MXN\":0.563719,\"MYR\":0.124335,\"MZN\":1.935579,\"NAD\":0.514805,\"NGN\":41.007017,\"NIO\":1.119979,\"NOK\":0.290657,\"NPR\":4.588903,\"NZD\":0.054962,\"OMR\":0.01168,\"PAB\":0.030377,\"PEN\":0.103649,\"PGK\":0.138902,\"PHP\":1.941902,\"PKR\":8.417575,\"PLN\":0.121496,\"PYG\":188.517324,\"QAR\":0.110574,\"RON\":0.147221,\"RSD\":3.237425,\"RUB\":2.510826,\"RWF\":44.94171,\"SAR\":0.113915,\"SBD\":0.2453,\"SCR\":0.444406,\"SDG\":13.808903,\"SEK\":0.306,\"SGD\":0.039152,\"SHP\":0.023,\"SLE\":0.700472,\"SLL\":700.471698,\"SOS\":17.387719,\"S",
    "head": "{\"result\":\"success\",\"provider\":\"https://www.exchangerate-api.com\",\"documentation\":\"https://www.exchangerate-api.com/docs/free\",\"terms_of_use\":\"https://www.exchangerate-api.com/terms\",\"time_last_update_unix\":1794787351,\"time_last_update_utc\":\"Mon, 16 Nov 2026 00:02:31 +0000\",\"time_next_update_unix\":1794874461,\"time_next_update_utc\":\"Tue, 17 Nov 2026 00:14:21 +0000\",\"time_eol_unix\":0,\"base_code\":\"TWD\",\"rates\":{\"TWD\":1,\"AED\":0.111561,\"AFN\":1.960745,\"ALL\":2.497479,\"AMD\":10.956649,\"ANG\":0.054376,\"AOA\":28.068999,\"ARS\":46.994835,\"AUD\":0.044818,\"AWG\":0.054376,\"AZN\":0.051703,\"BAM\":0.053906,\"BBD\":0.060755,\"BDT\":3.800075,\"BGN\":0.053906,\"BHD\":0.011422,\"BIF\":91.15293,\"BMD\":0.030377,\"BND\":0.039156,\"BOB\":0",
    "api_hints": []
+  },
+  "玉山POST ForeignExchangeRates {}": {
+   "error": "HTTP Error 500: Internal Server Error"
+  },
+  "玉山POST ForeignExchangeRates {\"Currency\":\"JPY\",\"Day\":\"90\"}": {
+   "error": "HTTP Error 500: Internal Server Error"
+  },
+  "玉山POST RateInfo {}": {
+   "error": "HTTP Error 500: Internal Server Error"
+  },
+  "玉山POST RateInfo {\"Currency\":\"JPY\",\"Day\":\"90\"}": {
+   "error": "HTTP Error 500: Internal Server Error"
+  },
+  "玉山POST LastRateInfo {}": {
+   "status": 200,
+   "head": "{\"DiscontFlag\":\"T\",\"Rates\":[{\"Name\":\"人民幣\",\"BBoardRate\":4.913,\"SBoardRate\":4.963,\"CashBBoardRate\":\"4.867\",\"CashSBoardRate\":\"5.027\",\"BuyIncreaseRate\":\"4.928\",\"SellDecreaseRate\":\"4.948\",\"UpdateTime\":\"\\/Date(1794815980000)\\/\",\"CCY\":\"CNY/TWD\",\"Key\":\"人民幣\",\"Url\":null,\"Title\":null,\"Serial\":0,\"Alt\":null,\"Bonus\":\"0.015\",\"CashBonus\":null,\"Description\":null},{\"Name\":\"澳幣\",\"BBoardRate\":22.14,\"SBoardRate\":22.36,\"CashBBoardRate\":\"21.85\",\"CashSBoardRate\":\"22.65\",\"BuyIncreaseRate\":\"22.19\",\"SellDecreaseRate\":\"22.31\",\"UpdateTime\":\"\\/Date(1794815980000)\\/\",\"CCY\":\"AUD/TWD\",\"Key\":\"澳幣\",\"Url\":null,\"Title\":null,\"Serial\":0,\"Alt\":null,\"Bonus\":\"0.05\",\"CashBonus\":null,\"Description\":null},{\"Name\":\"歐元\",\"BBoardRate\":36.09,\"SBoardRate\":36.49,\"CashBBoardRate\":\"35.79\",\"CashSBoardRate\":\"36.79\",\"BuyIncreaseRate\":\"36.21\",\"SellDecreaseRate\":\"36.37\",\"UpdateTime\":\"\\/Date(1794815980000)\\/\",\"CCY\":\"EUR/TWD\",\"Key\":\"歐元\",\"Url\":null,\"Title\":null,\"Serial\":0,\"Alt\":null,\"Bonus\":\"0.12\",\"CashBonus\":null,\"Description\":null},{\"Name\":\"日圓\",\"BBoardRate\":0.2045,\"SBoardRate\":0.2085,\"CashBBoardRate\":\"0.2035\",\"CashSBoardRate\":\"0.2105\",\"BuyIncreaseRate\":\"0.2057\",\"SellDecreaseRate\":\"0.2073\",\"UpdateTime\":\"\\/Date(1794815980000)\\/\",\"CCY\":\"JPY/TWD\",\"Key\":\"日圓\",\"Url\":null,\"Title\":null,\"Serial\":0,\"Alt\":null,\"Bonus\":\"0.0012\",\"CashBonus\":null,\"Description\":null},{\"Name\":\"泰銖\",\"BBoardRate\":0.952,\"SBoardRate\":0.992,\"CashBBoardRate\":\"\",\"CashSBoardRate\":\"\",\"BuyIncreaseRate\":\"0.962\",\"SellDecreaseRate\":\"0.982\",\"Upda"
+  },
+  "玉山POST LastRateInfo {\"Currency\":\"JPY\",\"Day\":\"90\"}": {
+   "status": 200,
+   "head": "{\"DiscontFlag\":\"T\",\"Rates\":[{\"Name\":\"人民幣\",\"BBoardRate\":4.913,\"SBoardRate\":4.963,\"CashBBoardRate\":\"4.867\",\"CashSBoardRate\":\"5.027\",\"BuyIncreaseRate\":\"4.928\",\"SellDecreaseRate\":\"4.948\",\"UpdateTime\":\"\\/Date(1794815980000)\\/\",\"CCY\":\"CNY/TWD\",\"Key\":\"人民幣\",\"Url\":null,\"Title\":null,\"Serial\":0,\"Alt\":null,\"Bonus\":\"0.015\",\"CashBonus\":null,\"Description\":null},{\"Name\":\"澳幣\",\"BBoardRate\":22.14,\"SBoardRate\":22.36,\"CashBBoardRate\":\"21.85\",\"CashSBoardRate\":\"22.65\",\"BuyIncreaseRate\":\"22.19\",\"SellDecreaseRate\":\"22.31\",\"UpdateTime\":\"\\/Date(1794815980000)\\/\",\"CCY\":\"AUD/TWD\",\"Key\":\"澳幣\",\"Url\":null,\"Title\":null,\"Serial\":0,\"Alt\":null,\"Bonus\":\"0.05\",\"CashBonus\":null,\"Description\":null},{\"Name\":\"歐元\",\"BBoardRate\":36.09,\"SBoardRate\":36.49,\"CashBBoardRate\":\"35.79\",\"CashSBoardRate\":\"36.79\",\"BuyIncreaseRate\":\"36.21\",\"SellDecreaseRate\":\"36.37\",\"UpdateTime\":\"\\/Date(1794815980000)\\/\",\"CCY\":\"EUR/TWD\",\"Key\":\"歐元\",\"Url\":null,\"Title\":null,\"Serial\":0,\"Alt\":null,\"Bonus\":\"0.12\",\"CashBonus\":null,\"Description\":null},{\"Name\":\"日圓\",\"BBoardRate\":0.2045,\"SBoardRate\":0.2085,\"CashBBoardRate\":\"0.2035\",\"CashSBoardRate\":\"0.2105\",\"BuyIncreaseRate\":\"0.2057\",\"SellDecreaseRate\":\"0.2073\",\"UpdateTime\":\"\\/Date(1794815980000)\\/\",\"CCY\":\"JPY/TWD\",\"Key\":\"日圓\",\"Url\":null,\"Title\":null,\"Serial\":0,\"Alt\":null,\"Bonus\":\"0.0012\",\"CashBonus\":null,\"Description\":null},{\"Name\":\"泰銖\",\"BBoardRate\":0.952,\"SBoardRate\":0.992,\"CashBBoardRate\":\"\",\"CashSBoardRate\":\"\",\"BuyIncreaseRate\":\"0.962\",\"SellDecreaseRate\":\"0.982\",\"Upda"
+  },
+  "玉山POST GetRateQuoteTime {}": {
+   "error": "HTTP Error 500: Internal Server Error"
+  },
+  "玉山POST GetRateQuoteTime {\"Currency\":\"JPY\",\"Day\":\"90\"}": {
+   "error": "HTTP Error 500: Internal Server Error"
   }
- }
+ },
+ "esun_js_error": "[Errno 2] No such file or directory: 'fx-rates/data/probe_raw/____E_SUN.html'"
 }
