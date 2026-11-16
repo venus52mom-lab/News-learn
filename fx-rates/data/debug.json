@@ -1,5 +1,5 @@
 {
- "time": "2026-11-16 17:00",
+ "time": "2026-11-16 17:13",
  "graph": 0,
  "gap_days": 0,
  "today": 19,
@@ -48,14 +48,11 @@
   "MYR": 2482,
   "CNY": 2482,
   "XAU": 5690,
-  "XAG": 5689
+  "XAG": 5688
  },
  "log": [
   {
-   "despike_removed": 2
-  },
-  {
-   "despike_removed": 3
+   "despike_removed": 1
   }
  ]
 }
