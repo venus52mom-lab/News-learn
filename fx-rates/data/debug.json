@@ -1,65 +1,65 @@
 {
- "time": "2026-11-16 15:47",
+ "time": "2026-11-16 15:55",
  "log": [
   {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/KRWTWD=X?period1=0&period2=9999999999&interval=1d",
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/KRWTWD=X?range=1mo&interval=1d",
    "status": 200,
-   "bytes": 652304,
+   "bytes": 3718,
    "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"KRWTWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":107"
   },
   {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/VNDTWD=X?period1=0&period2=9999999999&interval=1d",
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/VNDTWD=X?range=1mo&interval=1d",
    "status": 200,
-   "bytes": 1274,
+   "bytes": 1277,
    "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"VNDTWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":149"
   },
   {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?period1=0&period2=9999999999&interval=1d",
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?range=1mo&interval=1d",
    "status": 200,
-   "bytes": 589141,
+   "bytes": 3410,
    "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"TWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":108008"
   },
   {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/VND=X?period1=0&period2=9999999999&interval=1d",
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/VND=X?range=1mo&interval=1d",
    "status": 200,
-   "bytes": 329011,
+   "bytes": 2319,
    "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"VND\",\"symbol\":\"VND=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":107023"
   },
   {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/MYRTWD=X?period1=0&period2=9999999999&interval=1d",
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/MYRTWD=X?range=1mo&interval=1d",
    "status": 200,
-   "bytes": 564673,
+   "bytes": 3402,
    "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"MYRTWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":107"
   },
   {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/CNYTWD=X?period1=0&period2=9999999999&interval=1d",
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/CNYTWD=X?range=1mo&interval=1d",
    "status": 200,
-   "bytes": 1256,
+   "bytes": 1259,
    "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"CNYTWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":147"
   },
   {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?period1=0&period2=9999999999&interval=1d",
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/TWD=X?range=1mo&interval=1d",
    "status": 200,
-   "bytes": 589141,
+   "bytes": 3410,
    "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"TWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":108008"
   },
   {
-   "url": "https://query1.finance.yahoo.com/v8/finance/chart/CNY=X?period1=0&period2=9999999999&interval=1d",
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/CNY=X?range=1mo&interval=1d",
    "status": 200,
-   "bytes": 665050,
-   "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"CNY\",\"symbol\":\"USDCNY=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":993"
+   "bytes": 3443,
+   "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"CNY\",\"symbol\":\"CNY=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":993423"
   },
   {
    "probe": "https://rate.bot.com.tw/xrt/flcsv/0/day",
    "status": 200,
    "bytes": 1916,
-   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challenge Validation</title><link rel=\"stylesheet\" type=\"text/css\" href=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/Ai1deyNZ/SVVX\"><script type=\"text/javascript\">function cp_clge_done(){location.reload(true);}</script><script src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/M11LXkRC/PGEs\" async defer></script><script type=\"text/javascript\">sessionStorage.setItem('data-duration', 30);</script></head><body><div class=\"sec-container\"><div id=\"sec-text-container\"><iframe title=\"Challenge Message\" id=\"sec-text-if\" class=\"custmsg crypto\" src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/DSJaPREw/XXoBAQ\"></iframe></div><div id=\"sec-if-container\"><iframe title=\"Challenge Content\" id=\"sec-cpt-if\" provider=\"crypto\" class=\"crypto\" challenge=\"eyJ0b2tlbiI6IkFBUUFBQUFPX19fX195MFV1M21SQkRBS0UtX2FJQUl6MUpYX282dDhRUVBvNlJRNVNWRTBGR3BVS0U0Q19pckVQTGFKSWFfMEFJWnA2VlZQbmg0VXY3NlFidlV5a2VlRERxcmI2YTUzY0VRcXlfWWZMTW5EMGx3dnl3ZXcxMDdfOHBQQ25HZFVsV3I2MG9yZ0Nib0lCcEM0WDFaNFZBeXRoZE1MaGtBNmJLRmtBU2RxSzlaQ1dYWVR6TkdJZnNHcUcwLXd4UzdUTm9iZHdKR1lueUR5N1ZwS1dIc1JsNE5pQWpkUTc2MG9jcXVNRW1LSnNrU0Rua1YwY0ZNSGRCc056QVpBSzVvN3lpZzEyUUs0dzdmR2Z6YnBJYVJoakwzZWZ2WnJKXzhyUUNGZ0ZEV2pON0dIOGRBcHBKMmRqVWE1TUd4NE54anRkaUNaZWNBNjBnMUsyc2JRZHciLCJ0aW1lc3RhbXAiOjE3OTQ4MTUyMjksIm5vbmNlIjoiNmNkZjk2MTI4YzA4MjBiODQxOGIiLCJkaWZmaWN1bHR5IjoxNTAwMCwiY291bnQiOjEsInRpbWVvdXQiOjEwMDAsImNwdSI6ZmFsc2UsInZlcmlmeV91cmwiOiJodHRwczovL3JhdGUuYm90LmNvbS50dy96T3hmMXN2RHA4b3ZjRGx3QUp5WDVWQWhpSUEvaExOMW1KT0ROdUVZL1loMERQMllDL1MzQjBOZ1JFL09oVUIifQ==\"  data-key=\"\" data-duration=30 src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/XVRtJmYc/dEEAAQ\"></iframe></div></div><div><input type=\"hidden\" name=\"verify-url\" value=\"zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1mJODNuEY/Yh0DP2YC/S3B0NgRE/OhUB\"></div></body></html>"
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challenge Validation</title><link rel=\"stylesheet\" type=\"text/css\" href=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/Ai1deyNZ/SVVX\"><script type=\"text/javascript\">function cp_clge_done(){location.reload(true);}</script><script src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/M11LXkRC/PGEs\" async defer></script><script type=\"text/javascript\">sessionStorage.setItem('data-duration', 30);</script></head><body><div class=\"sec-container\"><div id=\"sec-text-container\"><iframe title=\"Challenge Message\" id=\"sec-text-if\" class=\"custmsg crypto\" src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/DSJaPREw/XXoBAQ\"></iframe></div><div id=\"sec-if-container\"><iframe title=\"Challenge Content\" id=\"sec-cpt-if\" provider=\"crypto\" class=\"crypto\" challenge=\"eyJ0b2tlbiI6IkFBUUFBQUFPX19fX181MXFnZUFrUDdkdi16a3oyU2M5R212RnVoYjRIWkk3N3ZqdzFWWjdqSnZST3VPMnJ1NWwzcHI3cnlGMVV6dTVpUzZnMFRVcXhCdHl3OHZlSHRvaGFJZVgxTmJyU25NTUp0YS13Um5fQi1kWG1WYmZSWk5kSkZfRTVYOTdVOVFkQ1ZVUVhtOEdzb2hTdEMxb2tTQ1czNnAwajk3empUdjN3VnUxbjJudElQalpWOXhRN3ZtU0l1Mjg2eG9CNlRoZk9nMDB3UndtRTVYLXAwNGlPdmhqMG53TGtESVNURFl2NWVZbDIzS2pIU3c0amtWOXVXeXRoMlE0dXRSZVlRdEUtMkFCZkdoclZ4UW9IR21wcHV5YmUwSktxQkRGRk1JOVRoVVlsVkJUd1VCWHFjRVFRWUtkdlhIeFF3Mnd3M1VyemFqOXl4aXlsNS11MHciLCJ0aW1lc3RhbXAiOjE3OTQ4MTU3MTIsIm5vbmNlIjoiNDdhYjg3YzQ5YTNlOThmMmJkZmIiLCJkaWZmaWN1bHR5IjoxNTAwMCwiY291bnQiOjEsInRpbWVvdXQiOjEwMDAsImNwdSI6ZmFsc2UsInZlcmlmeV91cmwiOiJodHRwczovL3JhdGUuYm90LmNvbS50dy96T3hmMXN2RHA4b3ZjRGx3QUp5WDVWQWhpSUEvaExOMW1KT0ROdUVZL1loMERQMllDL1MzQjBOZ1JFL09oVUIifQ==\"  data-key=\"\" data-duration=30 src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/XVRtJmYc/dEEAAQ\"></iframe></div></div><div><input type=\"hidden\" name=\"verify-url\" value=\"zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1mJODNuEY/Yh0DP2YC/S3B0NgRE/OhUB\"></div></body></html>"
   },
   {
    "probe": "https://rate.bot.com.tw/xrt/fltxt/0/day",
    "status": 200,
    "bytes": 1916,
-   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challenge Validation</title><link rel=\"stylesheet\" type=\"text/css\" href=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/Ai1deyNZ/SVVX\"><script type=\"text/javascript\">function cp_clge_done(){location.reload(true);}</script><script src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/M11LXkRC/PGEs\" async defer></script><script type=\"text/javascript\">sessionStorage.setItem('data-duration', 30);</script></head><body><div class=\"sec-container\"><div id=\"sec-text-container\"><iframe title=\"Challenge Message\" id=\"sec-text-if\" class=\"custmsg crypto\" src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/DSJaPREw/XXoBAQ\"></iframe></div><div id=\"sec-if-container\"><iframe title=\"Challenge Content\" id=\"sec-cpt-if\" provider=\"crypto\" class=\"crypto\" challenge=\"eyJ0b2tlbiI6IkFBUUFBQUFPX19fX18xOXhyYXRXMU0tUG9mWERFdE9RcGxaMFA5R01ReDVkM3VJOFd0OVJUdG9qUjlfR1ZzZzZRVjZXQWZEOHVvWmMzd2tpVTNDRllhYlpRX1NUT2szbFpfaThSSkhMbVBfVkhfaFlMQ04xMHM0eXpZdGNocHJ6bzRhVlRjR1BFMm9JV0pJVEw3LU5ScDI3RkRxUnBoWXA5NnBvVEh1SW1QN21WQlJfSnRGdl9BZmlTNXhNYTc3OFRRUFFQQ01BbUo2alE3bnVQZXZTclRfTnNYNjRiX3plRmh0bWZFWWFYR1pGTnA0RG5lYzJ1R1FCZmV6ZEliWTRlZXdhcjFuTjFLN1JVUUprMl9JUVJtT2lsdUVpa21yeHV3bmctcUF2VDV3QzllanBtYi1oVU1DY0JacFY2Qk1IbUROeG11VUpzNkZxUHRNNlVUdkQxUUF1MFEiLCJ0aW1lc3RhbXAiOjE3OTQ4MTUyMjksIm5vbmNlIjoiYjMxZGZkYmMyY2NhOWE0ZDI3MGEiLCJkaWZmaWN1bHR5IjoxNTAwMCwiY291bnQiOjEsInRpbWVvdXQiOjEwMDAsImNwdSI6ZmFsc2UsInZlcmlmeV91cmwiOiJodHRwczovL3JhdGUuYm90LmNvbS50dy96T3hmMXN2RHA4b3ZjRGx3QUp5WDVWQWhpSUEvaExOMW1KT0ROdUVZL1loMERQMllDL1MzQjBOZ1JFL09oVUIifQ==\"  data-key=\"\" data-duration=30 src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/XVRtJmYc/dEEAAQ\"></iframe></div></div><div><input type=\"hidden\" name=\"verify-url\" value=\"zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1mJODNuEY/Yh0DP2YC/S3B0NgRE/OhUB\"></div></body></html>"
+   "head": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><title>Challenge Validation</title><link rel=\"stylesheet\" type=\"text/css\" href=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/Ai1deyNZ/SVVX\"><script type=\"text/javascript\">function cp_clge_done(){location.reload(true);}</script><script src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/M11LXkRC/PGEs\" async defer></script><script type=\"text/javascript\">sessionStorage.setItem('data-duration', 30);</script></head><body><div class=\"sec-container\"><div id=\"sec-text-container\"><iframe title=\"Challenge Message\" id=\"sec-text-if\" class=\"custmsg crypto\" src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/DSJaPREw/XXoBAQ\"></iframe></div><div id=\"sec-if-container\"><iframe title=\"Challenge Content\" id=\"sec-cpt-if\" provider=\"crypto\" class=\"crypto\" challenge=\"eyJ0b2tlbiI6IkFBUUFBQUFPX19fX18tWWFkNG9ETTJ4WGJmWWZQSU9nMnJEaU43Yld2aWpYM1J3cjJIWTlqTTlrNnVMdS1oM0t3NUNHYjJ4c0JpaVlMSGpzMVYxYVNoSHYwcFNHNjhERDZyNHBnSGQyMlA3cE5mSjlScEphbjNSWXA2ZldlTmpKZXpEN18xb3RhNGtQZ2lvdk9hQXpWbnpvUHROemsxVXVzejZ5TkM0eGpwLWJ2Y1V2MmxHYjg5NXg2ZHk1T0NtRExaaGZOM0VGd1VoSWE2QnAzQThVenJSaXZFcFBRRXBUSlBSWXZrY21uT2FONC1pZGZ5dS00czB4Mm5XT1lxZHlkRWUzLVVRSkg3eDR0RDZHMnQyd2xVaWs0UklIeHRJbnNHTTBDZi1iZlpSRk96R0Z1WGhKVTBBeGUxSDBiSHFQUVBIRzAtQXh1SE0tSkRnMWl2UXpKY2dEX3ciLCJ0aW1lc3RhbXAiOjE3OTQ4MTU3MTIsIm5vbmNlIjoiNTlhNDczMmE3OWQ5ODdlZGI5NjgiLCJkaWZmaWN1bHR5IjoxNTAwMCwiY291bnQiOjEsInRpbWVvdXQiOjEwMDAsImNwdSI6ZmFsc2UsInZlcmlmeV91cmwiOiJodHRwczovL3JhdGUuYm90LmNvbS50dy96T3hmMXN2RHA4b3ZjRGx3QUp5WDVWQWhpSUEvaExOMW1KT0ROdUVZL1loMERQMllDL1MzQjBOZ1JFL09oVUIifQ==\"  data-key=\"\" data-duration=30 src=\"/zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1ut/Yh0DP2YC/XVRtJmYc/dEEAAQ\"></iframe></div></div><div><input type=\"hidden\" name=\"verify-url\" value=\"zOxf1svDp8ovcDlwAJyX5VAhiIA/hLN1mJODNuEY/Yh0DP2YC/S3B0NgRE/OhUB\"></div></body></html>"
   },
   {
    "probe": "https://govdata.bot.com.tw/v3/api-docs",
@@ -68,10 +68,10 @@
   {
    "probe": "https://query1.finance.yahoo.com/v8/finance/chart/JPYTWD=X?range=5d&interval=1d",
    "status": 200,
-   "bytes": 1712,
-   "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"JPYTWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":1070236800,\"regularMarketTime\":1794815205,\"hasPrePostMarketData\":false,\"gmtoffset\":0,\"timezone\":\"GMT\",\"exchangeTimezoneName\":\"Europe/London\",\"regularMarketPrice\":0.2047,\"regularMarketChangePercent\":0.4912,\"fulldayPrice\":0.2047,\"fulldayChange\":0.001,\"fulldayChangePercent\":0.4912,\"fiftyTwoWeekHigh\":0.2137,\"fiftyTwoWeekLow\":0.1953,\"regularMarketDayHigh\":0.2048,\"regularMarketDayLow\":0.2035,\"regularMarketVolume\":0,\"longName\":\"JPY/TWD\",\"shortName\":\"JPY/TWD\",\"chartPreviousClose\":0.2075,\"priceHint\":4,\"currentTradingPeriod\":{\"pre\":{\"timezone\":\"GMT\",\"start\":1794787200,\"end\":1794787200,\"gmtoffset\":0},\"regular\":{\"timezone\":\"GMT\",\"start\":1794787200,\"end\":1794873540,\"gmtoffset\":0},\"post\":{\"timezone\":\"GMT\",\"start\":1794873540,\"end\":1794873540,\"gmtoffset\":0}},\"dataGranularity\":\"1d\",\"range\":\"5d\",\"validRanges\":[\"1d\",\"5d\",\"1mo\",\"3mo\",\"6mo\",\"1y\",\"2y\",\"5y\",\"10y\",\"ytd\",\"max\"]},\"timestamp\":[1794268800,1794355200,1794441600,1794528000,1794815205],\"indicators\":{\"quote\":[{\"close\":[0.20753900706768036,0.20762899518013,0.2058349996805191,0.20601600408554077,0.20469999313354492],\"high\":[0.20841099321842194,0.20768600702285767,0.20679600536823273,0.20617100596427917,0.20479999482631683],\"volume\":[0,0,0,0,0],\"open\":[0.20745700597763062,0.2075980007648468,0.20579899847507477,0.20598900318145752,0.20389999449253082],\"low\":[0.20726299285888672,0.20555299520492554,0.20558099448680878,0.20513300597667694,0.20350000262260437]}],\"adjclose\":[{\"adjclose\":[0.20753900706768036,0.20762899518013,0.2058349996805191,0.20601600408554077,0.20469999313354492]}]}}],\"error\":null}}"
+   "bytes": 1711,
+   "head": "{\"chart\":{\"result\":[{\"meta\":{\"currency\":\"TWD\",\"symbol\":\"JPYTWD=X\",\"exchangeName\":\"CCY\",\"fullExchangeName\":\"CCY\",\"instrumentType\":\"CURRENCY\",\"firstTradeDate\":1070236800,\"regularMarketTime\":1794815505,\"hasPrePostMarketData\":false,\"gmtoffset\":0,\"timezone\":\"GMT\",\"exchangeTimezoneName\":\"Europe/London\",\"regularMarketPrice\":0.2046,\"regularMarketChangePercent\":0.4416,\"fulldayPrice\":0.2046,\"fulldayChange\":9.0E-4,\"fulldayChangePercent\":0.4416,\"fiftyTwoWeekHigh\":0.2137,\"fiftyTwoWeekLow\":0.1953,\"regularMarketDayHigh\":0.2048,\"regularMarketDayLow\":0.2035,\"regularMarketVolume\":0,\"longName\":\"JPY/TWD\",\"shortName\":\"JPY/TWD\",\"chartPreviousClose\":0.2075,\"priceHint\":4,\"currentTradingPeriod\":{\"pre\":{\"timezone\":\"GMT\",\"end\":1794787200,\"start\":1794787200,\"gmtoffset\":0},\"regular\":{\"timezone\":\"GMT\",\"end\":1794873540,\"start\":1794787200,\"gmtoffset\":0},\"post\":{\"timezone\":\"GMT\",\"end\":1794873540,\"start\":1794873540,\"gmtoffset\":0}},\"dataGranularity\":\"1d\",\"range\":\"5d\",\"validRanges\":[\"1d\",\"5d\",\"1mo\",\"3mo\",\"6mo\",\"1y\",\"2y\",\"5y\",\"10y\",\"ytd\",\"max\"]},\"timestamp\":[1794268800,1794355200,1794441600,1794528000,1794815505],\"indicators\":{\"quote\":[{\"open\":[0.20745700597763062,0.2075980007648468,0.20579899847507477,0.20598900318145752,0.20389999449253082],\"high\":[0.20841099321842194,0.20768600702285767,0.20679600536823273,0.20617100596427917,0.20479999482631683],\"close\":[0.20753900706768036,0.20762899518013,0.2058349996805191,0.20601600408554077,0.2046000063419342],\"low\":[0.20726299285888672,0.20555299520492554,0.20558099448680878,0.20513300597667694,0.20350000262260437],\"volume\":[0,0,0,0,0]}],\"adjclose\":[{\"adjclose\":[0.20753900706768036,0.20762899518013,0.2058349996805191,0.20601600408554077,0.2046000063419342]}]}}],\"error\":null}}"
   }
  ],
  "source": "yahoo",
- "rows_changed": 102796
+ "rows_changed": 18
 }
