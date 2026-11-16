@@ -235,7 +235,7 @@ function renderHome() {
   const L = LIST(), hasFx = L.items.some(id => K(id) === "fx");
   $("#rateLabel").innerHTML = `<i class="dot" style="background:${LCOL[S.cur]}"></i>${L.n}` +
     (hasFx ? `<small>銀行牌告・${RATE_NAME[S.rate]}${S.dir === "n" ? "" : "・每千台幣"}</small>` : "");
-  $("#updated").textContent = RECENT ? `更新 ${RECENT.updated.slice(5)}` : "";
+  $("#updated").textContent = hasFx ? (RECENT ? `更新 ${RECENT.updated.slice(5)}` : "") : (MARKETS ? `更新 ${MARKETS.updated.slice(5)}` : "");
   $("#btnMenu").hidden = EDITING; $("#btnDone").hidden = !EDITING;
   const ul = $("#list"); ul.innerHTML = "";
   if (!L.items.length && !EDITING) ul.append(el("li","empty","這個列表還是空的。<br>按右上「•••」→「編輯觀察列表」加入項目。"));
