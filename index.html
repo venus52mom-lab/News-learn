@@ -20,7 +20,7 @@
   --life:#8a9a68; --life-bg:#eceee3;
   --pol:#8f7b6e; --pol-bg:#efe9e5;
   /* 語言色（低飽和） */
-  --en:#5f7a8c; --ja:#a47b7b; --fr:#8a7fa3; --ko:#6d9393; --es:#b0806a; --th:#8b9466;
+  --en:#5f7a8c; --ja:#a47b7b; --fr:#8a7fa3; --ko:#6d9393; --es:#b0806a; --th:#8b9466; --it:#8f8a72;
   --hard:#efe2c4; --hard-line:#c4a46a;
   --c:var(--tw); --cbg:var(--tw-bg); --l:var(--en);
 }
@@ -29,14 +29,14 @@
   --bg:#1b1c1e; --paper:#232427; --ink:#e4e1d9; --soft:#b8b3a8; --mute:#878278; --line:#333438;
   --tw:#86a28f; --world:#8597b0; --fin:#b29d76; --tech:#958fb0; --health:#b8959a; --life:#9cab80; --pol:#a8958a;
   --tw-bg:#232a26; --world-bg:#22262d; --fin-bg:#2b2822; --tech-bg:#26252d; --health-bg:#2c2527; --life-bg:#262922; --pol-bg:#2a2624;
-  --en:#7891a3; --ja:#b08c8c; --fr:#9a90b3; --ko:#7fa3a3; --es:#b8917e; --th:#9aa27a;
+  --en:#7891a3; --ja:#b08c8c; --fr:#9a90b3; --ko:#7fa3a3; --es:#b8917e; --th:#9aa27a; --it:#a5a088;
   --hard:#383226; --hard-line:#9c8455;
 }
 @media (prefers-color-scheme:dark){:root[data-theme=auto]{
   --bg:#1b1c1e; --paper:#232427; --ink:#e4e1d9; --soft:#b8b3a8; --mute:#878278; --line:#333438;
   --tw:#86a28f; --world:#8597b0; --fin:#b29d76; --tech:#958fb0; --health:#b8959a; --life:#9cab80; --pol:#a8958a;
   --tw-bg:#232a26; --world-bg:#22262d; --fin-bg:#2b2822; --tech-bg:#26252d; --health-bg:#2c2527; --life-bg:#262922; --pol-bg:#2a2624;
-  --en:#7891a3; --ja:#b08c8c; --fr:#9a90b3; --ko:#7fa3a3; --es:#b8917e; --th:#9aa27a;
+  --en:#7891a3; --ja:#b08c8c; --fr:#9a90b3; --ko:#7fa3a3; --es:#b8917e; --th:#9aa27a; --it:#a5a088;
   --hard:#383226; --hard-line:#9c8455;
 }}
 body[data-cat=pol]{--c:var(--pol);--cbg:var(--pol-bg)}
@@ -46,7 +46,7 @@ body[data-cat=tech]{--c:var(--tech);--cbg:var(--tech-bg)}
 body[data-cat=health]{--c:var(--health);--cbg:var(--health-bg)}
 body[data-cat=life]{--c:var(--life);--cbg:var(--life-bg)}
 body[data-lang=ja]{--l:var(--ja)} body[data-lang=fr]{--l:var(--fr)} body[data-lang=ko]{--l:var(--ko)}
-body[data-lang=es]{--l:var(--es)} body[data-lang=th]{--l:var(--th)}
+body[data-lang=es]{--l:var(--es)} body[data-lang=it]{--l:var(--it)} body[data-lang=th]{--l:var(--th)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "Noto Sans TC",-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;-webkit-font-smoothing:antialiased}
 button{font-family:inherit}
@@ -125,6 +125,7 @@ main{padding-top:14px;padding-bottom:100px}
 .ent-d{font-size:13.5px;color:var(--soft);line-height:1.65;margin-top:4px}
 .ent-l{display:flex;gap:14px;margin-top:4px;font-size:12.5px}
 .ent-l a,.gh-n a{color:var(--c)}
+.ent-src{color:var(--mute)}
 .ent-n{font-size:12.5px;color:var(--mute);margin-top:4px}
 #gh{border-top-color:var(--world)}
 .gh-sec{padding:12px 0;border-bottom:1px solid var(--line)}
@@ -197,7 +198,9 @@ const LANGS = {
   es:{pol:'política', name:'Español',  short:'ES', tts:'es-ES', words:true, country:'🇪🇸 西班牙',
       gn:'hl=es&gl=ES&ceid=ES:es', life:'estilo de vida OR consumo OR vivienda', extra:{}},
   th:{pol:'การเมือง', name:'ไทย',      short:'TH', tts:'th-TH', country:'🇹🇭 泰國',
-      gn:'hl=th&gl=TH&ceid=TH:th', life:'ไลฟ์สไตล์ OR ชีวิต', extra:{}}
+      gn:'hl=th&gl=TH&ceid=TH:th', life:'ไลฟ์สไตล์ OR ชีวิต', extra:{}},
+  it:{pol:'politica', name:'Italiano', short:'IT', tts:'it-IT', words:true, country:'🇮🇹 義大利',
+      gn:'hl=it&gl=IT&ceid=IT:it', life:'stile di vita OR consumi OR casa', extra:{}}
 };
 const TW_GN = 'hl=zh-TW&gl=TW&ceid=TW:zh-Hant';
 const CATS = {
@@ -516,74 +519,155 @@ function findEntities(text){
   return [...new Set(out)].filter(e => !NOT_ENT.has(e) && e.length > 1).slice(0, 6);
 }
 
-const WIKI = 'https://en.wikipedia.org/w/api.php?format=json&origin=*&';
+/* 維基百科查詢：可指定哪一國語言的維基（wl） */
+const WIKI_NAME = {en:'英文', fr:'法文', es:'西班牙文', it:'義大利文', ja:'日文', ko:'韓文', th:'泰文'};
+const wikiApi = wl => `https://${wl}.wikipedia.org/w/api.php?format=json&origin=*&`;
 const WIKI_PROPS = 'action=query&redirects=1&prop=pageprops|langlinks|extracts&ppprop=disambiguation&lllang=zh&exintro=1&explaintext=1&exsentences=4';
 const entCache = {};
-async function wikiPage(title){
-  const d = await timeout(fetch(WIKI + WIKI_PROPS + '&titles=' + encodeURIComponent(title)).then(r => r.json()), 10000);
+async function wikiPage(title, wl){
+  const d = await timeout(fetch(wikiApi(wl) + WIKI_PROPS + '&titles=' + encodeURIComponent(title)).then(r => r.json()), 10000);
   const p = Object.values(d.query?.pages || {})[0];
-  if(!p || p.missing !== undefined || p.pageprops?.disambiguation !== undefined) return null;
+  if(!p || p.missing !== undefined || p.pageprops?.disambiguation !== undefined || !p.extract) return null;
   return p;
 }
-const toTW = async t => { if(!t) return ''; try{ return (await translate(t, 'zh-CN', 'zh-TW')).t; }catch(e){ return t; } };
-async function explainEntity(ent, headline){
-  const key = ent + '|' + headline;
-  if(entCache[key]) return entCache[key];
-  // 1. 直接查（自動跟隨縮寫的轉址，例如 NATO → 北大西洋公約組織）
-  let p = await wikiPage(ent).catch(() => null);
-  // 2. 縮寫有多種意思時，用標題裡其他字當線索去搜尋，找出「在這則新聞裡」的意思
-  if(!p){
-    const ctx = headline.split(/\s+/).map(w => w.replace(/[^\p{L}]/gu, ''))
-      .filter(w => w.length > 4 && !ent.includes(w) && !STOP.has(w.toLowerCase())).slice(0, 3).join(' ');
-    const s = await timeout(fetch(WIKI + 'action=query&list=search&srlimit=5&srsearch=' + encodeURIComponent(ent + ' ' + ctx)).then(r => r.json()), 10000).catch(() => null);
+async function wikiFind(term, ctx, wl){
+  // 1. 直接查（會自動跟隨縮寫轉址）
+  let p = await wikiPage(term, wl).catch(() => null);
+  if(p) return p;
+  // 2. 有多種意思時，帶上新聞標題的線索去搜尋，找「在這則新聞裡」的意思
+  for(const q of [ctx ? term + ' ' + ctx : null, term].filter(Boolean)){
+    const s = await timeout(fetch(wikiApi(wl) + 'action=query&list=search&srlimit=5&srsearch=' + encodeURIComponent(q)).then(r => r.json()), 10000).catch(() => null);
     for(const h of (s?.query?.search || [])){
-      if(/disambiguation/i.test(h.title)) continue;
-      p = await wikiPage(h.title).catch(() => null);
-      if(p) break;
+      if(/disambiguation|homonymie|desambiguación|disambigua|曖昧さ回避|동음이의|แก้ความกำกวม/i.test(h.title)) continue;
+      p = await wikiPage(h.title, wl).catch(() => null);
+      if(p) return p;
     }
   }
+  return null;
+}
+const toTW = async t => { if(!t) return ''; try{ return (await translate(t, 'zh-CN', 'zh-TW')).t; }catch(e){ return t; } };
+async function explainEntity(ent, headline, wl, term, extraCtx = ''){
+  const key = wl + '|' + ent + '|' + headline;
+  if(entCache[key]) return entCache[key];
+  const latin = /^[\p{Script=Latin}\s\p{P}\d]+$/u.test(headline);
+  const ctx = (latin ? headline.split(/\s+/).map(w => w.replace(/[^\p{L}]/gu, ''))
+      .filter(w => w.length > 4 && !ent.includes(w) && !STOP.has(w.toLowerCase())).slice(0, 3).join(' ') : '') + (extraCtx ? ' ' + extraCtx : '');
+  const p = await wikiFind(term || ent, ctx.trim(), wl);
   if(!p) return entCache[key] = {ent, none:true};
   const zhTitleRaw = p.langlinks?.[0]?.['*'] || '';
   let zhText = '';
   if(zhTitleRaw){
     try{
-      const d = await timeout(fetch('https://zh.wikipedia.org/w/api.php?format=json&origin=*&action=query&prop=extracts&exintro=1&explaintext=1&exsentences=4&titles=' + encodeURIComponent(zhTitleRaw)).then(r => r.json()), 10000);
+      const d = await timeout(fetch(wikiApi('zh') + 'action=query&prop=extracts&exintro=1&explaintext=1&exsentences=4&titles=' + encodeURIComponent(zhTitleRaw)).then(r => r.json()), 10000);
       zhText = Object.values(d.query?.pages || {})[0]?.extract || '';
     }catch(e){}
   }
-  const [zhTitle, zhBody] = await Promise.all([toTW(zhTitleRaw), zhText ? toTW(zhText) : (p.extract ? translate(p.extract.slice(0, 700), 'en', 'zh-TW').then(r => r.t).catch(() => '') : '')]);
+  // 中文維基太短時，改用當地語言的說明翻成中文（當地的說明通常比較完整）
+  const useLocal = !zhText || (wl !== 'en' && zhText.length < 60 && p.extract.length > zhText.length * 2);
+  const [zhTitle, zhBody] = await Promise.all([
+    toTW(zhTitleRaw),
+    useLocal ? translate(p.extract.slice(0, 700), wl, 'zh-TW').then(r => r.t).catch(() => '') : toTW(zhText)
+  ]);
   return entCache[key] = {
-    ent, en:p.title, zh:zhTitle, text:zhBody,
+    ent, wl, local:p.title, zh:zhTitle, text:zhBody,
     isAcr: /^[A-Z][A-Z0-9&.]{1,7}$/.test(ent) && p.title.replace(/\s/g, '') !== ent,
-    url: zhTitleRaw ? 'https://zh.wikipedia.org/zh-tw/' + encodeURIComponent(zhTitleRaw) : 'https://en.wikipedia.org/wiki/' + encodeURIComponent(p.title),
-    news: 'https://news.google.com/search?q=' + encodeURIComponent(p.title) + '&hl=zh-TW&gl=TW&ceid=TW:zh-Hant'
+    url: zhTitleRaw ? 'https://zh.wikipedia.org/zh-tw/' + encodeURIComponent(zhTitleRaw) : `https://${wl}.wikipedia.org/wiki/` + encodeURIComponent(p.title),
+    localUrl: wl !== 'en' || !zhTitleRaw ? `https://${wl}.wikipedia.org/wiki/` + encodeURIComponent(p.title) : '',
+    news: 'https://news.google.com/search?q=' + encodeURIComponent(zhTitle || p.title) + '&hl=zh-TW&gl=TW&ceid=TW:zh-Hant'
   };
 }
-async function englishOf(card){
-  const orig = card.dataset.orig, {mode, lang} = state;
-  if(mode === 'native') return lang === 'en' ? orig : (await translate(orig, lang, 'en')).t;
-  return lang === 'en' && card.dataset.text ? card.dataset.text : (await translate(orig, 'zh-TW', 'en')).t;
+
+/* 法、西、義文：直接從原文標題找專有名詞（大寫開頭、縮寫） */
+const LOCAL_STOP = {
+  fr:'le la les un une des du de et en au aux ce cet cette ces son sa ses il elle ils elles on nous pour par sur avec dans qui que quand comment pourquoi après avant face selon pas plus',
+  es:'el la los las un una unos unas de del y en al con por para su sus que cómo qué tras ante este esta estos estas según sin más',
+  it:'il lo la i gli le un una uno di del della dei delle e in con per su che come dopo prima questo questa questi secondo senza più'
+};
+function findEntitiesLatin(text, lang, enText = ''){
+  const stop = new Set((LOCAL_STOP[lang] || '').split(' '));
+  const toks = text.split(/\s+/).filter(Boolean);
+  const raws = toks.map(t => t.replace(/^[^\p{L}\p{N}]+/u, '').replace(/[^\p{L}\p{N}.]+$/u, '').replace(/\.$/, ''));
+  const words = raws.map(r => r.replace(/^(l|d|qu|j|n|s|c|all|dell|nell|sull)['’]/i, ''));
+  const isAcr = w => /^\p{Lu}[\p{Lu}0-9&]{1,6}$/u.test((w || '').replace(/\./g, ''));
+  const isEnt = w => !!w && (isAcr(w) || (/^\p{Lu}\p{Ll}/u.test(w) && !stop.has(w.toLowerCase())));
+  const out = []; let cur = [], start = -1;
+  const flush = () => {
+    // 句首單字可能只是大寫的普通字；如果英文翻譯裡原樣保留（人名、地名不會被翻），才當成專有名詞
+    if(cur.length && !(start === 0 && cur.length === 1 && !isAcr(cur[0]) && !enText.includes(cur[0]))) out.push(cur.join(' '));
+    cur = []; start = -1;
+  };
+  toks.forEach((t, i) => {
+    const w = words[i];
+    if(/^["“‘«(]/.test(t)) flush();
+    if(isEnt(w)){ if(!cur.length) start = i; cur.push(cur.length ? raws[i] : w); }
+    else if(cur.length && ['de','du','des','la','del','di','della','dei','delle'].includes(w) && isEnt(words[i + 1])) cur.push(w);
+    else flush();
+    if(/[,:;?!"”»)]$/.test(t)) flush();
+  });
+  flush();
+  return [...new Set(out)].filter(e => e.length > 1).slice(0, 6);
 }
+
+/* 決定這則新聞要用哪一國的維基、找出哪些名詞 */
+async function planEntities(card){
+  const orig = card.dataset.orig, {mode, lang, cat} = state;
+  const toEn = async () => mode === 'native' ? (lang === 'en' ? orig : (await translate(orig, lang, 'en')).t)
+                                              : (lang === 'en' && card.dataset.text ? card.dataset.text : (await translate(orig, 'zh-TW', 'en')).t);
+  // 台灣新聞模式、或當地模式的「國際」版：用國際通用（英文）名稱查
+  if(mode !== 'native' || cat === 'world'){
+    const en = await toEn();
+    return {wl:'en', items: findEntities(en).map(e => ({ent:e, term:e, headline:en})), note:'國際通用名稱'};
+  }
+  const regionCtx = lang === 'en' ? ({us:'United States', uk:'United Kingdom', au:'Australia', nz:'New Zealand'})[state.region] : '';
+  // 英文當地新聞：用英文維基，並帶上國家當線索
+  if(lang === 'en') return {wl:'en', items: findEntities(orig).map(e => ({ent:e, term:e, headline:orig, extra:regionCtx})), note:cfg('en').country.split(' ')[1] + '當地'};
+  // 法、西、義文：直接從原文抓名詞，到當地維基查
+  if(LOCAL_STOP[lang]){ let en = ''; try{ en = await toEn(); }catch(e){}
+    return {wl:lang, items: findEntitiesLatin(orig, lang, en).map(e => ({ent:e, term:e, headline:orig})), note:WIKI_NAME[lang] + '維基'}; }
+  // 日、韓、泰文：先從英文翻譯找出名詞，再翻回當地語言，到當地維基查
+  const en = await toEn();
+  const ents = findEntities(en);
+  const items = await Promise.all(ents.map(async e => {
+    let term = e; try{ term = (await translate(e, 'en', lang)).t || e; }catch(err){}
+    return {ent:term, term, headline:orig, enName:e};
+  }));
+  return {wl:lang, items, note:WIKI_NAME[lang] + '維基'};
+}
+
 async function toggleEnts(card){
   const box = card.querySelector('.ents');
   if(!box.classList.contains('hidden')){ box.classList.add('hidden'); return; }
   box.classList.remove('hidden');
   if(box.dataset.done) return;
   box.innerHTML = `<div class="ent-h">🔍 名詞解釋</div><div class="skel"></div>`;
-  let en = '';
-  try{ en = await englishOf(card); }catch(e){}
-  const ents = findEntities(en);
-  if(!ents.length){ box.innerHTML = `<div class="ent-h">🔍 名詞解釋</div><div class="ent-n">這則標題沒有找到需要解釋的專有名詞或縮寫。</div>`; box.dataset.done = 1; return; }
-  const res = await Promise.all(ents.map(e => explainEntity(e, en).catch(() => ({ent:e, none:true}))));
+  let plan = {wl:'en', items:[], note:''};
+  try{ plan = await planEntities(card); }catch(e){}
+  if(!plan.items.length){ box.innerHTML = `<div class="ent-h">🔍 名詞解釋</div><div class="ent-n">這則標題沒有找到需要解釋的專有名詞或縮寫。</div>`; box.dataset.done = 1; return; }
+  const res = await Promise.all(plan.items.map(async it => {
+    let r = await explainEntity(it.ent, it.headline, plan.wl, it.term, it.extra).catch(() => ({ent:it.ent, none:true}));
+    // 當地維基查不到時，退回英文維基
+    if(r.none && plan.wl !== 'en'){
+      const enTerm = it.enName || it.ent;
+      r = await explainEntity(enTerm, it.headline, 'en', enTerm).catch(() => r);
+      if(!r.none) r = {...r, ent:it.ent, fallback:true};
+    }
+    return r;
+  }));
   const found = res.filter(r => !r.none);
-  box.innerHTML = `<div class="ent-h">🔍 名詞解釋 <small>資料來源：維基百科</small></div>` +
-    (found.length ? found.map(r => `
+  const nameLabel = wl => wl === 'en' ? '英文' : WIKI_NAME[wl] + '原名';
+  box.innerHTML = `<div class="ent-h">🔍 名詞解釋 <small>優先查：${esc(plan.note)}</small></div>` +
+    found.map(r => `
       <div class="ent">
         <div class="ent-t"><b>${esc(r.ent)}</b>${r.zh ? `　${esc(r.zh)}` : ''}</div>
-        ${r.isAcr ? `<div class="ent-full">全稱：${esc(r.en)}</div>` : (r.en !== r.ent ? `<div class="ent-full">英文：${esc(r.en)}</div>` : '')}
+        ${r.isAcr ? `<div class="ent-full">全稱：${esc(r.local)}</div>` : (r.local !== r.ent ? `<div class="ent-full">${nameLabel(r.wl)}：${esc(r.local)}</div>` : '')}
         <div class="ent-d">${esc(r.text || '（維基百科沒有摘要）')}</div>
-        <div class="ent-l"><a href="${r.url}" target="_blank" rel="noopener">維基百科全文 ↗</a><a href="${r.news}" target="_blank" rel="noopener">相關新聞 ↗</a></div>
-      </div>`).join('') : '') +
+        <div class="ent-l">
+          <a href="${r.url}" target="_blank" rel="noopener">${r.url.includes('zh.wikipedia') ? '中文維基' : WIKI_NAME[r.wl] + '維基'} ↗</a>
+          ${r.localUrl && !r.url.startsWith(`https://${r.wl}.`) ? `<a href="${r.localUrl}" target="_blank" rel="noopener">${WIKI_NAME[r.wl]}維基 ↗</a>` : ''}
+          <a href="${r.news}" target="_blank" rel="noopener">相關新聞 ↗</a>
+          <span class="ent-src">${r.fallback ? '（當地查不到，改用英文維基）' : ''}</span>
+        </div>
+      </div>`).join('') +
     (res.length > found.length ? `<div class="ent-n">查不到：${res.filter(r => r.none).map(r => esc(r.ent)).join('、')}</div>` : '');
   box.dataset.done = 1;
 }
