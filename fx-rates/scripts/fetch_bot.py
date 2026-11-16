@@ -169,14 +169,32 @@ def sinopac_now():
 
 def yahoo(sym, full):
     q = "?period1=0&period2=9999999999&interval=1d" if full else "?range=1mo&interval=1d"
+    for host in ("query1", "query2"):          # 一台被限流就換另一台
+        txt = http(f"https://{host}.finance.yahoo.com/v8/finance/chart/" + urllib.parse.quote(sym, safe="=^") + q,
+                   headers={"User-Agent": "Mozilla/5.0"}, tries=2)
+        try:
+            res = json.loads(txt)["chart"]["result"][0]
+            off = res["meta"].get("gmtoffset", 0)
+            out = {dt.datetime.fromtimestamp(t + off, dt.timezone.utc).strftime("%Y%m%d"): c
+                   for t, c in zip(res.get("timestamp") or [], res["indicators"]["quote"][0].get("close") or []) if c and c > 0}
+            if out:
+                return out
+        except Exception as e:  # noqa: BLE001
+            DIAG.append({"yahoo": f"{host} {sym}", "error": str(e)[:100]})
+    return {}
+
+
+CAPI = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@{v}/v1/currencies/{c}.json"
+
+
+def currency_api(code, day=None):
+    """公開匯率資料庫（jsDelivr）：1 單位 code = ? 台幣。day=None 取最新。回傳 (YYYYMMDD, 值)"""
+    txt = http(CAPI.format(v=day.strftime("%Y-%m-%d") if day else "latest", c=code.lower()), tries=2)
     try:
-        res = json.loads(http("https://query1.finance.yahoo.com/v8/finance/chart/" + urllib.parse.quote(sym, safe="=^") + q))["chart"]["result"][0]
-        off = res["meta"].get("gmtoffset", 0)
-        return {dt.datetime.fromtimestamp(t + off, dt.timezone.utc).strftime("%Y%m%d"): c
-                for t, c in zip(res.get("timestamp") or [], res["indicators"]["quote"][0].get("close") or []) if c and c > 0}
-    except Exception as e:  # noqa: BLE001
-        DIAG.append({"yahoo": sym, "error": str(e)[:150]})
-        return {}
+        j = json.loads(txt)
+        return j["date"].replace("-", ""), float(j[code.lower()]["twd"])
+    except Exception:  # noqa: BLE001
+        return None, None
 
 
 def stooq(sym):
@@ -264,7 +282,7 @@ def write_recent(store):
 
 def write_diag(extra):
     with open(os.path.join(ROOT, "debug.json"), "w", encoding="utf-8") as f:
-        json.dump({"time": now_tpe().strftime("%Y-%m-%d %H:%M"), **extra, "log": DIAG[-20:]},
+        json.dump({"time": now_tpe().strftime("%Y-%m-%d %H:%M"), **extra, "log": DIAG[-40:]},
                   f, ensure_ascii=False, indent=1)
 
 
@@ -368,6 +386,20 @@ def update(max_minutes=45):
     for m in METALS:
         h = {} if fresh_start else load_hist(m)
         rows = metal_twd_per_gram(m, full=len(h) < 200)
+        if not rows:   # Yahoo、stooq 都不行 → 公開匯率資料庫（最新＋缺的最近 120 天）
+            nd = 2 if m == "XAU" else 3
+            d0, v = currency_api(m)
+            if v:
+                rows[d0] = round(v / OZ, nd)
+            if len(h) < 60:
+                for i in range(1, 121):
+                    day = today - dt.timedelta(days=i)
+                    if day.weekday() < 5 and day.strftime("%Y%m%d") not in h:
+                        dd, vv = currency_api(m, day)
+                        if vv:
+                            rows[dd] = round(vv / OZ, nd)
+                        time.sleep(0.2)
+            stats[m + "_src"] = "currency-api"
         for d, v in rows.items():
             h[d] = [d, v, v, v, v, "國際"]
         if h:
