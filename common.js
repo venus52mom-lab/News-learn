@@ -62,7 +62,9 @@ const BUILTIN = {
     au:{cc:'AU', place:'澳洲', accent:'澳洲英語', tts:'en-AU', hl:'en-AU', extra:{local:['https://www.abc.net.au/news/feed/51120/rss.xml']}},
     nz:{cc:'NZ', place:'紐西蘭', accent:'紐西蘭英語', tts:'en-NZ', hl:'en-NZ', extra:{local:['https://www.rnz.co.nz/rss/national.xml'], world:['https://www.rnz.co.nz/rss/world.xml'], fin:['https://www.rnz.co.nz/rss/business.xml']}},
     ca:{cc:'CA', place:'加拿大', accent:'加拿大英語', tts:'en-CA', hl:'en-CA'},
-    sg:{cc:'SG', place:'新加坡', accent:'新加坡英語', tts:'en-SG', hl:'en-SG'} }},
+    sg:{cc:'SG', place:'新加坡', accent:'新加坡英語', tts:'en-SG', hl:'en-SG'},
+    ie:{cc:'IE', place:'愛爾蘭', accent:'愛爾蘭英語', tts:'en-IE', hl:'en-IE'},
+    mt:{cc:'MT', place:'馬爾他', accent:'馬爾他英語', tts:'en-GB', hl:'en'} }},
   ja:{name:'日本語', short:'JA', pol:'政治', life:'暮らし OR 生活', regions:{
     jp:{cc:'JP', place:'日本', accent:'日語（標準語）', tts:'ja-JP', hl:'ja', extra:{pol:[NHK(4)], local:[NHK(1)], world:[NHK(6)], fin:[NHK(5)], tech:[NHK(3)], health:[NHK(3)]}} }},
   ko:{name:'한국어', short:'KO', words:true, pol:'정치', life:'생활 OR 라이프', regions:{
@@ -71,21 +73,92 @@ const BUILTIN = {
     fr:{cc:'FR', place:'法國', accent:'法國法語', tts:'fr-FR', hl:'fr'},
     ch:{cc:'CH', place:'瑞士', accent:'瑞士法語', tts:'fr-CH', hl:'fr'},
     ca:{cc:'CA', place:'加拿大', accent:'加拿大法語（魁北克）', tts:'fr-CA', hl:'fr-CA'},
-    be:{cc:'BE', place:'比利時', accent:'比利時法語', tts:'fr-BE', hl:'fr'} }},
+    be:{cc:'BE', place:'比利時', accent:'比利時法語', tts:'fr-BE', hl:'fr'},
+    lu:{cc:'LU', place:'盧森堡', accent:'盧森堡法語', tts:'fr-LU', hl:'fr'},
+    mc:{cc:'MC', place:'摩納哥', accent:'摩納哥法語', tts:'fr-FR', hl:'fr'} }},
   de:{name:'Deutsch', short:'DE', words:true, pol:'Politik', life:'Leben OR Verbraucher OR Wohnen', regions:{
     de:{cc:'DE', place:'德國', accent:'德國德語', tts:'de-DE', hl:'de'},
     ch:{cc:'CH', place:'瑞士', accent:'瑞士德語', tts:'de-CH', hl:'de'},
-    at:{cc:'AT', place:'奧地利', accent:'奧地利德語', tts:'de-AT', hl:'de'} }},
+    at:{cc:'AT', place:'奧地利', accent:'奧地利德語', tts:'de-AT', hl:'de'},
+    lu:{cc:'LU', place:'盧森堡', accent:'盧森堡德語', tts:'de-LU', hl:'de'},
+    li:{cc:'LI', place:'列支敦斯登', accent:'列支敦斯登德語', tts:'de-CH', hl:'de'} }},
   es:{name:'Español', short:'ES', words:true, pol:'política', life:'estilo de vida OR consumo OR vivienda', regions:{
     es:{cc:'ES', place:'西班牙', accent:'西班牙西語', tts:'es-ES', hl:'es'} }},
   it:{name:'Italiano', short:'IT', words:true, pol:'politica', life:'stile di vita OR consumi OR casa', regions:{
-    it:{cc:'IT', place:'義大利', accent:'義大利語', tts:'it-IT', hl:'it'} }},
+    it:{cc:'IT', place:'義大利', accent:'義大利語', tts:'it-IT', hl:'it'},
+    ch:{cc:'CH', place:'瑞士', accent:'瑞士義大利語', tts:'it-CH', hl:'it'},
+    sm:{cc:'SM', place:'聖馬利諾', accent:'義大利語', tts:'it-IT', hl:'it'} }},
   id:{name:'Bahasa Indonesia', short:'ID', words:true, pol:'politik', life:'gaya hidup OR kuliner OR wisata', regions:{
     id:{cc:'ID', place:'印尼', accent:'印尼語', tts:'id-ID', hl:'id'} }},
   th:{name:'ไทย', short:'TH', pol:'การเมือง', life:'ไลฟ์สไตล์ OR ชีวิต', regions:{
-    th:{cc:'TH', place:'泰國', accent:'泰語', tts:'th-TH', hl:'th'} }}
+    th:{cc:'TH', place:'泰國', accent:'泰語', tts:'th-TH', hl:'th'} }},
+  vi:{name:'Tiếng Việt', short:'VI', words:true, pol:'chính trị', life:'đời sống', regions:{
+    vn:{cc:'VN', place:'越南', accent:'越南語（北部）', tts:'vi-VN', hl:'vi'} }},
+  pt:{name:'Português', short:'PT', words:true, pol:'política', life:'estilo de vida OR consumo', regions:{
+    pt:{cc:'PT', place:'葡萄牙', accent:'葡萄牙葡語', tts:'pt-PT', hl:'pt-PT'},
+    br:{cc:'BR', place:'巴西', accent:'巴西葡語', tts:'pt-BR', hl:'pt-BR'} }},
+  nl:{name:'Nederlands', short:'NL', words:true, pol:'politiek', life:'leven OR consument', regions:{
+    nl:{cc:'NL', place:'荷蘭', accent:'荷蘭語', tts:'nl-NL', hl:'nl'},
+    be:{cc:'BE', place:'比利時（法蘭德斯）', accent:'比利時荷語', tts:'nl-BE', hl:'nl'} }},
+  sv:{name:'Svenska', short:'SV', words:true, pol:'politik', life:'livsstil OR konsument', regions:{
+    se:{cc:'SE', place:'瑞典', accent:'瑞典語', tts:'sv-SE', hl:'sv'} }},
+  no:{name:'Norsk', short:'NO', words:true, pol:'politikk', life:'livsstil OR forbruker', regions:{
+    no:{cc:'NO', place:'挪威', accent:'挪威語', tts:'nb-NO', hl:'no'} }},
+  da:{name:'Dansk', short:'DA', words:true, pol:'politik', life:'livsstil OR forbruger', regions:{
+    dk:{cc:'DK', place:'丹麥', accent:'丹麥語', tts:'da-DK', hl:'da', extra:{local:['https://www.dr.dk/nyheder/service/feeds/allenyheder']}} }},
+  fi:{name:'Suomi', short:'FI', words:true, pol:'politiikka', life:'elämäntapa OR kuluttaja', regions:{
+    fi:{cc:'FI', place:'芬蘭', accent:'芬蘭語', tts:'fi-FI', hl:'fi', extra:{local:['https://yle.fi/rss/uutiset/tuoreimmat']}} }},
+  is:{name:'Íslenska', short:'IS', words:true, pol:'stjórnmál', life:'lífsstíll', regions:{
+    is:{cc:'IS', place:'冰島', accent:'冰島語', tts:'is-IS', hl:'is', extra:{local:['https://www.ruv.is/rss/frettir']}} }},
+  cs:{name:'Čeština', short:'CS', words:true, pol:'politika', life:'životní styl OR spotřebitel', regions:{
+    cz:{cc:'CZ', place:'捷克', accent:'捷克語', tts:'cs-CZ', hl:'cs'} }},
+  sk:{name:'Slovenčina', short:'SK', words:true, pol:'politika', life:'životný štýl', regions:{
+    sk:{cc:'SK', place:'斯洛伐克', accent:'斯洛伐克語', tts:'sk-SK', hl:'sk'} }},
+  pl:{name:'Polski', short:'PL', words:true, pol:'polityka', life:'styl życia OR konsument', regions:{
+    pl:{cc:'PL', place:'波蘭', accent:'波蘭語', tts:'pl-PL', hl:'pl'} }},
+  hu:{name:'Magyar', short:'HU', words:true, pol:'politika', life:'életmód OR fogyasztó', regions:{
+    hu:{cc:'HU', place:'匈牙利', accent:'匈牙利語', tts:'hu-HU', hl:'hu'} }},
+  sl:{name:'Slovenščina', short:'SL', words:true, pol:'politika', life:'življenjski slog', regions:{
+    si:{cc:'SI', place:'斯洛維尼亞', accent:'斯洛維尼亞語', tts:'sl-SI', hl:'sl'} }},
+  et:{name:'Eesti', short:'ET', words:true, pol:'poliitika', life:'elustiil', regions:{
+    ee:{cc:'EE', place:'愛沙尼亞', accent:'愛沙尼亞語', tts:'et-EE', hl:'et', extra:{local:['https://www.err.ee/rss']}} }},
+  lv:{name:'Latviešu', short:'LV', words:true, pol:'politika', life:'dzīvesstils', regions:{
+    lv:{cc:'LV', place:'拉脫維亞', accent:'拉脫維亞語', tts:'lv-LV', hl:'lv'} }},
+  lt:{name:'Lietuvių', short:'LT', words:true, pol:'politika', life:'gyvenimo būdas', regions:{
+    lt:{cc:'LT', place:'立陶宛', accent:'立陶宛語', tts:'lt-LT', hl:'lt'} }},
+  uk:{name:'Українська', short:'UK', words:true, pol:'політика', life:'стиль життя', regions:{
+    ua:{cc:'UA', place:'烏克蘭', accent:'烏克蘭語', tts:'uk-UA', hl:'uk'} }},
+  ro:{name:'Română', short:'RO', words:true, pol:'politică', life:'stil de viață', regions:{
+    ro:{cc:'RO', place:'羅馬尼亞', accent:'羅馬尼亞語', tts:'ro-RO', hl:'ro'},
+    md:{cc:'MD', place:'摩爾多瓦', accent:'摩爾多瓦羅語', tts:'ro-MD', hl:'ro'} }},
+  bg:{name:'Български', short:'BG', words:true, pol:'политика', life:'начин на живот', regions:{
+    bg:{cc:'BG', place:'保加利亞', accent:'保加利亞語', tts:'bg-BG', hl:'bg'} }},
+  ru:{name:'Русский', short:'RU', words:true, pol:'политика', life:'образ жизни', regions:{
+    ru:{cc:'RU', place:'俄羅斯', accent:'俄語', tts:'ru-RU', hl:'ru'} }},
+  el:{name:'Ελληνικά', short:'EL', words:true, pol:'πολιτική', life:'τρόπος ζωής', regions:{
+    gr:{cc:'GR', place:'希臘', accent:'希臘語', tts:'el-GR', hl:'el'},
+    cy:{cc:'CY', place:'賽普勒斯', accent:'賽普勒斯希臘語', tts:'el-CY', hl:'el'} }},
+  hr:{name:'Hrvatski', short:'HR', words:true, pol:'politika', life:'životni stil', regions:{
+    hr:{cc:'HR', place:'克羅埃西亞', accent:'克羅埃西亞語', tts:'hr-HR', hl:'hr'} }},
+  sr:{name:'Српски', short:'SR', words:true, pol:'политика', life:'начин живота', regions:{
+    rs:{cc:'RS', place:'塞爾維亞', accent:'塞爾維亞語', tts:'sr-RS', hl:'sr'},
+    me:{cc:'ME', place:'蒙特內哥羅', accent:'蒙特內哥羅語', tts:'sr-ME', hl:'sr'} }},
+  bs:{name:'Bosanski', short:'BS', words:true, pol:'politika', life:'životni stil', regions:{
+    ba:{cc:'BA', place:'波士尼亞與赫塞哥維納', accent:'波士尼亞語', tts:'bs-BA', hl:'bs'} }},
+  sq:{name:'Shqip', short:'SQ', words:true, pol:'politika', life:'stili i jetesës', regions:{
+    al:{cc:'AL', place:'阿爾巴尼亞', accent:'阿爾巴尼亞語', tts:'sq-AL', hl:'sq'},
+    xk:{cc:'XK', place:'科索沃', accent:'科索沃阿語', tts:'sq-XK', hl:'sq'} }},
+  mk:{name:'Македонски', short:'MK', words:true, pol:'политика', life:'животен стил', regions:{
+    mk:{cc:'MK', place:'北馬其頓', accent:'馬其頓語', tts:'mk-MK', hl:'mk'} }},
+  mt:{name:'Malti', short:'MT', words:true, pol:'politika', life:'stil ta’ ħajja', regions:{
+    mt:{cc:'MT', place:'馬爾他', accent:'馬爾他語', tts:'mt-MT', hl:'mt'} }},
+  ca:{name:'Català', short:'CA', words:true, pol:'política', life:'estil de vida', regions:{
+    ad:{cc:'AD', place:'安道爾', accent:'安道爾加泰隆尼亞語', tts:'ca-AD', hl:'ca'},
+    es:{cc:'ES', place:'西班牙（加泰隆尼亞）', accent:'加泰隆尼亞語', tts:'ca-ES', hl:'ca'} }},
+  tr:{name:'Türkçe', short:'TR', words:true, pol:'siyaset', life:'yaşam', regions:{
+    tr:{cc:'TR', place:'土耳其', accent:'土耳其語', tts:'tr-TR', hl:'tr'} }}
 };
-const LANG_COLORS = {en:'#5f7a8c', ja:'#a47b7b', fr:'#8a7fa3', ko:'#6d9393', es:'#b0806a', th:'#8b9466', it:'#8f8a72', de:'#7a8a7e', id:'#a0866e', zh:'#6f8f7a'};
+const LANG_COLORS = {vi:'#8d9a7a', pt:'#9c8070', nl:'#8a8f9c', sv:'#7d8fa0', no:'#8e8797', da:'#a08588', fi:'#7f9b9b', is:'#8a98a6', cs:'#9a8a7c', sk:'#8f8f7d', pl:'#a3878a', hu:'#89977f', sl:'#82949a', et:'#7f8aa0', lv:'#9b8279', lt:'#8f9a72', uk:'#7d8fa6', ro:'#a08c74', bg:'#8a9a88', ru:'#93868f', el:'#7a8fa8', hr:'#9a8580', sr:'#8b7f8f', bs:'#88937f', sq:'#a0817d', mk:'#a38f72', mt:'#8f8a7f', ca:'#a08478', tr:'#a07d80', en:'#5f7a8c', ja:'#a47b7b', fr:'#8a7fa3', ko:'#6d9393', es:'#b0806a', th:'#8b9466', it:'#8f8a72', de:'#7a8a7e', id:'#a0866e', zh:'#6f8f7a'};
 const CUSTOM_COLORS = ['#7f8fa0','#a08a8f','#8f9a84','#9a8fa8','#a8977e','#7e9a9a'];
 
 /* 自訂語言／地區（只是設定，存在手機瀏覽器，很小） */
@@ -123,12 +196,27 @@ async function catKeyword(lang, cat){
   try{ kwCache[k] = (await translate(cat === 'pol' ? 'politics' : 'lifestyle', 'en', lang)).t; }catch(e){ kwCache[k] = cat === 'pol' ? 'politics' : 'lifestyle'; }
   return kwCache[k];
 }
+/* Google 新聞沒有當地版本的國家，先改用 Bing 新聞（同樣免費、可用當地語言） */
+const NO_GN = new Set(['DK','FI','IS','EE','HR','BA','AL','MK','ME','LU','MT','CY','MD','AD','MC','LI','SM','XK','BY','IE']);
+const BING_CAT = {local:'', world:'international', fin:'economy', pol:'politics', tech:'technology', health:'health', life:'lifestyle'};
+async function bingQuery(lang, cc, cat){
+  let place = cc; try{ place = new Intl.DisplayNames([lang], {type:'region'}).of(cc) || cc; }catch(e){}
+  if(cat === 'local') return place;
+  let kw = BING_CAT[cat];
+  if(lang !== 'en'){ const k = 'bing' + lang + cat; kw = kwCache[k] ||= await translate(BING_CAT[cat], 'en', lang).then(r => r.t).catch(() => BING_CAT[cat]); }
+  return cat === 'world' ? kw : `${place} ${kw}`;
+}
+const bingUrl = (q, lang, cc) => `https://www.bing.com/news/search?q=${encodeURIComponent(q)}&format=rss&setlang=${lang}&cc=${cc}&mkt=${lang}-${cc}`;
 async function sourcesFor(lang, rk, cat){
   const R = regionOf(lang, rk);
   const ex = (R.extra || {})[cat] || [];
-  if(CATS[cat].topic) return [gnTopic(CATS[cat].topic, R.gn), ...ex];
-  const g = gnSearch(await catKeyword(lang, cat), R.gn);
-  return (R.localFirst || []).includes(cat) ? [ex[0], g, ...ex.slice(1)].filter(Boolean) : [g, ...ex];
+  let g;
+  if(CATS[cat].topic) g = gnTopic(CATS[cat].topic, R.gn);
+  else g = gnSearch(await catKeyword(lang, cat), R.gn);
+  const bing = lang === 'zh' ? null : bingUrl(await bingQuery(lang, R.cc.toUpperCase(), cat), lang, R.cc.toUpperCase());
+  if(NO_GN.has(R.cc.toUpperCase())) return [...ex, bing, g].filter(Boolean);
+  if((R.localFirst || []).includes(cat)) return [ex[0], g, ...ex.slice(1)].filter(Boolean);
+  return [g, ...ex, bing].filter(Boolean);
 }
 
 /* =========================================================
@@ -152,7 +240,8 @@ function parseXml(txt){
   const items = [...d.querySelectorAll('item')].map(i => ({
     title: i.querySelector('title')?.textContent || '',
     link:  i.querySelector('link')?.textContent || '',
-    date:  i.querySelector('pubDate')?.textContent || i.getElementsByTagName('dc:date')[0]?.textContent || ''
+    date:  i.querySelector('pubDate')?.textContent || i.getElementsByTagName('dc:date')[0]?.textContent || '',
+    source: i.getElementsByTagName('News:Source')[0]?.textContent || i.getElementsByTagName('source')[0]?.textContent || ''
   })).filter(x => x.title);
   if(!items.length) throw new Error('empty');
   return items;
@@ -161,18 +250,20 @@ function fetchFeed(url){
   return timeout(any([
     (async () => { const j = await (await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(url))).json();
                    if(j.status !== 'ok' || !j.items?.length) throw 0;
-                   return j.items.map(i => ({title:i.title, link:i.link, date:i.pubDate})); })(),
+                   return j.items.map(i => ({title:i.title, link:i.link, date:i.pubDate, source:i.author || ''})); })(),
     (async () => parseXml(await proxyText(url, t => /<item[\s>]/.test(t))))()
   ]), 20000);
 }
-const SRC_NAME = u => /ltn/.test(u) ? '自由時報' : /yahoo/.test(u) ? 'Yahoo新聞' : /bbc/.test(u) ? 'BBC' : /nhk/.test(u) ? 'NHK' : /npr/.test(u) ? 'NPR' : /abc\.net/.test(u) ? 'ABC' : /rnz/.test(u) ? 'RNZ' : '';
+const SRC_NAME = u => /bing\.com/.test(u) ? '' : /dr\.dk/.test(u) ? 'DR' : /yle\.fi/.test(u) ? 'Yle' : /err\.ee/.test(u) ? 'ERR' : /ruv\.is/.test(u) ? 'RÚV' : /ltn/.test(u) ? '自由時報' : /yahoo/.test(u) ? 'Yahoo新聞' : /bbc/.test(u) ? 'BBC' : /nhk/.test(u) ? 'NHK' : /npr/.test(u) ? 'NPR' : /abc\.net/.test(u) ? 'ABC' : /rnz/.test(u) ? 'RNZ' : '';
 function cleanItems(items, srcName, max = 20){
   const seen = new Set(), out = [];
   for(const it of items){
     let title = (it.title || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), source = srcName;
-    if(!srcName){ const k = title.lastIndexOf(' - '); if(k > 0){ source = title.slice(k + 3); title = title.slice(0, k); } }
+    let link = it.link || '';
+    if(/bing\.com\/news\/apiclick/i.test(link)){ try{ link = new URL(link).searchParams.get('url') || link; }catch(e){} source = it.source || 'Bing'; }
+    else if(!srcName){ const k = title.lastIndexOf(' - '); if(k > 0){ source = title.slice(k + 3); title = title.slice(0, k); } else source = it.source || ''; }
     if(!title || seen.has(title)) continue;
-    seen.add(title); out.push({title, source, link:it.link, date:it.date});
+    seen.add(title); out.push({title, source, link, date:it.date});
     if(out.length >= max) break;
   }
   return out;
@@ -746,8 +837,7 @@ function langIndex(){
   _langIdx = codes.map(c => {
     let n; try{ n = zh?.of(c); }catch(e){ return null; }
     if(!n || n === c) return null;
-    let nat = ''; try{ nat = new Intl.DisplayNames([c], {type:'language'}).of(c); }catch(e){}
-    return {code:c, zh:n, cn:cn?.of(c) || '', en:en?.of(c) || '', native:nat};
+    return {code:c, zh:n, cn:cn?.of(c) || '', en:en?.of(c) || '', native:''};
   }).filter(Boolean);
   return _langIdx;
 }
@@ -802,7 +892,8 @@ async function findLanguage(q){
   if(!hit) return null;
   let cc = 'US', script = '';
   try{ const loc = new Intl.Locale(hit.code).maximize(); cc = HOME_COUNTRY[hit.code] || loc.region || cc; script = loc.script || ''; }catch(e){}
-  return {code: hit.code === 'fil' ? 'tl' : hit.code, zh:hit.zh, name:hit.native || hit.en || hit.zh, cc, place:countryName(cc),
+  let nat = ''; try{ nat = new Intl.DisplayNames([hit.code], {type:'language'}).of(hit.code); }catch(e){}
+  return {code: hit.code === 'fil' ? 'tl' : hit.code, zh:hit.zh, name:nat || hit.en || hit.zh, cc, place:countryName(cc),
           words: !['Hans','Hant','Jpan','Thai','Laoo','Khmr','Mymr','Tibt'].includes(script)};
 }
 async function findCountry(q){
@@ -850,4 +941,35 @@ async function officialLangs(cc){
     const ls = (await wd('action=wbgetentities&props=claims&ids=' + lids.join('|'))).entities || {};
     return lids.map(l => claimStr(ls[l], 'P218')).filter(Boolean);
   }catch(e){ return []; }
+}
+
+
+/* =========================================================
+   語言／國家下拉選單（依地區分組）
+   ========================================================= */
+const GROUPS = [
+  ['亞洲', 'TW JP KR TH ID VN SG HK'],
+  ['美洲・大洋洲', 'US CA AU NZ BR MX'],
+  ['西歐', 'GB IE FR BE NL LU MC DE AT CH LI'],
+  ['南歐', 'ES PT IT SM AD MT'],
+  ['北歐', 'SE NO DK FI IS'],
+  ['中歐', 'CZ SK PL HU SI'],
+  ['東歐・波羅的海', 'EE LV LT UA MD RO BG RU BY'],
+  ['東南歐・巴爾幹', 'GR CY HR BA RS ME AL XK MK TR']
+];
+function langRegionList(includeZh){
+  const L = allLangs(), all = [];
+  for(const [k, l] of Object.entries(L)){
+    if(l.hidden && !(includeZh && k === 'zh')) continue;
+    for(const rk of Object.keys(l.regions)){ const r = regionOf(k, rk); all.push({v:`${k}|${rk}`, lang:k, r, name:l.name}); }
+  }
+  const groupOf = cc => (GROUPS.find(g => g[1].split(' ').includes(cc)) || ['其他'])[0];
+  const order = [...GROUPS.map(g => g[0]), '其他'];
+  return order.map(g => [g, all.filter(x => groupOf(x.r.cc.toUpperCase()) === g)]).filter(([, xs]) => xs.length);
+}
+/* style: 'place'（國家・語言）或 'accent'（語言・口音） */
+function langRegionOptions(selected, style = 'place', includeZh = false){
+  return langRegionList(includeZh).map(([g, xs]) => `<optgroup label="${g}">${xs.map(x => {
+    const label = x.lang === 'zh' ? '🇹🇼 台灣・中文' : style === 'accent' ? `${x.r.flag} ${x.name}（${x.r.accent}）` : `${x.r.flag} ${x.r.place}・${x.name}`;
+    return `<option value="${x.v}" ${x.v === selected ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</optgroup>`).join('');
 }

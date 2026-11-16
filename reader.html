@@ -9,7 +9,7 @@
 <title>電子書朗讀 · 每日新聞學語言</title>
 <script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css?v=6">
+<link rel="stylesheet" href="common.css?v=7">
 <style>
 .drop{display:block;border:2px dashed var(--line);border-radius:16px;padding:28px 16px;text-align:center;color:var(--soft);background:var(--paper);cursor:pointer}
 .drop b{display:block;font-size:17px;color:var(--ink);margin-bottom:4px}
@@ -53,7 +53,7 @@
   <select id="rate"><option value="0.8">0.8x</option><option value="1" selected>1x</option><option value="1.2">1.2x</option><option value="1.5">1.5x</option></select>
 </div></div>
 
-<script src="common.js?v=6"></script>
+<script src="common.js?v=7"></script>
 <script>
 const PER_PAGE = 120;
 let doc = null;            // {name, paras:[], lang, region, mixed, page, trs:{}}
@@ -148,11 +148,7 @@ $('#file').onchange = async e => {
 };
 
 /* ====== 顯示 ====== */
-function langOptions(){
-  return Object.entries(allLangs()).map(([k, l]) => Object.keys(l.regions).map(rk => {
-    const r = regionOf(k, rk); return `<option value="${k}|${rk}">${k === 'zh' ? '中文（台灣華語）' : esc(l.name) + '（' + esc(r.accent) + '）'}</option>`;
-  }).join('')).join('');
-}
+function langOptions(){ return langRegionOptions('', 'accent', true); }
 function renderBook(){
   const pages = Math.ceil(doc.paras.length / PER_PAGE), p = doc.page;
   const from = p * PER_PAGE, list = doc.paras.slice(from, from + PER_PAGE);

@@ -10,7 +10,7 @@
 <script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css?v=6">
+<link rel="stylesheet" href="common.css?v=7">
 </head>
 <body data-cat="local">
 <header><div class="wrap">
@@ -25,13 +25,12 @@
     <button data-mode="native">🌐 當地原文新聞<small>外語原文 → 翻成中文</small></button>
   </div>
   <nav class="cats" id="cats"></nav>
-  <nav class="langs" id="langs"></nav>
+  <div class="lsel"><span id="lselLb">學習語言</span><select id="langSel"></select></div>
 </div></header>
 
 <main class="wrap">
   <div class="bar">
     <label><input type="checkbox" id="showZh" checked> <span id="zhLabel">顯示中文原文</span></label>
-    <select id="region" class="hidden"></select>
     <select id="count"><option value="10">10 則</option><option value="15">15 則</option><option value="20">20 則</option></select>
     <span id="status"></span>
     <button class="rf" id="refresh">↻ 重新抓取</button>
@@ -49,7 +48,7 @@
 <div id="setFull" class="full hidden"></div>
 <div id="full" class="full hidden"></div>
 
-<script src="common.js?v=6"></script>
+<script src="common.js?v=7"></script>
 <script>
 /* ====== 狀態 ====== */
 const NEWS_CATS = ['local','world','fin','pol','tech','health','life'];
@@ -93,15 +92,14 @@ function renderNav(){
   document.body.style.setProperty('--l', cur.color);
   document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.mode === state.mode));
   $('#cats').innerHTML = NEWS_CATS.map(k => `<button data-cat="${k}" class="${k === state.cat ? 'on' : ''}">${catName(k)}</button>`).join('');
-  $('#langs').innerHTML = Object.entries(L).filter(([k, l]) => !l.hidden).map(([k, l]) =>
-    `<button data-lang="${k}" class="${k === state.lang ? 'on' : ''}" style="${k === state.lang ? 'background:' + l.color : ''}">${esc(l.name)}</button>`).join('');
+  const ls = $('#langSel');
+  ls.innerHTML = langRegionOptions(`${state.lang}|${R().key}`, state.mode === 'tw' ? 'accent' : 'place');
+  ls.value = `${state.lang}|${R().key}`;
+  ls.style.borderColor = cur.color;
+  $('#lselLb').textContent = state.mode === 'tw' ? '翻成' : '看哪國新聞';
   $('#showZh').checked = state.showZh;
   $('#zhLabel').textContent = state.mode === 'tw' ? '顯示中文原文' : '顯示中文翻譯';
   $('#count').value = String(state.count);
-  const regs = Object.keys(cur.regions), rs = $('#region');
-  rs.classList.toggle('hidden', regs.length < 2);
-  rs.innerHTML = regs.map(k => { const r = regionOf(state.lang, k); return `<option value="${k}">${state.mode === 'tw' ? r.flag + ' ' + r.accent + '口音' : r.label}</option>`; }).join('');
-  rs.value = R().key;
 }
 
 /* ====== 新聞列表 ====== */
@@ -331,7 +329,7 @@ function openVocab(book){
   const items = all.map((x, i) => ({...x, i})).filter(x => x.lang === vocabBook);
   el.style.borderTopColor = L[vocabBook].color;
   el.innerHTML = `<div class="hd"><span class="big">📒 單字本</span><button class="x" data-close>×</button></div>
-    <div class="vtabs">${Object.entries(L).filter(([k, l]) => !l.hidden).map(([k, l]) =>
+    <div class="vtabs">${Object.entries(L).filter(([k, l]) => !l.hidden && (counts[k] || k === vocabBook || k === state.lang)).map(([k, l]) =>
       `<button data-vbook="${k}" class="${k === vocabBook ? 'on' : ''}" style="${k === vocabBook ? 'background:' + l.color : ''}">${esc(l.name)} ${counts[k] || 0}</button>`).join('')}</div>
     ${items.length ? '' : `<div class="msg">${esc(L[vocabBook].name)} 單字本還是空的。<br>點新聞裡的字，再按「☆ 加入單字本」。</div>`}
     ${items.map(x => `<div class="vi"><div><b>${esc(x.w)}</b> ${x.ph ? `<small>${esc(x.ph)}</small>` : ''} <small>${x.d}</small><br>${esc(x.m)}<br><small>${esc(x.ctx)}</small></div>
@@ -348,10 +346,10 @@ function openSettings(){
   el.innerHTML = `<div class="fbar"><div class="wrap"><button class="back" data-setclose>← 返回</button><b style="font-size:15px">⚙️ 語言與地區</b></div></div>
   <div class="wrap" style="padding-bottom:60px">
     <div class="sec-t">＋ 新增語言</div>
-    <div class="inrow"><input id="nLang" placeholder="例如：越南語、Vietnamese、Portuguese" enterkeyhint="done" autocapitalize="off"><button class="btn solid" id="nAdd">加入</button></div>
+    <div class="inrow"><input id="nLang" placeholder="例如：越南語、Vietnamese、Portuguese" enterkeyhint="done" autocapitalize="off"><button type="button" class="btn solid" id="nAdd">加入</button></div>
     <div class="note">中文、英文、當地文字都可以，英文拼錯幾個字母也找得到。會自動找出語言代碼，並先加入這個語言的主要國家。</div>
     <div class="sec-t">＋ 新增地區（國家）</div>
-    <div class="inrow"><input id="fCountry" placeholder="例如：墨西哥、Ireland、Quebec" enterkeyhint="done" autocapitalize="off"><button class="btn solid" id="fAdd">加入</button></div>
+    <div class="inrow"><input id="fCountry" placeholder="例如：墨西哥、Ireland、Quebec" enterkeyhint="done" autocapitalize="off"><button type="button" class="btn solid" id="fAdd">加入</button></div>
     <div class="inrow" style="margin-top:8px;align-items:center;font-size:13.5px;color:var(--soft)">語言
       <select id="fLang" style="flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px;font-size:16px"><option value="auto">🌐 自動（用這個國家的官方語言）</option>${Object.entries(L).filter(([k, l]) => !l.hidden).map(([k, l]) => `<option value="${k}">${esc(l.name)}</option>`).join('')}</select></div>
     <div class="note">中文或英文地名都可以，拼錯幾個字母也找得到。不是國家的地名（例如 Quebec、巴伐利亞）會自動上網查出它屬於哪個國家。</div>
@@ -400,8 +398,9 @@ function openSettings(){
     saveCustom(c); renderNav(); openSettings();
     msg(`✅ ${via}${allLangs()[lang].name} 已加入 ${f.place}。`);
   };
-  $('#nAdd').onclick = addLang; $('#nLang').onkeydown = e => { if(e.key === 'Enter'){ e.target.blur(); addLang(); } };
-  $('#fAdd').onclick = addReg; $('#fCountry').onkeydown = e => { if(e.key === 'Enter'){ e.target.blur(); addReg(); } };
+  const safe = fn => async e => { e?.preventDefault?.(); try{ await fn(); }catch(err){ msg('發生錯誤：' + (err?.message || err) + '。你的瀏覽器可能太舊，請更新 iOS 後再試。', true); } };
+  $('#nAdd').addEventListener('click', safe(addLang)); $('#nLang').onkeydown = e => { if(e.key === 'Enter'){ e.target.blur(); safe(addLang)(); } };
+  $('#fAdd').addEventListener('click', safe(addReg)); $('#fCountry').onkeydown = e => { if(e.key === 'Enter'){ e.target.blur(); safe(addReg)(); } };
 }
 function closeSettings(){ const el = $('#setFull'); if(el.classList.contains('hidden')) return; el.classList.add('hidden'); el.innerHTML = ''; unlockScroll(); render(); }
 
@@ -470,7 +469,13 @@ document.addEventListener('click', e => {
 });
 $('#showZh').onchange = e => { state.showZh = e.target.checked; store.set('nl_zh', state.showZh); document.querySelectorAll('.card .zh').forEach(z => z.classList.toggle('hidden', !state.showZh)); };
 $('#count').onchange = e => { state.count = +e.target.value; store.set('nl_count', state.count); render(); };
-$('#region').onchange = e => { state.regions[state.lang] = e.target.value; store.set('nl_regions', state.regions); renderNav(); if(state.mode === 'native') render(); };
+$('#langSel').onchange = e => {
+  const [l, rk] = e.target.value.split('|');
+  const sameLang = l === state.lang;
+  state.lang = l; state.regions[l] = rk;
+  store.set('nl_lang', l); store.set('nl_regions', state.regions);
+  renderNav(); if(state.mode === 'native' || !sameLang) render();
+};
 $('#refresh').onclick = () => render(true);
 $('#vocabBtn').onclick = () => openVocab(state.lang);
 $('#themeBtn').onclick = cycleTheme;

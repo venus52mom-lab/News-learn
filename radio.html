@@ -9,7 +9,7 @@
 <title>新聞廣播 · 每日新聞學語言</title>
 <script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css?v=6">
+<link rel="stylesheet" href="common.css?v=7">
 <style>
 .prog{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;margin-bottom:8px}
 .prog select{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:6px 6px;font-size:14px;min-width:0}
@@ -59,7 +59,7 @@
   <div class="now-t" id="now">—</div>
 </div></div>
 
-<script src="common.js?v=6"></script>
+<script src="common.js?v=7"></script>
 <script>
 const DEFAULT = {progs:[{src:'zh|tw', cat:'local', n:20}, {src:'zh|tw', cat:'fin', n:20}, {src:'en|us', cat:'world', n:20}, {src:'en|us', cat:'fin', n:20}],
                  target:'zh|tw', orig:false, gloss:true, rate:1};
@@ -78,12 +78,12 @@ const catLabel = (cat, src) => cat === 'local' ? (src.startsWith('zh|') ? '本�
 function renderProgs(){
   const opts = srcOptions();
   $('#progs').innerHTML = cfg.progs.map((p, i) => `<div class="prog">
-      <select data-k="src" data-i="${i}">${opts.map(o => `<option value="${o.v}" ${o.v === p.src ? 'selected' : ''}>${esc(o.t)}</option>`).join('')}</select>
+      <select data-k="src" data-i="${i}">${langRegionOptions(p.src, 'place', true)}</select>
       <select data-k="cat" data-i="${i}">${Object.keys(CATS).map(c => `<option value="${c}" ${c === p.cat ? 'selected' : ''}>${catLabel(c, p.src)}</option>`).join('')}</select>
       <select data-k="n" data-i="${i}">${[5,10,15,20].map(n => `<option value="${n}" ${n === p.n ? 'selected' : ''}>${n} 則</option>`).join('')}</select>
       <button class="del" data-del="${i}">×</button></div>`).join('') || '<div class="note">還沒有節目，按下面加一個。</div>';
   const tg = $('#target');
-  tg.innerHTML = opts.map(o => `<option value="${o.v}">${o.lang === 'zh' ? '中文（台灣華語）' : esc(allLangs()[o.lang].name) + '（' + esc(o.r.accent) + '）'}</option>`).join('');
+  tg.innerHTML = langRegionOptions(cfg.target, 'accent', true);
   tg.value = cfg.target;
   $('#optOrig').checked = cfg.orig; $('#optGloss').checked = cfg.gloss; $('#rate').value = String(cfg.rate);
 }
