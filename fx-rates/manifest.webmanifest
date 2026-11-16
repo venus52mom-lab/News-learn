@@ -1,6 +1,6 @@
 {
-  "name": "匯率走勢",
-  "short_name": "匯率",
+  "name": "匯率股市",
+  "short_name": "匯率股市",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

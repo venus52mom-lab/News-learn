@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>匯率</title>
+<title>匯率股市</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="匯率">
+<meta name="apple-mobile-web-app-title" content="匯率股市">
 <meta name="theme-color" content="#000000">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon-192.png">
@@ -18,17 +18,28 @@
 <main id="home">
   <header class="top">
     <div>
-      <h1>匯率</h1>
+      <h1>匯率・股市</h1>
       <div class="sub" id="today"></div>
     </div>
     <div class="pill">
-      <button id="btnEdit" aria-label="編輯">編輯</button>
-      <button id="btnSettings" aria-label="設定">•••</button>
+      <button id="btnMenu" aria-label="選單">•••</button>
+      <button id="btnDone" aria-label="完成" hidden>✓</button>
+    </div>
+    <div id="menu" class="menu" hidden>
+      <button id="mEdit"><span>✎</span>編輯觀察列表</button>
+      <button id="mNew"><span>＋</span>新增觀察列表</button>
+      <hr>
+      <div class="mlabel">縮圖顯示範圍</div>
+      <div class="seg mini" id="sparkSeg"><button data-v="1D">當日</button><button data-v="3M">3個月</button><button data-v="1Y">1年</button><button data-v="3Y">3年</button></div>
+      <hr>
+      <button id="mSettings"><span>⚙︎</span>設定（牌價種類、顏色…）</button>
     </div>
   </header>
-  <div class="section-title"><span id="rateLabel">台灣銀行・現金賣出</span><span class="muted" id="updated"></span></div>
+  <nav id="tabs" class="tabs"></nav>
+  <div class="section-title"><span id="rateLabel"></span><span class="muted" id="updated"></span></div>
   <ul id="list"></ul>
-  <p class="foot muted">資料來源：臺灣銀行牌告匯率。縮圖為近 3 個月走勢，點右側數字可切換顯示。</p>
+  <div id="addBox" hidden></div>
+  <p class="foot muted"></p>
 </main>
 
 <!-- 詳細頁 -->
@@ -58,16 +69,14 @@
     <div class="muted small" id="cvNote"></div>
   </div>
   <div class="rates4" id="dRates"></div>
+  <div id="dNews" class="newsbox"></div>
 </section>
 
-<!-- 編輯 -->
-<section id="edit" class="sheet" hidden>
+<!-- 加到觀察列表 -->
+<section id="picker" class="sheet small" hidden>
   <div class="grab"></div>
-  <header class="dhead"><div class="dtitle">我的幣別</div><button class="close done" id="eClose">完成</button></header>
-  <p class="muted small">拖曳 ☰ 排序，點 − 移除；下方點 ＋ 加入。</p>
-  <ul id="eMine" class="elist"></ul>
-  <div class="section-title">可加入（外幣、黃金、白銀、台指期）</div>
-  <ul id="eAll" class="elist"></ul>
+  <header class="dhead"><div class="dtitle" id="pickTitle"></div><button class="close done" id="pClose">完成</button></header>
+  <div id="pickBody"></div>
 </section>
 
 <!-- 設定 -->
