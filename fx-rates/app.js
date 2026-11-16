@@ -570,7 +570,7 @@ async function refreshLive() {
         (await cnyesDaily(it.cn, 400)).forEach(([d, c]) => mm[d] = c);
         m.daily = Object.keys(mm).sort().map(k => [k, mm[k]]); m.t = Date.now(); m.full = true;
       }
-      if (!m.daily && it.kind === "mkt") m.daily = await cnyesDaily(it.cn, 200);
+      if (!(m.daily && m.daily.length > 1) && it.kind === "mkt" && !m.cd) { m.cd = 1; m.daily = await cnyesDaily(it.cn, 200); }
       const wantIntra = it.kind === "txf" || S.spark === "1D" || (detailOpen && D.id === id) || !(m.daily && m.daily.length > 1);
       if (wantIntra && (!m.intraLive || Date.now() - (m.it || 0) > 60*1000)) { await cnyesIntra(id); m.it = Date.now(); }
     } catch (e) {
