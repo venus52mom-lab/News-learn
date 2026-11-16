@@ -1,6 +1,6 @@
 {
-  "name": "匯率股市 B",
-  "short_name": "匯率股市",
+  "name": "股市觀察表",
+  "short_name": "股市觀察表",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

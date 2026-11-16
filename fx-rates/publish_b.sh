@@ -11,6 +11,8 @@ sed -i 's#|| "data/"#|| "../fx-rates/data/"#' fx-b/app.js
 sed -i 's/"fx-settings"/"fxb-settings"/g; s/"fx-mm-quota"/"fxb-mm-quota"/g' fx-b/app.js
 # 離線快取分開
 sed -i 's/"fx-v/"fxb-v/; s/k.startsWith("fx-v")/k.startsWith("fxb-v")/' fx-b/sw.js
-sed -i 's/"name": "匯率股市"/"name": "匯率股市 B"/' fx-b/manifest.webmanifest
+# B 版標題
+sed -i 's#<h1>匯率・股市</h1>#<h1>股市觀察表</h1>#; s#<title>匯率股市</title>#<title>股市觀察表</title>#; s#content="匯率股市"#content="股市觀察表"#' fx-b/index.html
+sed -i 's/"匯率股市"/"股市觀察表"/g' fx-b/manifest.webmanifest
 echo "B 版已更新：$(date '+%Y-%m-%d %H:%M')" > fx-b/VERSION.txt
 grep -c '"../fx-rates/data/"' fx-b/app.js >/dev/null && grep -q fxb-settings fx-b/app.js && grep -q fxb-v fx-b/sw.js && echo OK
