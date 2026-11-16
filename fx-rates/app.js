@@ -8,7 +8,7 @@ const FXN = {
 };
 // kind: fx 銀行牌價｜metal 台幣/公克｜txf 台指期｜mkt 股市・期貨・加密（cn = 鉅亨網代號，可手機即時）
 const ITEMS = {};
-for (const [k, [n, f]] of Object.entries(FXN)) ITEMS[k] = {name:k, sub:n, flag:f, kind:"fx", group:"外匯"};
+for (const [k, [n, f]] of Object.entries(FXN)) ITEMS[k] = {name:k, sub:n, flag:f, kind:"fx", group:"外匯牌價"};
 Object.assign(ITEMS, {
   XAU:{name:"黃金", sub:"台幣／公克・國際價", flag:"🥇", kind:"metal", group:"黃金白銀"},
   XAG:{name:"白銀", sub:"台幣／公克・國際價", flag:"🥈", kind:"metal", group:"黃金白銀"},
@@ -37,9 +37,14 @@ const LIVE = id => K(id) === "mkt" || K(id) === "txf";
 const RATE_NAME = {cb:"現金買入",cs:"現金賣出",sb:"即期買入",ss:"即期賣出"};
 const COL = {cb:1,cs:2,sb:3,ss:4};
 const FALLBACK = {cs:["cs","ss"],ss:["ss","cs"],cb:["cb","sb"],sb:["sb","cb"]};
-const LCOL = ["#ff453a","#ff9f0a","#30d158","#ffd60a","#0a84ff","#bf5af2"];
-const LETTER = "ABCDEF";
-const MAX_LISTS = 6;
+const LCOL0 = ["#ff453a","#ff9f0a","#30d158","#ffd60a","#0a84ff","#bf5af2"];
+const lcol = i => i < LCOL0.length ? LCOL0[i] : `hsl(${Math.round((i * 137.508 + 20) % 360)} 75% 58%)`;   // 第 7 個以後自動產生新顏色
+const letter = i => i < 26 ? String.fromCharCode(65 + i) : String(i + 1);
+const GROUPS = ["台股","美股","全球指數","外匯牌價","外匯","期貨","黃金白銀","原物料","債券","加密貨幣","自訂"];
+function applyCatalog(cat) {   // 觀察項目目錄（catalog.json）
+  for (const c of cat.items || []) ITEMS[c.id] = {name:c.n, sub:c.s, flag:c.f || "", kind:"mkt", cn:c.cn || undefined, group:c.g};
+}
+function applyCustom() { for (const [id, c] of Object.entries(S.custom || {})) ITEMS[id] = {name:c.name, sub:c.sub, kind:"mkt", cn:c.cn, group:"自訂", custom:true}; }
 
 /* ===================== 設定（存在這支手機） ===================== */
 const DEFAULT_LISTS = [
@@ -58,6 +63,8 @@ try {
 } catch (e) {}
 if (!S.lists.length) S.lists = JSON.parse(JSON.stringify(DEFAULT_LISTS));
 S.cur = Math.min(S.cur || 0, S.lists.length - 1);
+S.custom = S.custom || {};
+applyCustom();
 const save = () => { try { localStorage.setItem("fx-settings", JSON.stringify(S)); } catch (e) {} };
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 const LIST = () => S.lists[S.cur];
@@ -257,11 +264,12 @@ let EDITING = false;
 function renderTabs() {
   const bar = $("#tabs"); bar.innerHTML = "";
   S.lists.forEach((l, i) => {
-    const b = el("button", "tab" + (i === S.cur ? " on" : ""), `<i style="background:${LCOL[i]}">${LETTER[i]}</i>${l.n}`);
+    const b = el("button", "tab" + (i === S.cur ? " on" : ""), `<i style="background:${lcol(i)}">${letter(i)}</i>${l.n}`);
     b.onclick = () => { S.cur = i; save(); EDITING = false; renderHome(); refreshLive(); window.scrollTo(0, 0); };
     bar.append(b);
   });
-  if (S.lists.length < MAX_LISTS) { const b = el("button", "tab add", "＋"); b.onclick = newList; bar.append(b); }
+  { const b = el("button", "tab add", "＋"); b.onclick = newList; bar.append(b); }
+  const on = bar.querySelector(".tab.on"); if (on && on.scrollIntoView) on.scrollIntoView({inline:"nearest", block:"nearest"});
 }
 function renderHome() {
   document.body.classList.toggle("us", S.color === "us");
@@ -270,7 +278,7 @@ function renderHome() {
   $("#today").textContent = `${now.getMonth()+1}月${now.getDate()}日`;
   renderTabs();
   const L = LIST(), hasFx = L.items.some(id => K(id) === "fx");
-  $("#rateLabel").innerHTML = `<i class="dot" style="background:${LCOL[S.cur]}"></i>${L.n}` +
+  $("#rateLabel").innerHTML = `<i class="dot" style="background:${lcol(S.cur)}"></i>${L.n}` +
     (hasFx ? `<small>銀行牌告・${RATE_NAME[S.rate]}${S.dir === "n" ? "" : "・每千台幣"}</small>` : "");
   $("#updated").textContent = hasFx ? (RECENT ? `更新 ${RECENT.updated.slice(5)}` : "") : (MARKETS ? `更新 ${MARKETS.updated.slice(5)}` : "");
   $("#btnMenu").hidden = EDITING; $("#btnDone").hidden = !EDITING;
@@ -311,7 +319,7 @@ function renderHome() {
     requestAnimationFrame(() => drawLine(row.querySelector("canvas"), spark, {baseline:true, lw:1.4, base, segLabels:false}));
   }
   renderAdd();
-  if (S.spark === "1W" && !renderHome.wk && L.items.some(id => ITEMS[id] && ITEMS[id].cn && !(MK[id] && MK[id].weekLive && Date.now() - MK[id].wt < 10*60*1000))) { renderHome.wk = true; loadWeeks(L.items).then(() => { renderHome.wk = false; }); }
+  if (S.spark === "1W" && !renderHome.wk && (!WEEKF || L.items.some(id => ITEMS[id] && ITEMS[id].cn && !(MK[id] && MK[id].weekLive && Date.now() - MK[id].wt < 10*60*1000)))) { renderHome.wk = true; loadWeeks(L.items).then(() => { renderHome.wk = false; }); }
   if ((S.spark === "1Y" || S.spark === "3Y") && !renderHome.loading) {
     const need = L.items.filter(id => (K(id) === "fx" || K(id) === "metal") ? !HIST[id] : K(id) === "mkt" ? !(MK[id] && MK[id].full) : false);
     if (need.length) { renderHome.loading = true; Promise.allSettled(need.map(loadHist)).then(() => { renderHome.loading = false; renderHome(); }); }
@@ -325,15 +333,28 @@ function renderHome() {
 function renderAdd() {   // 編輯模式：下方列出可以加入的項目
   const box = $("#addBox"); box.hidden = !EDITING; if (!EDITING) return;
   box.innerHTML = `<div class="addhead"><button id="renameList">重新命名「${LIST().n}」</button>${S.lists.length > 1 ? `<button id="delList" class="danger">刪除這個列表</button>` : ""}</div>`;
+  box.insertAdjacentHTML("beforeend", `<div class="search"><input id="addQ" placeholder="搜尋：名稱或代號（例：台積電、2330、AAPL、原油）" autocapitalize="off" autocorrect="off" value="${esc(renderAdd.q || "")}"></div><div id="addHint"></div>`);
+  const qv = (renderAdd.q || "").trim().toLowerCase();
   const groups = {};
-  for (const [id, it] of Object.entries(ITEMS)) if (!LIST().items.includes(id)) (groups[it.group] = groups[it.group] || []).push(id);
-  for (const g of ["股市","外匯","期貨","黃金白銀"]) {
+  for (const [id, it] of Object.entries(ITEMS)) {
+    if (LIST().items.includes(id)) continue;
+    if (qv && !(`${it.name} ${it.sub} ${id}`.toLowerCase().includes(qv))) continue;
+    (groups[it.group] = groups[it.group] || []).push(id);
+  }
+  const inp = $("#addQ");
+  inp.oninput = () => { renderAdd.q = inp.value; clearTimeout(renderAdd.t); renderAdd.t = setTimeout(() => { renderAdd(); const i = $("#addQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); };
+  if (qv && /^[0-9a-z.\-]{1,10}$/i.test(qv)) {   // 用代號直接查（台股、美股）
+    const b = el("button", "wide", `用代號加入「${esc(renderAdd.q.trim().toUpperCase())}」（台股／美股）`);
+    b.onclick = () => addBySymbol(renderAdd.q.trim()); $("#addHint").append(b);
+  }
+  if (qv && !Object.keys(groups).length) $("#addHint").insertAdjacentHTML("beforeend", `<p class="muted small">目錄裡找不到「${esc(renderAdd.q)}」。台股或美股可以直接用代號加入。</p>`);
+  for (const g of GROUPS) {
     if (!groups[g]) continue;
     box.append(el("div", "section-title", `可加入：${g}`));
     const ul = el("ul", "elist");
     for (const id of groups[g]) {
       const it = ITEMS[id];
-      const li = el("li", "", `<button class="ebtn add">＋</button><div class="n">${it.flag || ""} ${it.name}<small>${it.sub}</small></div>`);
+      const li = el("li", "", `<button class="ebtn add">＋</button><div class="n">${it.flag || ""} ${esc(it.name)}<small>${esc(it.sub)}</small></div>`);
       li.onclick = () => { LIST().items.push(id); save(); renderHome(); refreshLive(); };
       ul.append(li);
     }
@@ -344,10 +365,26 @@ function renderAdd() {   // 編輯模式：下方列出可以加入的項目
     if (!confirm(`確定刪除「${LIST().n}」？`)) return;
     S.lists.splice(S.cur, 1); S.cur = Math.max(0, S.cur - 1); save(); renderHome(); };
 }
+async function addBySymbol(code) {
+  const hint = $("#addHint"); hint.innerHTML = `<p class="muted small">查詢中…</p>`;
+  const c = code.toUpperCase();
+  for (const sym of [`TWS:${c}:STOCK`, `USS:${c}:STOCK`, `TWG:${c}:STOCK`]) {
+    try {
+      const j = await getJSON(`${CNYES}/quote/quotes/${sym}`);
+      const q = j && j.data && j.data[0]; if (!q || q["6"] == null) continue;
+      const id = "U_" + sym.replace(/[^A-Z0-9]/g, "_");
+      const tw = sym.startsWith("TW");
+      S.custom[id] = {name: q["200009"] || c, sub: `${c}・${tw ? "台股" : "美股"}`, cn: sym};
+      applyCustom();
+      if (!LIST().items.includes(id)) LIST().items.push(id);
+      renderAdd.q = ""; save(); renderHome(); refreshLive(); return;
+    } catch (e) {}
+  }
+  hint.innerHTML = `<p class="warnline">找不到代號「${esc(c)}」。台股請輸入數字代號（例：2330），美股請輸入英文代號（例：AAPL）。</p>`;
+}
 function removeItem(id) { LIST().items = LIST().items.filter(x => x !== id); save(); renderHome(); }
 function newList() {
-  if (S.lists.length >= MAX_LISTS) return;
-  const n = prompt(`新觀察列表名稱（${LETTER[S.lists.length]}）`, `列表 ${LETTER[S.lists.length]}`);
+  const n = prompt(`新觀察列表名稱（${letter(S.lists.length)}）`, `列表 ${letter(S.lists.length)}`);
   if (!n || !n.trim()) return;
   S.lists.push({n: n.trim().slice(0, 8), items: []}); S.cur = S.lists.length - 1; EDITING = true; save(); renderHome();
 }
@@ -396,12 +433,12 @@ function openListPicker(id) {
   $("#pickTitle").textContent = `把「${ITEMS[id].name}」加到…`;
   S.lists.forEach((l, i) => {
     const on = l.items.includes(id);
-    const b = el("button", "pick" + (on ? " on" : ""), `<i style="background:${LCOL[i]}">${LETTER[i]}</i><span>${l.n}</span><em>${on ? "✓" : ""}</em>`);
+    const b = el("button", "pick" + (on ? " on" : ""), `<i style="background:${lcol(i)}">${letter(i)}</i><span>${l.n}</span><em>${on ? "✓" : ""}</em>`);
     b.onclick = () => { if (on) l.items = l.items.filter(x => x !== id); else l.items.push(id); save(); openListPicker(id); renderHome(); };
     box.append(b);
   });
-  if (S.lists.length < MAX_LISTS) { const b = el("button", "pick", `<i style="background:#48484a">＋</i><span>新增觀察列表</span>`);
-    b.onclick = () => { closeSheets(); const n = prompt("新觀察列表名稱", `列表 ${LETTER[S.lists.length]}`); if (n && n.trim()) { S.lists.push({n:n.trim().slice(0,8), items:[id]}); save(); renderHome(); } };
+  { const b = el("button", "pick", `<i style="background:#48484a">＋</i><span>新增觀察列表</span>`);
+    b.onclick = () => { closeSheets(); const n = prompt("新觀察列表名稱", `列表 ${letter(S.lists.length)}`); if (n && n.trim()) { S.lists.push({n:n.trim().slice(0,8), items:[id]}); save(); renderHome(); } };
     box.append(b); }
   openSheet("#picker");
 }
@@ -430,7 +467,12 @@ async function loadMarkets() {
   renderHome();
 }
 async function loadSnap() { try { FXI = await getJSON(dataBase() + "intraday.json?t=" + Date.now()); } catch (e) {} renderHome(); }
+let WEEKF = null;
 async function loadWeeks(ids) {   // 1週：鉅亨網 30 分鐘線（沒有鉅亨網代號的用每小時存的 Yahoo 資料）
+  if (!WEEKF || Date.now() - WEEKF.t > 20*60*1000) {
+    try { const j = await getJSON(dataBase() + "week.json?t=" + Date.now(), 15000); WEEKF = {t: Date.now()};
+      for (const [id, arr] of Object.entries(j.items || {})) { const m = MK[id] || (MK[id] = {}); if (!m.weekLive) m.week = arr.map(([t, c]) => [tpeKey(t), c]); } } catch (e) { WEEKF = {t: Date.now()}; }
+  }
   await Promise.allSettled(ids.filter(id => ITEMS[id] && ITEMS[id].cn).map(async id => {
     const m = MK[id] || (MK[id] = {}); if (m.weekLive && Date.now() - m.wt < 10*60*1000) return;
     const now = Math.floor(Date.now()/1000);
@@ -485,8 +527,15 @@ async function cnyesIntra(id) {
       let cut = 0; for (let i = pts.length - 1; i > 0; i--) if (pts[i][0] - pts[i-1][0] > 50*60) { cut = i; break; }
       return pts.slice(cut);
     };
-    const [cur, prev] = await Promise.all([seg(now, start - 60), seg(start - 61, start - 20*3600).catch(() => [])]);
-    setTwoSessions(m, prev, cur, true);
+    const cur = await seg(now, start - 60).catch(() => []);
+    if (!m.srv || Date.now() - (m.srvT || 0) > 10*60*1000) {   // 期交所的日盤／夜盤 1 分線（GitHub 每小時存）
+      try { m.srv = (await getJSON(dataBase() + "txf.json?t=" + Date.now())).intra || []; m.srvT = Date.now(); } catch (e) { m.srv = m.srv || []; }
+    }
+    let segs = (m.srv || []).filter(g => g && g.length > 1);
+    if (cur.length > 1) segs = segs.filter(g => Math.abs(g[0][0] - cur[0][0]) > 3*3600).concat([cur]);
+    segs.sort((a, b) => a[0][0] - b[0][0]);
+    const two = segs.slice(-2);
+    setTwoSessions(m, two.length > 1 ? two[0] : [], two[two.length-1] || [], cur.length > 1);
     return;
   } else {
     const h = (await getJSON(`${CNYES}/charting/history?symbol=${it.cn}&resolution=5&from=${now}&to=${now - 4*86400}`)).data;
@@ -499,11 +548,22 @@ async function cnyesIntra(id) {
 }
 async function refreshLive() {
   const ids = new Set(LIST().items.filter(id => ITEMS[id] && ITEMS[id].cn));
-  if (D.id && ITEMS[D.id].cn && !$("#detail").hidden) ids.add(D.id);
-  await Promise.all([...ids].map(async id => {
+  if (D.id && ITEMS[D.id] && ITEMS[D.id].cn && !$("#detail").hidden) ids.add(D.id);
+  const arr = [...ids], quotes = {};
+  for (let i = 0; i < arr.length; i += 20) {   // 一次問 20 個代號
+    const part = arr.slice(i, i + 20);
+    try {
+      const j = await getJSON(`${CNYES}/quote/quotes/${part.map(id => ITEMS[id].cn).join(",")}`);
+      for (const q of (j.data || [])) quotes[q["0"]] = q;
+    } catch (e) {}
+  }
+  const detailOpen = !$("#detail").hidden;
+  await Promise.all(arr.map(async id => {
     const m = MK[id] || (MK[id] = {}), it = ITEMS[id];
     try {
-      m.quote = await cnyesQuote(it.cn);
+      const q = quotes[it.cn];
+      if (!q || q["6"] == null) throw new Error("no quote");
+      m.quote = {last:q["6"], chg:q["11"], pct:q["56"], prev:q["21"], open:q["19"], high:q["12"], low:q["13"], time:q["200007"], sessions:q["800003"], src:"鉅亨網"};
       if (it.kind === "txf" && (!m.daily || Date.now() - (m.t || 0) > 30*60*1000)) {
         const mm = {};
         try { (await getJSON(dataBase() + "txf.json?t=" + Date.now())).daily.forEach(([d, c]) => mm[d] = c); } catch (e) {}
@@ -511,12 +571,13 @@ async function refreshLive() {
         m.daily = Object.keys(mm).sort().map(k => [k, mm[k]]); m.t = Date.now(); m.full = true;
       }
       if (!m.daily && it.kind === "mkt") m.daily = await cnyesDaily(it.cn, 200);
-      if (!m.intraLive || Date.now() - (m.it || 0) > 60*1000) { await cnyesIntra(id); m.it = Date.now(); }
+      const wantIntra = it.kind === "txf" || S.spark === "1D" || (detailOpen && D.id === id) || !(m.daily && m.daily.length > 1);
+      if (wantIntra && (!m.intraLive || Date.now() - (m.it || 0) > 60*1000)) { await cnyesIntra(id); m.it = Date.now(); }
     } catch (e) {
       if (it.kind === "txf") {   // 台指期備援
         try { const j = await getJSON(dataBase() + "txf.json?t=" + Date.now());
           if (j.quote) m.quote = {...j.quote, prev: j.quote.ref, src: (j.source || "備援") + "（備援，約每小時更新）"}; m.daily = j.daily;
-          if (j.intra && j.intra.length && !m.intraLive) setTwoSessions(m, j.intra.length > 1 ? j.intra[0] : [], j.intra[j.intra.length-1], false); } catch (e2) {}
+          if (j.intra && j.intra.length && !m.intraLive) { const two = j.intra.slice(-2); setTwoSessions(m, two.length > 1 ? two[0] : [], two[two.length-1], false); } } catch (e2) {}
       }
     }
   }));
@@ -656,7 +717,7 @@ const esc = t => String(t || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;
 function renderNews(id) {
   const box = $("#dNews");
   const list = NEWS && NEWS.news && NEWS.news[id];
-  if (!list) { box.innerHTML = `<div class="news-h">相關新聞</div><p class="muted small">${NEWS ? "目前沒有相關新聞" : "讀取中…"}</p>`; if (!NEWS) loadNews().then(() => { if (D.id === id) renderNews(id); }); return; }
+  if (!list) { box.innerHTML = `<div class="news-h">相關新聞</div><p class="muted small">${ITEMS[id].custom ? "自己用代號加入的項目暫時沒有新聞" : NEWS ? "目前沒有相關新聞" : "讀取中…"}</p>`; if (!NEWS) loadNews().then(() => { if (D.id === id) renderNews(id); }); return; }
   const today = list.filter(n => Date.now()/1000 - n.ts < 24*3600);
   const N = S.newsN; if (!N) { box.innerHTML = ""; return; }
   const show = (today.length >= N ? today : list).slice(0, N);
@@ -706,13 +767,15 @@ function renderSettings() {
   $("#sCode").value = "";
 }
 function backupCode() {
-  const keep = {lists:S.lists, rate:S.rate, dir:S.dir, color:S.color, badge:S.badge, spark:S.spark, dRange:S.dRange, refresh:S.refresh, newsN:S.newsN};
+  const keep = {custom:S.custom, lists:S.lists, rate:S.rate, dir:S.dir, color:S.color, badge:S.badge, spark:S.spark, dRange:S.dRange, refresh:S.refresh, newsN:S.newsN};
   return "FX1:" + btoa(unescape(encodeURIComponent(JSON.stringify(keep))));
 }
 function restoreCode(code) {
   const j = JSON.parse(decodeURIComponent(escape(atob(code.trim().replace(/^FX1:/, "")))));
   if (!Array.isArray(j.lists) || !j.lists.length) throw new Error("bad");
-  j.lists = j.lists.slice(0, MAX_LISTS).map(l => ({n: String(l.n || "列表").slice(0, 8), items: (l.items || []).filter(id => ITEMS[id])}));
+  if (j.custom) { S.custom = {...S.custom, ...j.custom}; applyCustom(); }
+  j.lists = j.lists.map(l => ({n: String(l.n || "列表").slice(0, 8), items: (l.items || []).filter(id => ITEMS[id])}));
+  delete j.custom;
   S = {...S, ...j, cur:0}; save();
 }
 
@@ -759,7 +822,8 @@ function startTimer() { clearInterval(TIMER); if (S.refresh > 0) TIMER = setInte
 startTimer();
 
 function loadAll() { loadRecent(); loadSnap(); loadMarkets().then(refreshLive); loadNews(); }
+async function loadCatalog() { try { applyCatalog(await getJSON("catalog.json?v=" + (S.catV || 1), 10000)); applyCustom(); } catch (e) {} }
 document.querySelectorAll("#sparkSeg button").forEach(b => b.onclick = e => { e.stopPropagation(); S.spark = b.dataset.v; save(); renderHome(); });
 renderHome();
-loadAll();
+loadCatalog().then(() => { renderHome(); loadAll(); });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

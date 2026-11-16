@@ -149,3 +149,8 @@ textarea.txt{resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:
 .wide.danger{color:#ff453a;margin-top:6px}
 .adv{margin-top:20px}.adv summary{color:var(--muted);font-size:15px;padding:8px 0}
 .ranges button{font-size:13px}
+
+.search{margin:14px 0 6px}
+.search input{width:100%;background:#1c1c1e;border:1px solid #3a3a3c;border-radius:10px;color:#fff;padding:11px 12px;font-size:16px}
+#addHint .wide{margin:6px 0}
+.warnline{color:#ffd60a;font-weight:700;font-size:14px;margin:8px 0}
