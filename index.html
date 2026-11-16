@@ -348,13 +348,13 @@ function openSettings(){
   el.innerHTML = `<div class="fbar"><div class="wrap"><button class="back" data-setclose>← 返回</button><b style="font-size:15px">⚙️ 語言與地區</b></div></div>
   <div class="wrap" style="padding-bottom:60px">
     <div class="sec-t">＋ 新增語言</div>
-    <div class="inrow"><input id="nLang" placeholder="例如：越南語、葡萄牙文、Swahili" enterkeyhint="done"><button class="btn solid" id="nAdd">加入</button></div>
-    <div class="note">只要輸入語言名稱（中文、英文、當地文字都可以），會自動找出語言代碼，並先加入這個語言的主要國家。</div>
+    <div class="inrow"><input id="nLang" placeholder="例如：越南語、Vietnamese、Portuguese" enterkeyhint="done" autocapitalize="off"><button class="btn solid" id="nAdd">加入</button></div>
+    <div class="note">中文、英文、當地文字都可以，英文拼錯幾個字母也找得到。會自動找出語言代碼，並先加入這個語言的主要國家。</div>
     <div class="sec-t">＋ 新增地區（國家）</div>
-    <div class="inrow"><input id="fCountry" placeholder="例如：墨西哥、愛爾蘭、魁北克" enterkeyhint="done"><button class="btn solid" id="fAdd">加入</button></div>
+    <div class="inrow"><input id="fCountry" placeholder="例如：墨西哥、Ireland、Quebec" enterkeyhint="done" autocapitalize="off"><button class="btn solid" id="fAdd">加入</button></div>
     <div class="inrow" style="margin-top:8px;align-items:center;font-size:13.5px;color:var(--soft)">語言
       <select id="fLang" style="flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px;font-size:16px"><option value="auto">🌐 自動（用這個國家的官方語言）</option>${Object.entries(L).filter(([k, l]) => !l.hidden).map(([k, l]) => `<option value="${k}">${esc(l.name)}</option>`).join('')}</select></div>
-    <div class="note">只要輸入中文地名。不是國家的地名（例如 魁北克、巴伐利亞）會自動查出它屬於哪個國家。</div>
+    <div class="note">中文或英文地名都可以，拼錯幾個字母也找得到。不是國家的地名（例如 Quebec、巴伐利亞）會自動上網查出它屬於哪個國家。</div>
     <div id="sMsg" class="note" style="color:var(--c)"></div>
     <div class="sec-t">目前的語言和國家</div>
     <div class="note">切換國家就會抓那個國家的當地新聞，發音也換成當地口音。你自己加的可以按 × 刪除。</div>

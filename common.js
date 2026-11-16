@@ -733,8 +733,8 @@ function scriptLang(text, fallback){
 /* =========================================================
    只輸入語言名稱 → 自動找出語言代碼與官方國家（用瀏覽器內建資料，免費）
    ========================================================= */
-const normName = s => (s || '').toLowerCase().replace(/[\s()（）]/g, '').replace(/(語言|語|语|文|話|话|language)$/, '');
-const normPlace = s => (s || '').toLowerCase().replace(/[\s()（）]/g, '');
+const normName = s => (s || '').toLowerCase().replace(/\blanguage\b/g, '').replace(/[\s()（）'’-]/g, '').replace(/(語言|語|语|文|話|话)$/, '');
+const normPlace = s => (s || '').toLowerCase().replace(/^the\s+/, '').replace(/[\s()（）.'’-]/g, '');
 let _langIdx = null, _ccIdx = null;
 function langIndex(){
   if(_langIdx) return _langIdx;
@@ -761,6 +761,29 @@ function ccIndex(){
   }
   return _ccIdx = out;
 }
+function lev(a, b){
+  if(Math.abs(a.length - b.length) > 3) return 99;
+  const d = Array.from({length:a.length + 1}, (_, i) => [i]);
+  for(let j = 1; j <= b.length; j++) d[0][j] = j;
+  for(let i = 1; i <= a.length; i++) for(let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+/* 英文：拼錯幾個字母、或多打了形容詞（例如 Brazilian Portuguese）也找得到 */
+function fuzzyIn(list, q, fields, norm){
+  const n = norm(q); if(n.length < 3) return null;
+  let best = null, bd = 99;
+  for(const x of list) for(const f of fields){
+    const v = norm(x[f]); if(!v || v.length < 3) continue;
+    const dist = lev(n, v), lim = Math.max(1, Math.floor(v.length / 4));
+    if(dist <= lim && dist < bd){ best = x; bd = dist; }
+  }
+  if(best) return best;
+  // 輸入裡包含某個語言／國家名稱（取最長的）
+  let hit = null;
+  for(const x of list) for(const f of fields){ const v = norm(x[f]); if(v.length >= 4 && n.includes(v) && (!hit || v.length > hit.len)) hit = {x, len:v.length}; }
+  return hit?.x || null;
+}
 function matchIn(list, q, fields, norm){
   const n = norm(q); if(!n) return null;
   return list.find(x => fields.some(f => norm(x[f]) === n)) ||
@@ -772,19 +795,21 @@ const HOME_COUNTRY = {pt:'PT', ar:'SA', sw:'KE', ms:'MY', fa:'IR', ur:'PK', bn:'
 async function findLanguage(q){
   q = (q || '').trim(); if(!q) return null;
   const idx = langIndex();
-  let hit = idx.find(x => x.code === q.toLowerCase()) || matchIn(idx, q, ['zh','cn','en','native'], normName);
-  if(!hit){ try{ hit = matchIn(idx, (await translate(q, 'auto', 'en')).t, ['en'], normName); }catch(e){} }
+  const ALIAS = {tagalog:'fil', filipino:'fil', 他加祿:'fil', farsi:'fa', persian:'fa', cantonese:'yue', 廣東:'yue', mandarin:'zh', 國:'zh', 普通:'zh', burmese:'my', 緬甸:'my', khmer:'km', 高棉:'km', 柬埔寨:'km', 寮:'lo', lao:'lo', 老撾:'lo', 印度:'hi', 菲律賓:'fil'};
+  const al = ALIAS[normName(q)];
+  let hit = (al && idx.find(x => x.code === al)) || idx.find(x => x.code === q.toLowerCase()) || matchIn(idx, q, ['zh','cn','en','native'], normName) || fuzzyIn(idx, q, ['en','native'], normName);
+  if(!hit){ try{ const en = (await translate(q, 'auto', 'en')).t; hit = matchIn(idx, en, ['en'], normName) || fuzzyIn(idx, en, ['en'], normName); }catch(e){} }
   if(!hit) return null;
   let cc = 'US', script = '';
   try{ const loc = new Intl.Locale(hit.code).maximize(); cc = HOME_COUNTRY[hit.code] || loc.region || cc; script = loc.script || ''; }catch(e){}
-  return {code:hit.code, zh:hit.zh, name:hit.native || hit.en || hit.zh, cc, place:countryName(cc),
+  return {code: hit.code === 'fil' ? 'tl' : hit.code, zh:hit.zh, name:hit.native || hit.en || hit.zh, cc, place:countryName(cc),
           words: !['Hans','Hant','Jpan','Thai','Laoo','Khmr','Mymr','Tibt'].includes(script)};
 }
 async function findCountry(q){
   q = (q || '').trim(); if(!q) return null;
   const idx = ccIndex();
-  let hit = idx.find(x => x.cc === q.toUpperCase()) || matchIn(idx, q, ['zh','cn','en'], normPlace);
-  if(!hit){ try{ hit = matchIn(idx, (await translate(q, 'auto', 'en')).t, ['en'], normPlace); }catch(e){} }
+  let hit = idx.find(x => x.cc === q.toUpperCase()) || matchIn(idx, q, ['zh','cn','en'], normPlace) || fuzzyIn(idx, q, ['en'], normPlace);
+  if(!hit){ try{ const en = (await translate(q, 'auto', 'en')).t; hit = matchIn(idx, en, ['en'], normPlace) || fuzzyIn(idx, en, ['en'], normPlace); }catch(e){} }
   if(hit) return {cc:hit.cc, place:PLACE_FIX[hit.cc] || hit.zh};
   const w = await wikidataCountry(q);
   return w ? {cc:w.cc, place:countryName(w.cc), sub:w.sub} : null;
@@ -796,8 +821,13 @@ const claimId = (ent, p) => ent?.claims?.[p]?.[0]?.mainsnak?.datavalue?.value?.i
 const claimStr = (ent, p) => ent?.claims?.[p]?.[0]?.mainsnak?.datavalue?.value;
 async function wikidataCountry(q){
   try{
-    const s = await wd('action=wbsearchentities&language=zh&uselang=zh-tw&limit=5&search=' + encodeURIComponent(q));
-    const ids = (s.search || []).map(x => x.id); if(!ids.length) return null;
+    const latin = /^[\p{Script=Latin}\s\p{P}]+$/u.test(q);
+    let ids = [];
+    for(const lg of latin ? ['en', 'zh'] : ['zh', 'en']){
+      const s = await wd(`action=wbsearchentities&language=${lg}&uselang=${lg}&limit=5&search=` + encodeURIComponent(q));
+      ids = (s.search || []).map(x => x.id); if(ids.length) break;
+    }
+    if(!ids.length) return null;
     const ents = (await wd('action=wbgetentities&props=claims&ids=' + ids.join('|'))).entities || {};
     for(const id of ids){
       const e = ents[id]; if(!e) continue;
