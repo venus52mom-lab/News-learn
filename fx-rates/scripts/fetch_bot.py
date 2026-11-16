@@ -113,7 +113,7 @@ def merge(store, parsed):
 
 def write_recent(store, note="", source="bot"):
     cutoff = (today_tpe() - dt.timedelta(days=RECENT_DAYS)).strftime("%Y%m%d")
-    out = {"updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": source, "yv": 2, "note": note, "rates": {}}
+    out = {"updated": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "source": source, "yv": 3, "note": note, "rates": {}}
     for ccy in CCYS:
         h = store.get(ccy) or {}
         rows = [h[k] for k in sorted(h) if k >= cutoff]
@@ -171,17 +171,13 @@ def yahoo_series(sym, full):
     for t, c in zip(ts, closes):
         if c and c > 0:
             out[dt.datetime.fromtimestamp(t + off, dt.timezone.utc).strftime("%Y%m%d")] = c
-    live = res["meta"].get("regularMarketPrice")
-    if live and out:
-        out[max(out)] = live
     return out
 
 
 def yahoo_ccy(ccy, full):
     """回傳 {date: 1 外幣 = ? 台幣}。先試直接匯率，沒有就用美金交叉換算。"""
     d = yahoo_series(f"{ccy}TWD=X", full)
-    small = d and sorted(d.values())[len(d) // 2] < 1   # 日圓、韓元等小數字：直接報價只有 4 位小數，改用交叉換算比較精準
-    if len(d) >= 5 and (not small or ccy == "USD"):
+    if len(d) >= 5:
         return d
     usd_twd = yahoo_series("TWD=X", full)          # 1 USD = ? TWD
     if ccy == "USD":
@@ -225,7 +221,7 @@ def cmd_update():
     test = http_get(BASE + "day")
     if is_challenge(test):
         print("臺灣銀行擋掉了（回傳驗證頁），改用 Yahoo 市場匯率")
-        if current_source() != "yahoo2":
+        if current_source() != "yahoo3":
             store = {c: {} for c in CCYS}   # 不混用兩種來源
         changed = cmd_update_yahoo(store)
         for c in CCYS:
