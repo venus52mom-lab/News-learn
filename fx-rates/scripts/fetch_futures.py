@@ -14,6 +14,7 @@ UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit
       "Accept": "application/json"}
 CNYES = "https://ws.api.cnyes.com/ws/api/v1"
 LOG = []
+OLD_DAILY = {}
 
 
 def get(url, body=None):
@@ -41,16 +42,23 @@ def from_cnyes():
                  "high": q.get("12"), "low": q.get("13"), "time": q["200007"], "sessions": q.get("800003")}
     except Exception:  # noqa: BLE001
         return None, None
-    now = int(time.time())
-    h = get(f"{CNYES}/charting/history?symbol=TWF:TXF:FUTURES&resolution=D&quote=1&from={now}&to=0")
-    daily = {}
-    try:
-        d = h["data"]
-        for t, c in zip(d["t"], d["c"]):
-            if c:
-                daily[day_of(t)] = c
-    except Exception:  # noqa: BLE001
-        pass
+    daily, frm = {}, int(time.time())
+    for _ in range(12):            # 一次最多約 5 年，往前翻頁直到沒有資料
+        h = get(f"{CNYES}/charting/history?symbol=TWF:TXF:FUTURES&resolution=D&from={frm}&to=0")
+        try:
+            d = h["data"]
+            pts = [(t, c) for t, c in zip(d["t"], d["c"]) if c]
+        except Exception:  # noqa: BLE001
+            break
+        new = [(t, c) for t, c in pts if day_of(t) not in daily]
+        if not new:
+            break
+        for t, c in new:
+            daily[day_of(t)] = c
+        frm = min(t for t, _ in new) - 86400
+        time.sleep(0.5)
+        if len(OLD_DAILY) and min(daily) <= min(OLD_DAILY):
+            break                  # 舊資料已經有更早的了，不用再翻
     return quote, daily
 
 
@@ -85,6 +93,7 @@ def main():
     except Exception:  # noqa: BLE001
         old = {}
     daily = {r[0]: r[1] for r in old.get("daily", [])}
+    OLD_DAILY.update(daily)
     quote, d2 = from_cnyes()
     src = "鉅亨網"
     if d2:

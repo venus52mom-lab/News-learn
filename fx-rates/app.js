@@ -255,9 +255,11 @@ async function loadFut() {
     const q = (await getJSON(`${CNYES}/quote/quotes/TWF:TXF:FUTURES`)).data[0];
     FQ = {last:q["6"], chg:q["11"], pct:q["56"], ref:q["21"], open:q["19"], high:q["12"], low:q["13"], time:q["200007"], sessions:q["800003"], src:"鉅亨網"};
     if (!FUT_DAILY || Date.now() - (loadFut.t || 0) > 30*60*1000) {
+      const m = {};
+      try { (await getJSON(dataBase() + "txf.json?t=" + Date.now())).daily.forEach(([d, c]) => m[d] = c); } catch (e) {}  // 完整歷史
       const now = Math.floor(Date.now()/1000);
-      const h = (await getJSON(`${CNYES}/charting/history?symbol=TWF:TXF:FUTURES&resolution=D&from=${now}&to=0`, 15000)).data;
-      const m = {}; h.t.forEach((t, i) => { if (h.c[i]) m[utcDay(t)] = h.c[i]; });
+      const h = (await getJSON(`${CNYES}/charting/history?symbol=TWF:TXF:FUTURES&resolution=D&from=${now}&to=${now - 400*86400}`, 15000)).data;
+      h.t.forEach((t, i) => { if (h.c[i]) m[utcDay(t)] = h.c[i]; });
       FUT_DAILY = Object.keys(m).sort().map(k => [k, m[k]]); loadFut.t = Date.now();
     }
   } catch (e) {   // 備援：GitHub 每小時存的期交所／鉅亨網資料
