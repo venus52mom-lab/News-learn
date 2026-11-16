@@ -32,11 +32,15 @@ def today_tpe():
     return dt.datetime.now(TPE).date()
 
 
+DIAG = []
+
+
 def http_get(url, tries=3):
     for i in range(tries):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30) as r:
                 raw = r.read()
+                DIAG.append({"url": url, "status": r.status, "bytes": len(raw), "head": raw[:160].decode("utf-8", "replace")})
             for enc in ("utf-8-sig", "big5", "cp950"):
                 try:
                     return raw.decode(enc)
@@ -44,6 +48,7 @@ def http_get(url, tries=3):
                     pass
             return raw.decode("utf-8", "replace")
         except Exception as e:  # noqa: BLE001
+            DIAG.append({"url": url, "error": str(e)[:200]})
             print(f"  ! {url} ({e}), retry {i + 1}", file=sys.stderr)
             time.sleep(2 * (i + 1))
     return ""
@@ -123,6 +128,28 @@ def load_all():
     return {c: load_hist(c) for c in CCYS}
 
 
+def write_diag(extra=None):
+    d = {"time": dt.datetime.now(TPE).strftime("%Y-%m-%d %H:%M"), "log": DIAG[-12:]}
+    if extra:
+        d.update(extra)
+    with open(os.path.join(ROOT, "debug.json"), "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=1)
+
+
+def probe():
+    """診斷：看看從 GitHub 的主機能不能連到各個來源。"""
+    for u in ["https://rate.bot.com.tw/xrt/flcsv/0/day",
+              "https://rate.bot.com.tw/xrt/fltxt/0/day",
+              "https://rate.bot.com.tw/xrt?Lang=zh-TW",
+              "https://query1.finance.yahoo.com/v8/finance/chart/JPYTWD=X?range=5d&interval=1d"]:
+        try:
+            with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=20) as r:
+                raw = r.read()
+                DIAG.append({"probe": u, "status": r.status, "bytes": len(raw), "head": raw[:160].decode("utf-8", "replace")})
+        except Exception as e:  # noqa: BLE001
+            DIAG.append({"probe": u, "error": str(e)[:200]})
+
+
 def cmd_update():
     store = load_all()
     t = today_tpe()
@@ -151,6 +178,9 @@ def cmd_update():
         if store.get(c):
             save_hist(c, store[c])
     write_recent(store)
+    if not any(store.values()):
+        probe()
+    write_diag({"rows_changed": changed, "ccys_with_data": [c for c in CCYS if store.get(c)]})
     print(f"update done, {changed} rows changed")
 
 
