@@ -357,9 +357,11 @@ function renderAdd() {   // 編輯模式：下方列出可以加入的項目
   }
   const inp = $("#addQ");
   inp.oninput = () => { renderAdd.q = inp.value; renderAdd.msg = ""; clearTimeout(renderAdd.t); renderAdd.t = setTimeout(() => { renderAdd(); const i = $("#addQ"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); };
-  if (qv) symbolHint(renderAdd.q, !!Object.keys(groups).length);
+  const twHits = qv ? twSearch(qv) : [];
+  if (qv) symbolHint(renderAdd.q, !!Object.keys(groups).length || twHits.length > 0);
   else $("#addHint").innerHTML = (renderAdd.msg || "") + `<p class="muted small">找不到想要的？可以直接輸入代號加入，例如 2330、AAPL、0700.HK。</p>`;
   for (const g of GROUPS) {
+    if (g === "美股") renderTwSection(box, qv, twHits);   // 全台灣上市、上櫃股票接在「台股」後面
     if (!groups[g]) continue;
     box.append(el("div", "section-title", `可加入：${g}`));
     const ul = el("ul", "elist");
@@ -376,12 +378,108 @@ function renderAdd() {   // 編輯模式：下方列出可以加入的項目
     if (!confirm(`確定刪除「${LIST().n}」？`)) return;
     S.lists.splice(S.cur, 1); S.cur = Math.max(0, S.cur - 1); save(); renderHome(); };
 }
+/* ===== 全台灣上市、上櫃股票（data/twstocks.json，每天更新） ===== */
+let TW = null, TWLOAD = null;
+function loadTw() {
+  if (TW || TWLOAD) return TWLOAD;
+  return TWLOAD = getJSON(dataBase() + "twstocks.json?d=" + new Date().toISOString().slice(0, 10), 20000).then(j => {
+    TW = {L: j.L || [], O: j.O || [], date: j.date || ""};
+    if (EDITING) { const q = $("#addQ"), f = q && document.activeElement === q; renderAdd(); if (f) $("#addQ").focus(); }
+  }).catch(() => { TWLOAD = null; });
+}
+function twId(code) { return ITEMS["TW" + code] && !ITEMS["TW" + code].custom ? "TW" + code : `U_TWS_${code}_STOCK`; }
+function twIn(code) { const L = LIST().items; return L.includes("TW" + code) || L.includes(`U_TWS_${code}_STOCK`) || L.includes(`U_OTC_${code}_STOCK`); }
+function addTw(code, name, mk) {
+  const id = twId(code);
+  if (!ITEMS[id]) { S.custom[id] = {name, sub: `${code}・${mk}`, cn: `TWS:${code}:STOCK`}; applyCustom(); }
+  if (!LIST().items.includes(id)) LIST().items.push(id);
+  renderAdd.msg = `<p class="okline">✅ 已加入「${esc(LIST().n)}」：${esc(name)}（${esc(code)}）</p>`;
+  save(); renderHome(); refreshLive();
+}
+function twSearch(qv) {   // 本機名單：代號開頭或名稱包含
+  if (!TW) return [];
+  const q = normSym(qv).toLowerCase(), out = [];
+  for (const [mk, arr] of [["上市", TW.L], ["上櫃", TW.O]])
+    for (const [c, n, ind] of arr) if (c.toLowerCase().startsWith(q) || n.toLowerCase().includes(q)) out.push([c, n, ind, mk]);
+  return out.sort((a, b) => (a[0].toLowerCase() === q ? -1 : 0) - (b[0].toLowerCase() === q ? -1 : 0) || a[0].length - b[0].length);
+}
+function twRow(c, n, ind, mk) {
+  const li = el("li", "", `<button class="ebtn add">＋</button><div class="n">🇹🇼 ${esc(n)}<small>${esc(c)}・${mk}・${esc(ind)}</small></div>`);
+  li.onclick = () => addTw(c, n, mk); return li;
+}
+function renderTwSection(box, qv, hits) {
+  if (!TW) { box.append(el("div", "section-title", `台股上市・上櫃 <small>名單載入中…</small>`)); loadTw(); return; }
+  if (qv) {
+    const show = hits.filter(h => !twIn(h[0])).slice(0, 60);
+    if (!show.length) return;
+    box.append(el("div", "section-title", `可加入：台股上市・上櫃 <small>${hits.length > 60 ? `前 60 筆／共 ${hits.length} 筆` : `${show.length} 筆`}</small>`));
+    const ul = el("ul", "elist"); for (const h of show) ul.append(twRow(...h)); box.append(ul); return;
+  }
+  renderTwSection.open = renderTwSection.open || {};
+  for (const [mk, arr] of [["上市", TW.L], ["上櫃", TW.O]]) {
+    box.append(el("div", "section-title", `可加入：台股${mk} <small>共 ${arr.length} 檔・${TW.date} 更新</small>`));
+    const byInd = {};
+    for (const r of arr) (byInd[r[2]] = byInd[r[2]] || []).push(r);
+    const names = Object.keys(byInd).sort((a, b) => (a === "ETF" ? -1 : b === "ETF" ? 1 : byInd[b].length - byInd[a].length));
+    for (const ind of names) {
+      const k = mk + ind, open = renderTwSection.open[k];
+      const head = el("button", "indhead" + (open ? " on" : ""), `<span>${open ? "▾" : "▸"} ${esc(ind)}</span><small>${byInd[ind].length} 檔</small>`);
+      head.onclick = () => { renderTwSection.open[k] = !open; renderAdd(); };
+      box.append(head);
+      if (open) { const ul = el("ul", "elist"); for (const [c, n] of byInd[ind]) if (!twIn(c)) ul.append(twRow(c, n, ind, mk)); box.append(ul); }
+    }
+  }
+}
+/* ===== 名單裡沒有時：到多個網站查（證交所、FinMind、鉅亨網） ===== */
+let FINMIND = null;
+async function searchOnline(q) {
+  const hint = $("#addHint"); const name = normSym(q).replace(/\.(TWO?|TW)$/, "");
+  const box = el("div", "online"); box.innerHTML = `<p class="muted small">本機名單沒有「${esc(name)}」，正在到網路上查…</p><ul class="srcs"></ul><div class="cands"></div>`;
+  hint.append(box); symbolHint.lastQ = q; symbolHint.box = box;
+  const srcs = box.querySelector(".srcs"), cands = box.querySelector(".cands"), seen = new Set();
+  const addCand = (c, n, mk, src) => {
+    c = c.toUpperCase(); if (seen.has(c)) return; seen.add(c);
+    const b = el("button", "wide", `＋ ${esc(n || c)}（${esc(c)}${mk ? "・" + mk : ""}）<small class="src">來源：${src}</small>`);
+    b.onclick = () => addBySymbol(c); cands.append(b);
+  };
+  const line = (site) => { const li = el("li", "", `⏳ ${site}：查詢中…`); srcs.append(li); return (t, ok) => { li.innerHTML = `${ok ? "✅" : ok === false ? "❌" : "➖"} ${site}：${t}`; }; };
+  const codeLike = /^\d{4,6}[A-Z]?$/.test(name);
+  const jobs = [];
+  jobs.push((async () => { const set = line("證交所");
+    try { const j = await getJSON(`https://www.twse.com.tw/rwd/zh/api/codeQuery?query=${encodeURIComponent(name)}`, 10000);
+      const r = (j.suggestions || []).map(x => x.split("\t")).filter(x => x.length > 1 && /^\d{4,6}[A-Z]?$/.test(x[0]));
+      r.slice(0, 8).forEach(x => addCand(x[0], x[1], "上市", "證交所")); set(r.length ? `找到 ${r.length} 筆` : "沒有符合的上市股票", r.length ? true : null);
+    } catch (e) { set("連不上", false); } })());
+  jobs.push((async () => { const set = line("FinMind（上市＋上櫃）");
+    try { if (!FINMIND) FINMIND = ((await getJSON("https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInfo", 20000)).data || []);
+      const lq = name.toLowerCase(), m = new Map();
+      for (const r of FINMIND) if ((r.stock_id || "").toLowerCase().startsWith(lq) || (r.stock_name || "").toLowerCase().includes(lq)) m.set(r.stock_id, r);
+      const r = [...m.values()].filter(x => /^\d{4,6}[A-Z]?$/.test(x.stock_id));
+      r.slice(0, 8).forEach(x => addCand(x.stock_id, x.stock_name, x.type === "tpex" ? "上櫃" : x.type === "twse" ? "上市" : "", "FinMind")); set(r.length ? `找到 ${r.length} 筆` : "沒有符合的", r.length ? true : null);
+    } catch (e) { set("連不上", false); } })());
+  jobs.push((async () => { const set = line("鉅亨網");
+    try {
+      if (codeLike) {
+        let hit = null;
+        for (const sym of [`TWS:${name}:STOCK`, `OTC:${name}:STOCK`]) { try { const d = (await getJSON(`${CNYES}/quote/quotes/${sym}`, 10000)).data[0]; if (d) { hit = d; break; } } catch (e) { if (!/^4\d\d$/.test(e.message)) throw e; } }
+        if (hit) { addCand(name, hit["200009"], "", "鉅亨網"); set("找到 1 筆", true); } else set("查無此代號", null);
+      } else {
+        const items = ((await getJSON(`https://ess.api.cnyes.com/ess/api/v1/siteSearch/main?q=${encodeURIComponent(name)}&limit=20&category=TWS`, 10000)).data || {}).news || [];
+        let n = 0;
+        for (const it of items) for (const m of (it.title || "").replace(/<\/?mark>/g, "").matchAll(/([㐀-鿿A-Za-z0-9\-\*]{1,12})\s*[（(]\s*([0-9A-Z]{4,6})-TW\s*[)）]/g))
+          if (m[1].includes(name) || name.includes(m[1])) { addCand(m[2], m[1], "", "鉅亨網新聞"); n++; }
+        set(n ? `從新聞找到代號` : "沒有符合的", n ? true : null);
+      }
+    } catch (e) { set("連不上", false); } })());
+  await Promise.all(jobs);
+  if (!seen.size) cands.innerHTML = `<p class="warnline">⚠️ 三個網站都查不到「${esc(name)}」。可能原因：名稱打錯或不完整、還沒正式上市上櫃，或不是台灣的股票。${codeLike ? "" : "可以改用數字代號再試一次。"}</p>`;
+}
 /* ===== 用代號加入：先檢查格式，再到網路上查 ===== */
 const FMT_HELP = `<div class="fmt"><b>代號格式說明</b>
 <div>🇹🇼 台股／ETF：數字代號，例 <code>2330</code>、<code>0050</code>、<code>00631L</code>（上市上櫃都可以，也可以打 <code>2330.TW</code>）</div>
 <div>🇺🇸 美股／ETF：英文代號，例 <code>AAPL</code>、<code>TSLA</code>、<code>SPY</code>、<code>BRK.B</code></div>
 <div>🇭🇰 港股：數字加 <code>.HK</code>，例 <code>0700.HK</code>、<code>9988.HK</code></div>
-<div>🔎 也可以打中文名稱，例 <code>環球晶</code>、<code>騰訊</code>，會幫你找代號</div>
+<div>🔎 台股也可以打中文名稱，例 <code>環球晶</code>、<code>長榮航</code>；名單裡沒有的會自動到證交所、FinMind、鉅亨網查</div>
 <div class="muted">日股、韓股、歐股等其他市場目前沒辦法用手機直接查，請告訴開發者把它加進目錄。</div></div>`;
 function normSym(q) {   // 全形轉半形、去空白、轉大寫
   return q.replace(/[！-～]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/　/g, " ").trim().toUpperCase();
@@ -402,12 +500,16 @@ function parseSym(q) {   // → {ok, tries:[鉅亨網代號…], label} 或 {ok:
 }
 function symbolHint(q, inCatalog) {
   const h = $("#addHint"); const p = parseSym(q);
+  const twQuery = (p.ok && p.mk === "台股") || p.name;
+  if (twQuery && inCatalog) return;
+  if (twQuery && symbolHint.lastQ === q && symbolHint.box) { h.append(symbolHint.box); return; }
+  if (twQuery && TW) { clearTimeout(symbolHint.t); symbolHint.t = setTimeout(() => { if ((renderAdd.q || "") === q) searchOnline(q); }, 400); return; }
   if (p.ok) {
     const b = el("button", "wide", `🔎 上網查「${esc(p.code)}」（${p.mk}）並加入`);
     b.onclick = () => addBySymbol(q); h.append(b);
     if (!inCatalog) h.insertAdjacentHTML("beforeend", `<p class="muted small">目錄裡沒有，按上面的按鈕到鉅亨網查詢。</p>`);
   } else if (p.name) {
-    if (!inCatalog) { const b = el("button", "wide", `🔎 用名稱「${esc(normSym(q))}」上網找代號`); b.onclick = () => searchByName(q); h.append(b); }
+    if (!inCatalog) { const b = el("button", "wide", `🔎 用名稱「${esc(normSym(q))}」上網找代號`); b.onclick = () => searchOnline(q); h.append(b); }
   } else if (!inCatalog) {
     h.insertAdjacentHTML("beforeend", `<p class="warnline">⚠️ ${esc(p.why)}</p>${p.yahoo ? "" : FMT_HELP}`);
   }
@@ -424,8 +526,8 @@ async function addBySymbol(q) {
     const d = j && j.data && j.data[0];
     if (!d) { nf++; continue; }
     if (d["6"] == null) { noPrice = d; continue; }
-    const id = "U_" + sym.replace(/[^A-Z0-9]/g, "_");
-    S.custom[id] = {name: d["200009"] || p.code, sub: `${p.code}・${p.mk}`, cn: sym};
+    const id = p.mk === "台股" ? twId(p.code) : "U_" + sym.replace(/[^A-Z0-9]/g, "_");
+    if (!ITEMS[id] || ITEMS[id].custom) S.custom[id] = {name: d["200009"] || p.code, sub: `${p.code}・${p.mk}`, cn: sym};
     applyCustom();
     const had = LIST().items.includes(id);
     if (!had) LIST().items.push(id);
@@ -438,25 +540,6 @@ async function addBySymbol(q) {
   else if (net && !nf) why = `連不上鉅亨網（可能是手機網路不穩，或鉅亨網暫時故障），請稍後再試一次。`;
   else why = `鉅亨網查不到 ${p.mk}「${p.code}」。可能原因：代號打錯、已經下市，或不是${p.mk}。${p.mk === "美股" ? "如果是台股，請輸入數字代號；如果是港股，請在後面加 .HK。" : ""}`;
   hint.innerHTML = `<p class="warnline">⚠️ ${esc(why)}</p>${FMT_HELP}`;
-}
-async function searchByName(q) {   // 鉅亨網沒有開放名稱查詢，改從新聞標題找「名稱(代號-TW)」
-  const hint = $("#addHint"); const name = normSym(q);
-  hint.innerHTML = `<p class="muted small">正在找「${esc(name)}」的代號…</p>`;
-  let items;
-  try { items = ((await getJSON(`https://ess.api.cnyes.com/ess/api/v1/siteSearch/main?q=${encodeURIComponent(name)}&limit=20&category=TWS`, 10000)).data || {}).news || []; }
-  catch (e) { hint.innerHTML = `<p class="warnline">⚠️ 連不上鉅亨網，沒辦法用名稱找。請稍後再試，或直接輸入代號。</p>${FMT_HELP}`; return; }
-  const found = new Map();
-  for (const n of items) {
-    const t = (n.title || "").replace(/<\/?mark>/g, "");
-    for (const m of t.matchAll(/([㐀-鿿A-Za-z0-9\-\*]{1,12})\s*[（(]\s*([0-9A-Z.]{1,8})-(TW|US|HK)\s*[)）]/g)) {
-      if (!m[1].includes(name) && !name.includes(m[1])) continue;
-      const code = m[3] === "HK" ? m[2] + ".HK" : m[2];
-      if (!found.has(code)) found.set(code, m[1]);
-    }
-  }
-  if (!found.size) { hint.innerHTML = `<p class="warnline">⚠️ 找不到「${esc(name)}」的代號。可能是名稱不完整、不是台股／美股／港股，或最近沒有相關新聞可以對照。請改輸入代號。</p>${FMT_HELP}`; return; }
-  hint.innerHTML = `<p class="muted small">找到以下代號，點一下加入：</p>`;
-  for (const [code, nm] of found) { const b = el("button", "wide", `＋ ${esc(nm)}（${esc(code)}）`); b.onclick = () => addBySymbol(code); hint.append(b); }
 }
 function removeItem(id) { LIST().items = LIST().items.filter(x => x !== id); save(); renderHome(); }
 function newList() {
@@ -920,7 +1003,7 @@ function loadAll() { loadRecent(); loadSnap(); loadMarkets().then(refreshLive); 
 async function loadCatalog() { try { applyCatalog(await getJSON("catalog.json?v=" + (S.catV || 1), 10000)); applyCustom(); } catch (e) {} }
 document.querySelectorAll("#sparkSeg button").forEach(b => b.onclick = e => { e.stopPropagation(); S.spark = b.dataset.v; save(); renderHome(); });
 renderHome();
-loadCatalog().then(() => { renderHome(); loadAll(); });
+loadCatalog().then(() => { renderHome(); loadAll(); setTimeout(loadTw, 3000); });
 if ("serviceWorker" in navigator) {   // 有新版就自動換上（不用自己清快取）
   navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).then(r => r.update()).catch(() => {});
   let reloaded = false;
