@@ -10,10 +10,10 @@
 <script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css?v=10">
+<link rel="stylesheet" href="common.css?v=11">
 </head>
-<body data-cat="local">
-<header><div class="wrap">
+<body data-tone="local">
+<header class="nosticky"><div class="wrap">
   <div class="top">
     <h1><small>Daily News · Language</small>每日新聞學語言</h1>
     <div style="text-align:right"><div id="date"></div>
@@ -29,6 +29,7 @@
   <div class="favs" id="favs"></div>
 </div></header>
 
+<div id="mini" class="mini"><div class="wrap"><button id="miniBtn"></button><button id="miniTop">⬆ 換國家／分類</button></div></div>
 <main class="wrap">
   <div class="bar">
     <label><input type="checkbox" id="showZh" checked> <span id="zhLabel">顯示中文原文</span></label>
@@ -90,7 +91,7 @@ document.addEventListener('mousedown', e => { if(e.target.closest('.sheet button
 const catName = k => k === 'local' ? (state.mode === 'tw' ? '🇹🇼 台灣' : R().label) : CATS[k].name;
 function renderNav(){
   const L = allLangs(), cur = L[state.lang];
-  document.body.dataset.cat = state.cat === 'local' ? 'tw' : state.cat;
+  document.body.dataset.tone = state.cat === 'local' ? 'tw' : state.cat;
   document.body.style.setProperty('--l', cur.color);
   document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.mode === state.mode));
   $('#cats').innerHTML = NEWS_CATS.map(k => `<button data-cat="${k}" class="${k === state.cat ? 'on' : ''}">${catName(k)}</button>`).join('');
@@ -98,8 +99,11 @@ function renderNav(){
   $('#pickBtn').innerHTML = `<span>${esc(labelOf(curV, style))}</span><b>🌍 換國家 ▾</b>`;
   $('#pickBtn').style.borderColor = cur.color;
   const favs = getFavs().filter(v => allLangs()[v.split('|')[0]]);
+  $('#mini').style.setProperty('--l', cur.color);
+  $('#miniBtn').textContent = `${labelOf(curV, style)}・${state.cat === 'local' ? (state.mode === 'tw' ? '台灣新聞' : '本地新聞') : CATS[state.cat].name}`;
+  $('#favs').classList.toggle('open', favOpen);
   $('#favs').innerHTML = favs.length
-    ? '<span class="fl">⭐ 常看</span>' + favs.map(v => `<button data-pick="${v}" class="${v === curV ? 'on' : ''}" style="${v === curV ? 'background:' + allLangs()[v.split('|')[0]].color : ''}">${esc(labelOf(v, style))}</button>`).join('')
+    ? `<button class="favtog" data-favtog="1">⭐ 常看國家（${favs.length}）${favOpen ? '▴ 收起' : '▾'}</button>` + (favOpen ? '' : '') + favs.map(v => `<button data-pick="${v}" class="${v === curV ? 'on' : ''}" style="${v === curV ? 'background:' + allLangs()[v.split('|')[0]].color : ''}">${esc(labelOf(v, style))}</button>`).join('')
     : '<span class="fl">⭐ 小提示：在「🌍 換國家」裡按國家旁的 ☆，就會出現在這裡，以後一鍵切換。</span>';
   $('#lselLb').textContent = state.mode === 'tw' ? '翻成' : '看哪國新聞';
   $('#showZh').checked = state.showZh;
@@ -465,7 +469,7 @@ document.addEventListener('click', e => {
   else if(t.dataset.ent){ toggleEnts(t.closest('.card')); }
   else if(t.dataset.clear){ clearLocal(t.dataset.clear); }
   else if(t.dataset.mode){ state.mode = t.dataset.mode; store.set('nl_mode', state.mode); renderNav(); render(); }
-  else if(t.dataset.cat){ state.cat = t.dataset.cat; store.set('nl_cat2', state.cat); renderNav(); render(); window.scrollTo({top:0}); }
+  else if(t.dataset.cat && CATS[t.dataset.cat] && t.closest('#cats')){ state.cat = t.dataset.cat; store.set('nl_cat2', state.cat); renderNav(); render(); window.scrollTo({top:0}); }
   else if(t.dataset.lang){ state.lang = t.dataset.lang; store.set('nl_lang', state.lang); renderNav(); render(); }
   else if(t.dataset.say){ const c = t.closest('.card'); if(c.dataset.text) sayText(c.dataset.text, R().tts, +t.dataset.say); }
   else if(t.classList.contains('w')){ openWord(t.dataset.w, t.closest('.card').dataset.text || ''); }
@@ -474,7 +478,9 @@ document.addEventListener('click', e => {
 });
 $('#showZh').onchange = e => { state.showZh = e.target.checked; store.set('nl_zh', state.showZh); document.querySelectorAll('.card .zh').forEach(z => z.classList.toggle('hidden', !state.showZh)); };
 $('#count').onchange = e => { state.count = +e.target.value; store.set('nl_count', state.count); render(); };
+let favOpen = false;
 function selectLR(v){
+  favOpen = false;
   const [l, rk] = v.split('|');
   const sameLang = l === state.lang;
   state.lang = l; state.regions[l] = rk;
@@ -529,10 +535,11 @@ function renderPicker(){
   el.scrollTop = 0;
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-pick],[data-fav],[data-cont],[data-sub],[data-pickback],[data-pickclose],#pickBtn,.lsel'); if(!t) return;
+  const t = e.target.closest('[data-favtog],[data-pick],[data-fav],[data-cont],[data-sub],[data-pickback],[data-pickclose],#pickBtn,.lsel'); if(!t) return;
   if(t.id === 'pickBtn' || t.classList.contains('lsel')) return openPicker();
   if(t.dataset.fav){ toggleFav(t.dataset.fav); renderNav(); if(!$('#pick').classList.contains('hidden')) renderPicker(); return; }
   if(t.dataset.pick){ const inPicker = !!t.closest('#pick'); selectLR(t.dataset.pick); if(inPicker) closePicker(); return; }
+  if(t.dataset.favtog){ favOpen = !favOpen; renderNav(); return; }
   if(t.dataset.cont){ const i = +t.dataset.cont; pickPath = CONTINENTS[i][2].length > 1 ? [i] : [i, 0]; return renderPicker(); }
   if(t.dataset.sub){ pickPath = [pickPath[0], +t.dataset.sub]; return renderPicker(); }
   if(t.dataset.pickclose !== undefined) return closePicker();
@@ -544,6 +551,11 @@ document.addEventListener('click', e => {
   }
 });
 $('#refresh').onclick = () => render(true);
+/* 往下讀新聞時，上方只留一條細細的狀態列 */
+const headEnd = () => $('.bar').getBoundingClientRect().top + window.scrollY;
+window.addEventListener('scroll', () => { if(locks) return; $('#mini').classList.toggle('show', window.scrollY > headEnd()); }, {passive:true});
+$('#miniTop').onclick = () => window.scrollTo({top:0, behavior:'smooth'});
+$('#miniBtn').onclick = () => window.scrollTo({top:0, behavior:'smooth'});
 $('#vocabBtn').onclick = () => openVocab(state.lang);
 $('#themeBtn').onclick = cycleTheme;
 $('#ghBtn').onclick = openGitHub;

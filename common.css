@@ -28,12 +28,12 @@
   --en:#7891a3; --ja:#b08c8c; --fr:#9a90b3; --ko:#7fa3a3; --es:#b8917e; --th:#9aa27a; --it:#a5a088;
   --hard:#383226; --hard-line:#9c8455;
 }}
-body[data-cat=pol]{--c:var(--pol);--cbg:var(--pol-bg)}
-body[data-cat=world]{--c:var(--world);--cbg:var(--world-bg)}
-body[data-cat=fin]{--c:var(--fin);--cbg:var(--fin-bg)}
-body[data-cat=tech]{--c:var(--tech);--cbg:var(--tech-bg)}
-body[data-cat=health]{--c:var(--health);--cbg:var(--health-bg)}
-body[data-cat=life]{--c:var(--life);--cbg:var(--life-bg)}
+body[data-tone=pol]{--c:var(--pol);--cbg:var(--pol-bg)}
+body[data-tone=world]{--c:var(--world);--cbg:var(--world-bg)}
+body[data-tone=fin]{--c:var(--fin);--cbg:var(--fin-bg)}
+body[data-tone=tech]{--c:var(--tech);--cbg:var(--tech-bg)}
+body[data-tone=health]{--c:var(--health);--cbg:var(--health-bg)}
+body[data-tone=life]{--c:var(--life);--cbg:var(--life-bg)}
 body[data-lang=ja]{--l:var(--ja)} body[data-lang=fr]{--l:var(--fr)} body[data-lang=ko]{--l:var(--ko)}
 body[data-lang=es]{--l:var(--es)} body[data-lang=it]{--l:var(--it)} body[data-lang=th]{--l:var(--th)}
 *{box-sizing:border-box}
@@ -205,3 +205,15 @@ button,a,select,label,.lsel,.w,.tile,.lopt{touch-action:manipulation;-webkit-tap
 .lopt button{min-height:40px;padding:8px 6px 8px 14px}
 .lopt .star{min-width:40px;padding:8px 12px 8px 6px;font-size:18px}
 .pages a,.mode button,.cats button{min-height:40px}
+
+/* 新聞頁：標題區不黏在上方，往下捲只留細狀態列 */
+header.nosticky{position:relative}
+.mini{position:fixed;top:0;left:0;right:0;z-index:8;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line);transform:translateY(-100%);transition:transform .2s;padding-top:env(safe-area-inset-top)}
+.mini.show{transform:none}
+.mini .wrap{display:flex;gap:8px;align-items:center;padding-top:7px;padding-bottom:7px}
+.mini button{border:none;background:none;color:var(--ink);font-size:14px;cursor:pointer;padding:6px 0;min-height:36px;font-family:inherit}
+#miniBtn{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-left:3px solid var(--l);padding-left:8px}
+#miniTop{flex:none;color:var(--soft);font-size:13px;border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+/* 常看國家：平常收起，只顯示一顆按鈕 */
+.favs .favtog{border:1px dashed var(--line);color:var(--soft);background:none}
+.favs:not(.open) button[data-pick]{display:none}
