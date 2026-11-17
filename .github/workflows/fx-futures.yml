@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["fx-rates/catalog.json", "fx-rates/scripts/fetch_futures.py", "fx-rates/scripts/fetch_markets.py", "fx-rates/scripts/fetch_news.py", ".github/workflows/fx-futures.yml"]
+    paths: ["fx-rates/catalog.json", "fx-rates/scripts/fetch_futures.py", "fx-rates/scripts/fetch_markets.py", "fx-rates/scripts/fetch_news.py", "fx-rates/scripts/fetch_twlist.py", ".github/workflows/fx-futures.yml"]
 permissions:
   contents: write
 concurrency:
@@ -25,9 +25,10 @@ jobs:
       - run: python3 fx-rates/scripts/fetch_futures.py || true
       - run: python3 fx-rates/scripts/fetch_markets.py || true
       - run: python3 fx-rates/scripts/fetch_news.py || true
+      - run: python3 fx-rates/scripts/fetch_twlist.py || true
       - name: Commit
         run: |
           git config user.name "fx-bot"
           git config user.email "fx-bot@users.noreply.github.com"
-          git add fx-rates/data/txf.json fx-rates/data/markets.json fx-rates/data/week.json fx-rates/data/fullhist_tried.json fx-rates/data/mkt fx-rates/data/news.json || true
+          git add fx-rates/data/txf.json fx-rates/data/markets.json fx-rates/data/week.json fx-rates/data/fullhist_tried.json fx-rates/data/mkt fx-rates/data/news.json fx-rates/data/twstocks.json || true
           git diff --cached --quiet || (git commit -m "台指期備援・股市・新聞 $(TZ=Asia/Taipei date '+%F %R')" && git pull --rebase && git push)
