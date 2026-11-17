@@ -173,3 +173,25 @@ main{padding-top:14px;padding-bottom:100px}
 
 /* 阿拉伯文、希伯來文等由右往左的文字自動換方向 */
 .tr .tx,.zh,.para .o,.para .t,.seg,.ent-d,.vi{unicode-bidi:plaintext}
+
+/* 國家選擇 */
+.pickbtn{flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:8px;border:1.5px solid var(--l);background:var(--paper);color:var(--ink);border-radius:10px;padding:9px 12px;font-size:16px;cursor:pointer;font-family:inherit}
+.pickbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pickbtn b{flex:none;font-weight:400;font-size:12.5px;color:var(--soft)}
+.favs{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 10px;align-items:center}
+.favs .fl{font-size:12px;color:var(--mute)}
+.favs button{border:1px solid var(--line);background:var(--paper);color:var(--soft);border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer}
+.favs button.on{color:#fff;border-color:transparent}
+.pq{width:100%;margin-top:14px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:16px}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:14px;padding:14px;font-size:17px;cursor:pointer;text-align:left;font-family:inherit}
+.tile .ic{font-size:24px}
+.tile small{font-size:12px;color:var(--mute);line-height:1.6;word-break:break-all}
+.crow{padding:12px 0;border-bottom:1px solid var(--line)}
+.cname{font-size:16px;font-weight:500;margin-bottom:6px}
+.clangs{display:flex;flex-wrap:wrap;gap:6px}
+.lopt{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--paper);overflow:hidden}
+.lopt button{border:none;background:none;color:var(--soft);font-size:14px;padding:5px 4px 5px 12px;cursor:pointer;font-family:inherit}
+.lopt .star{padding:5px 10px 5px 6px;color:#c4a46a;font-size:16px}
+.lopt.on{border-color:var(--l);background:var(--cbg)}
+.lopt.on button:first-child{color:var(--ink);font-weight:500}

@@ -10,7 +10,7 @@
 <script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css?v=8">
+<link rel="stylesheet" href="common.css?v=9">
 </head>
 <body data-cat="local">
 <header><div class="wrap">
@@ -25,7 +25,8 @@
     <button data-mode="native">🌐 當地原文新聞<small>外語原文 → 翻成中文</small></button>
   </div>
   <nav class="cats" id="cats"></nav>
-  <div class="lsel"><span id="lselLb">學習語言</span><select id="langSel"></select></div>
+  <div class="lsel"><span id="lselLb">看哪國新聞</span><button id="pickBtn" class="pickbtn"></button></div>
+  <div class="favs" id="favs"></div>
 </div></header>
 
 <main class="wrap">
@@ -46,9 +47,10 @@
 <div id="vocab" class="sheet hidden"></div>
 <div id="gh" class="sheet hidden"></div>
 <div id="setFull" class="full hidden"></div>
+<div id="pick" class="full hidden"></div>
 <div id="full" class="full hidden"></div>
 
-<script src="common.js?v=9"></script>
+<script src="common.js?v=10"></script>
 <script>
 /* ====== 狀態 ====== */
 const NEWS_CATS = ['local','world','fin','pol','tech','health','life'];
@@ -92,10 +94,13 @@ function renderNav(){
   document.body.style.setProperty('--l', cur.color);
   document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.mode === state.mode));
   $('#cats').innerHTML = NEWS_CATS.map(k => `<button data-cat="${k}" class="${k === state.cat ? 'on' : ''}">${catName(k)}</button>`).join('');
-  const ls = $('#langSel');
-  ls.innerHTML = langRegionOptions(`${state.lang}|${R().key}`, state.mode === 'tw' ? 'accent' : 'place');
-  ls.value = `${state.lang}|${R().key}`;
-  ls.style.borderColor = cur.color;
+  const curV = `${state.lang}|${R().key}`, style = state.mode === 'tw' ? 'accent' : 'place';
+  $('#pickBtn').innerHTML = `<span>${esc(labelOf(curV, style))}</span><b>🌍 換國家 ▾</b>`;
+  $('#pickBtn').style.borderColor = cur.color;
+  const favs = getFavs().filter(v => allLangs()[v.split('|')[0]]);
+  $('#favs').innerHTML = favs.length
+    ? '<span class="fl">⭐ 常看</span>' + favs.map(v => `<button data-pick="${v}" class="${v === curV ? 'on' : ''}" style="${v === curV ? 'background:' + allLangs()[v.split('|')[0]].color : ''}">${esc(labelOf(v, style))}</button>`).join('')
+    : '<span class="fl">⭐ 小提示：在「🌍 換國家」裡按國家旁的 ☆，就會出現在這裡，以後一鍵切換。</span>';
   $('#lselLb').textContent = state.mode === 'tw' ? '翻成' : '看哪國新聞';
   $('#showZh').checked = state.showZh;
   $('#zhLabel').textContent = state.mode === 'tw' ? '顯示中文原文' : '顯示中文翻譯';
@@ -469,13 +474,75 @@ document.addEventListener('click', e => {
 });
 $('#showZh').onchange = e => { state.showZh = e.target.checked; store.set('nl_zh', state.showZh); document.querySelectorAll('.card .zh').forEach(z => z.classList.toggle('hidden', !state.showZh)); };
 $('#count').onchange = e => { state.count = +e.target.value; store.set('nl_count', state.count); render(); };
-$('#langSel').onchange = e => {
-  const [l, rk] = e.target.value.split('|');
+function selectLR(v){
+  const [l, rk] = v.split('|');
   const sameLang = l === state.lang;
   state.lang = l; state.regions[l] = rk;
   store.set('nl_lang', l); store.set('nl_regions', state.regions);
   renderNav(); if(state.mode === 'native' || !sameLang) render();
-};
+}
+
+/* ====== 選國家：洲 → 區域 → 國家，可加入常看 ====== */
+let pickPath = [], pickQ = '';
+function openPicker(){ const el = $('#pick'); if(el.classList.contains('hidden')){ lockScroll(); el.classList.remove('hidden'); } pickPath = []; pickQ = ''; renderPicker(); }
+function closePicker(){ const el = $('#pick'); if(el.classList.contains('hidden')) return; el.classList.add('hidden'); el.innerHTML = ''; unlockScroll(); }
+function countryRow(cc, curV, style){
+  const es = entriesOfCC(cc); if(!es.length) return '';
+  const favs = getFavs(), place = es[0].r.place.replace(/（.*?）/, '');
+  return `<div class="crow"><div class="cname">${es[0].r.flag} ${esc(place)}</div><div class="clangs">${es.map(e =>
+    `<span class="lopt ${e.v === curV ? 'on' : ''}"><button data-pick="${e.v}">${esc(style === 'accent' ? e.name + '（' + e.r.accent + '）' : e.name + (e.r.place !== place ? '・' + e.r.place.replace(place, '').replace(/[（）]/g, '') : ''))}</button><button class="star" data-fav="${e.v}" title="常看">${favs.includes(e.v) ? '★' : '☆'}</button></span>`).join('')}</div></div>`;
+}
+function renderPicker(){
+  const el = $('#pick'), curV = `${state.lang}|${R().key}`, style = state.mode === 'tw' ? 'accent' : 'place';
+  const [ci, si] = pickPath, cont = CONTINENTS[ci];
+  const crumbs = ['選擇國家', cont && cont[0], cont && si != null && cont[2].length > 1 && cont[2][si][0]].filter(Boolean).join(' › ');
+  let body = '';
+  if(ci == null){
+    const favs = getFavs().filter(v => allLangs()[v.split('|')[0]]);
+    body += `<input id="pq" class="pq" placeholder="🔎 直接搜尋國家或語言，例如 捷克、Japan" value="${esc(pickQ)}" autocapitalize="off">`;
+    if(pickQ.trim()){
+      const q = pickQ.trim().toLowerCase();
+      const hits = allCCs().filter(cc => entriesOfCC(cc).some(e => (e.r.place + e.name + (new Intl.DisplayNames(['en'], {type:'region'}).of(cc) || '') + cc).toLowerCase().includes(q)));
+      body += hits.length ? hits.map(cc => countryRow(cc, curV, style)).join('') : '<div class="note">找不到，換個寫法試試。</div>';
+    }else{
+      body += `<div class="sec-t">⭐ 常看國家</div>` + (favs.length
+        ? `<div class="clangs">${favs.map(v => `<span class="lopt ${v === curV ? 'on' : ''}"><button data-pick="${v}">${esc(labelOf(v, style))}</button><button class="star" data-fav="${v}">★</button></span>`).join('')}</div>`
+        : '<div class="note">還沒有常看國家。選到國家後按旁邊的 ☆ 就會加進來。</div>');
+      body += `<div class="sec-t">🌐 依地區選擇</div><div class="tiles">${CONTINENTS.map(([n, ic, subs], i) => {
+        const cnt = subs.reduce((s, [, ccs]) => s + ccs.split(' ').filter(cc => entriesOfCC(cc).length).length, 0);
+        return `<button class="tile" data-cont="${i}"><span class="ic">${ic}</span>${n}<small>${cnt} 國</small></button>`; }).join('')}</div>`;
+      const known = new Set(GROUPS.flatMap(g => g[1].split(' ')));
+      const others = allCCs().filter(cc => !known.has(cc));
+      if(others.length) body += `<div class="sec-t">其他（你自己加的）</div>` + others.map(cc => countryRow(cc, curV, style)).join('');
+    }
+  }else if(si == null && cont[2].length > 1){
+    body += `<div class="tiles">${cont[2].map(([n, ccs], i) => {
+      const list = ccs.split(' ').filter(cc => entriesOfCC(cc).length);
+      return `<button class="tile" data-sub="${i}">${n}<small>${list.map(cc => entriesOfCC(cc)[0].r.flag).join('')}</small></button>`; }).join('')}</div>`;
+  }else{
+    const sub = cont[2][si ?? 0];
+    body += sub[1].split(' ').map(cc => countryRow(cc, curV, style)).join('') || '<div class="note">這一區還沒有國家。</div>';
+  }
+  el.innerHTML = `<div class="fbar"><div class="wrap"><button class="back" data-pickback>←</button><b style="font-size:15px">${esc(crumbs)}</b><button class="back" style="margin-left:auto" data-pickclose>✕</button></div></div>
+    <div class="wrap" style="padding-bottom:60px">${body}</div>`;
+  const pq = $('#pq'); if(pq){ pq.oninput = e => { pickQ = e.target.value; const pos = e.target.selectionStart; renderPicker(); const n = $('#pq'); n.focus(); try{ n.setSelectionRange(pos, pos); }catch(err){} }; }
+  el.scrollTop = 0;
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-pick],[data-fav],[data-cont],[data-sub],[data-pickback],[data-pickclose],#pickBtn'); if(!t) return;
+  if(t.id === 'pickBtn') return openPicker();
+  if(t.dataset.fav){ toggleFav(t.dataset.fav); renderNav(); if(!$('#pick').classList.contains('hidden')) renderPicker(); return; }
+  if(t.dataset.pick){ const inPicker = !!t.closest('#pick'); selectLR(t.dataset.pick); if(inPicker) closePicker(); return; }
+  if(t.dataset.cont){ const i = +t.dataset.cont; pickPath = CONTINENTS[i][2].length > 1 ? [i] : [i, 0]; return renderPicker(); }
+  if(t.dataset.sub){ pickPath = [pickPath[0], +t.dataset.sub]; return renderPicker(); }
+  if(t.dataset.pickclose !== undefined) return closePicker();
+  if(t.dataset.pickback !== undefined){
+    if(!pickPath.length) return closePicker();
+    const [ci] = pickPath;
+    pickPath = pickPath.length === 2 && CONTINENTS[ci][2].length > 1 ? [ci] : [];
+    return renderPicker();
+  }
+});
 $('#refresh').onclick = () => render(true);
 $('#vocabBtn').onclick = () => openVocab(state.lang);
 $('#themeBtn').onclick = cycleTheme;

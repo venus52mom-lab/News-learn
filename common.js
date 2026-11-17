@@ -1017,20 +1017,39 @@ async function officialLangs(cc){
 /* =========================================================
    語言／國家下拉選單（依地區分組）
    ========================================================= */
-const GROUPS = [
-  ['東亞・東南亞', 'TW JP KR TH ID VN SG HK'],
-  ['南亞', 'IN PK BD LK NP'],
-  ['中東・西亞', 'AE SA QA KW BH OM JO LB IQ IR IL EG MA'],
-  ['中亞', 'KZ UZ KG TJ TM'],
-  ['北美・大洋洲', 'US CA AU NZ'],
-  ['中南美洲・加勒比', 'MX BR AR CO CL PE VE CU EC BO PY UY CR PA GT HN SV NI DO PR JM TT BZ SR HT'],
-  ['西歐', 'GB IE FR BE NL LU MC DE AT CH LI'],
-  ['南歐', 'ES PT IT SM AD MT'],
-  ['北歐', 'SE NO DK FI IS'],
-  ['中歐', 'CZ SK PL HU SI'],
-  ['東歐・波羅的海', 'EE LV LT UA MD RO BG RU BY'],
-  ['東南歐・巴爾幹', 'GR CY HR BA RS ME AL XK MK TR']
+/* 洲 → 區域 → 國家 */
+const CONTINENTS = [
+  ['亞洲', '🌏', [['東亞・東南亞', 'TW JP KR TH ID VN SG HK'], ['南亞', 'IN PK BD LK NP'], ['中亞', 'KZ UZ KG TJ TM']]],
+  ['中東', '🕌', [['中東・西亞・北非', 'AE SA QA KW BH OM JO LB IQ IR IL EG MA']]],
+  ['歐洲', '🏰', [['西歐', 'GB IE FR BE NL LU MC DE AT CH LI'], ['北歐', 'SE NO DK FI IS'], ['中歐', 'CZ SK PL HU SI'],
+                 ['南歐', 'ES PT IT SM AD MT'], ['東歐・波羅的海', 'EE LV LT UA MD RO BG RU BY'], ['東南歐・巴爾幹', 'GR CY HR BA RS ME AL XK MK TR']]],
+  ['美洲', '🌎', [['北美洲', 'US CA MX'], ['中美洲・加勒比', 'GT HN SV NI CR PA BZ CU DO PR JM TT HT'], ['南美洲', 'BR AR CO CL PE VE EC BO PY UY SR']]],
+  ['大洋洲', '🦘', [['大洋洲', 'AU NZ']]]
 ];
+const GROUPS = CONTINENTS.flatMap(([, , subs]) => subs);
+/* 常看國家（只是設定，存在手機） */
+const getFavs = () => store.get('nl_favs', []);
+function toggleFav(v){ const f = getFavs(); const i = f.indexOf(v); i < 0 ? f.push(v) : f.splice(i, 1); store.set('nl_favs', f); return i < 0; }
+/* 某國有哪些語言可選 */
+function entriesOfCC(cc, includeZh){
+  const out = [];
+  for(const [k, l] of Object.entries(allLangs())){
+    if(l.hidden && !(includeZh && k === 'zh')) continue;
+    for(const rk of Object.keys(l.regions)){ const r = regionOf(k, rk); if(r.cc.toUpperCase() === cc) out.push({v:`${k}|${rk}`, lang:k, r, name:l.name}); }
+  }
+  return out;
+}
+function allCCs(includeZh){
+  const s = new Set();
+  for(const [k, l] of Object.entries(allLangs())){ if(l.hidden && !(includeZh && k === 'zh')) continue; for(const rk of Object.keys(l.regions)) s.add(regionOf(k, rk).cc.toUpperCase()); }
+  return [...s];
+}
+function labelOf(v, style = 'place'){
+  const [k, rk] = v.split('|'); const L = allLangs()[k]; if(!L) return v;
+  const r = regionOf(k, rk);
+  if(k === 'zh') return '🇹🇼 台灣・中文';
+  return style === 'accent' ? `${r.flag} ${L.name}（${r.accent}）` : `${r.flag} ${r.place}・${L.name}`;
+}
 function langRegionList(includeZh){
   const L = allLangs(), all = [];
   for(const [k, l] of Object.entries(L)){
@@ -1043,7 +1062,9 @@ function langRegionList(includeZh){
 }
 /* style: 'place'（國家・語言）或 'accent'（語言・口音） */
 function langRegionOptions(selected, style = 'place', includeZh = false){
-  return langRegionList(includeZh).map(([g, xs]) => `<optgroup label="${g}">${xs.map(x => {
+  const favs = getFavs().filter(v => allLangs()[v.split('|')[0]]);
+  const favHtml = favs.length ? `<optgroup label="⭐ 常看國家">${favs.map(v => `<option value="${v}" ${v === selected ? 'selected' : ''}>${esc(labelOf(v, style))}</option>`).join('')}</optgroup>` : '';
+  return favHtml + langRegionList(includeZh).map(([g, xs]) => `<optgroup label="${g}">${xs.map(x => {
     const label = x.lang === 'zh' ? '🇹🇼 台灣・中文' : style === 'accent' ? `${x.r.flag} ${x.name}（${x.r.accent}）` : `${x.r.flag} ${x.r.place}・${x.name}`;
     return `<option value="${x.v}" ${x.v === selected ? 'selected' : ''}>${esc(label)}</option>`; }).join('')}</optgroup>`).join('');
 }
