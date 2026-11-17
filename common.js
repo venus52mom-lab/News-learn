@@ -223,22 +223,27 @@ const CUSTOM_COLORS = ['#7f8fa0','#a08a8f','#8f9a84','#9a8fa8','#a8977e','#7e9a9
 
 /* 自訂語言／地區（只是設定，存在手機瀏覽器，很小） */
 function customCfg(){ return store.get('nl_custom', {langs:{}, regions:{}}); }
-function saveCustom(c){ store.set('nl_custom', c); }
+function saveCustom(c){ store.set('nl_custom', c); resetLangCache(); }
+/* 語言清單會被反覆用到，算一次就記起來（手機上才不會卡） */
+let _allL = null, _regC = {}, _ccMap = {};
+function resetLangCache(){ _allL = null; _regC = {}; _ccMap = {}; }
 function allLangs(){
+  if(_allL) return _allL;
   const c = customCfg(), out = {};
   for(const [k, L] of Object.entries(BUILTIN)) out[k] = {...L, regions:{...L.regions}};
   for(const [k, L] of Object.entries(c.langs || {})) out[k] = {custom:true, words:L.words !== false, ...L, regions:{...(L.regions || {})}};
   for(const [lang, rs] of Object.entries(c.regions || {})) if(out[lang]) for(const [rk, r] of Object.entries(rs)) out[lang].regions[rk] = {...r, custom:true};
   Object.keys(out).forEach((k, i) => out[k].color = LANG_COLORS[k] || CUSTOM_COLORS[i % CUSTOM_COLORS.length]);
-  return out;
+  return _allL = out;
 }
 function regionOf(lang, rk){
+  const ck = lang + '|' + rk; if(_regC[ck]) return _regC[ck];
   const L = allLangs()[lang]; if(!L) return null;
   const keys = Object.keys(L.regions);
   const r = L.regions[rk] || L.regions[keys[0]];
   const key = L.regions[rk] ? rk : keys[0];
   const cc = r.cc.toUpperCase();
-  return {...r, key, lang, flag:flagOf(cc), label:`${flagOf(cc)} ${r.place}`,
+  return _regC[ck] = {...r, key, lang, flag:flagOf(cc), label:`${flagOf(cc)} ${r.place}`,
           accent: r.accent || `${r.place}${L.name}`, tts: r.tts || `${lang}-${cc}`,
           gn: `hl=${r.hl || lang}&gl=${cc}&ceid=${r.ceid || cc + ':' + (/-419$/.test(r.hl || '') ? r.hl : lang)}`};
 }
@@ -1032,18 +1037,18 @@ const getFavs = () => store.get('nl_favs', []);
 function toggleFav(v){ const f = getFavs(); const i = f.indexOf(v); i < 0 ? f.push(v) : f.splice(i, 1); store.set('nl_favs', f); return i < 0; }
 /* 某國有哪些語言可選 */
 function entriesOfCC(cc, includeZh){
-  const out = [];
-  for(const [k, l] of Object.entries(allLangs())){
-    if(l.hidden && !(includeZh && k === 'zh')) continue;
-    for(const rk of Object.keys(l.regions)){ const r = regionOf(k, rk); if(r.cc.toUpperCase() === cc) out.push({v:`${k}|${rk}`, lang:k, r, name:l.name}); }
+  const mk = includeZh ? 'z' : 'n';
+  if(!_ccMap[mk]){
+    const m = {};
+    for(const [k, l] of Object.entries(allLangs())){
+      if(l.hidden && !(includeZh && k === 'zh')) continue;
+      for(const rk of Object.keys(l.regions)){ const r = regionOf(k, rk), u = r.cc.toUpperCase(); (m[u] ||= []).push({v:`${k}|${rk}`, lang:k, r, name:l.name}); }
+    }
+    _ccMap[mk] = m;
   }
-  return out;
+  return _ccMap[mk][cc] || [];
 }
-function allCCs(includeZh){
-  const s = new Set();
-  for(const [k, l] of Object.entries(allLangs())){ if(l.hidden && !(includeZh && k === 'zh')) continue; for(const rk of Object.keys(l.regions)) s.add(regionOf(k, rk).cc.toUpperCase()); }
-  return [...s];
-}
+function allCCs(includeZh){ entriesOfCC('', includeZh); return Object.keys(_ccMap[includeZh ? 'z' : 'n']); }
 function labelOf(v, style = 'place'){
   const [k, rk] = v.split('|'); const L = allLangs()[k]; if(!L) return v;
   const r = regionOf(k, rk);

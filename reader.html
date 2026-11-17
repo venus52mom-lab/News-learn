@@ -9,7 +9,7 @@
 <title>電子書朗讀 · 每日新聞學語言</title>
 <script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css?v=9">
+<link rel="stylesheet" href="common.css?v=10">
 <style>
 .drop{display:block;border:2px dashed var(--line);border-radius:16px;padding:28px 16px;text-align:center;color:var(--soft);background:var(--paper);cursor:pointer}
 .drop b{display:block;font-size:17px;color:var(--ink);margin-bottom:4px}
@@ -53,7 +53,7 @@
   <select id="rate"><option value="0.8">0.8x</option><option value="1" selected>1x</option><option value="1.2">1.2x</option><option value="1.5">1.5x</option></select>
 </div></div>
 
-<script src="common.js?v=10"></script>
+<script src="common.js?v=11"></script>
 <script>
 const PER_PAGE = 120;
 let doc = null;            // {name, paras:[], lang, region, mixed, page, trs:{}}
@@ -141,6 +141,7 @@ $('#file').onchange = async e => {
   if(!allLangs()[lang]){
     // 沒在清單裡的語言：用 Google 語音直接念
     BUILTIN[lang] = {hidden:true, name:lang, short:lang.toUpperCase(), regions:{x:{cc:'UN', place:lang, accent:lang, tts:lang}}};
+    resetLangCache();
   }
   doc = {name, paras, lang, region: Object.keys(allLangs()[lang].regions)[0], auto:true, page:0, trs:{}};
   $('#status').textContent = '';

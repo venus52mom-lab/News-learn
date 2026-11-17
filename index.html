@@ -10,7 +10,7 @@
 <script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("nl_theme"))||"auto"}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="common.css?v=9">
+<link rel="stylesheet" href="common.css?v=10">
 </head>
 <body data-cat="local">
 <header><div class="wrap">
@@ -50,7 +50,7 @@
 <div id="pick" class="full hidden"></div>
 <div id="full" class="full hidden"></div>
 
-<script src="common.js?v=10"></script>
+<script src="common.js?v=11"></script>
 <script>
 /* ====== 狀態 ====== */
 const NEWS_CATS = ['local','world','fin','pol','tech','health','life'];
@@ -484,7 +484,7 @@ function selectLR(v){
 
 /* ====== 選國家：洲 → 區域 → 國家，可加入常看 ====== */
 let pickPath = [], pickQ = '';
-function openPicker(){ const el = $('#pick'); if(el.classList.contains('hidden')){ lockScroll(); el.classList.remove('hidden'); } pickPath = []; pickQ = ''; renderPicker(); }
+function openPicker(){ const el = $('#pick'); if(!el.classList.contains('hidden')) return; lockScroll(); el.classList.remove('hidden'); pickPath = []; pickQ = ''; renderPicker(); }
 function closePicker(){ const el = $('#pick'); if(el.classList.contains('hidden')) return; el.classList.add('hidden'); el.innerHTML = ''; unlockScroll(); }
 function countryRow(cc, curV, style){
   const es = entriesOfCC(cc); if(!es.length) return '';
@@ -529,8 +529,8 @@ function renderPicker(){
   el.scrollTop = 0;
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-pick],[data-fav],[data-cont],[data-sub],[data-pickback],[data-pickclose],#pickBtn'); if(!t) return;
-  if(t.id === 'pickBtn') return openPicker();
+  const t = e.target.closest('[data-pick],[data-fav],[data-cont],[data-sub],[data-pickback],[data-pickclose],#pickBtn,.lsel'); if(!t) return;
+  if(t.id === 'pickBtn' || t.classList.contains('lsel')) return openPicker();
   if(t.dataset.fav){ toggleFav(t.dataset.fav); renderNav(); if(!$('#pick').classList.contains('hidden')) renderPicker(); return; }
   if(t.dataset.pick){ const inPicker = !!t.closest('#pick'); selectLR(t.dataset.pick); if(inPicker) closePicker(); return; }
   if(t.dataset.cont){ const i = +t.dataset.cont; pickPath = CONTINENTS[i][2].length > 1 ? [i] : [i, 0]; return renderPicker(); }
