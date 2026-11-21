@@ -1,0 +1,3238 @@
+{
+ "updated": "2026-11-21T15:06:21.964Z",
+ "ok": 785,
+ "total": 798,
+ "report": {
+  "zh-tw-life": {
+   "n": 20,
+   "from": "news.ltn.com.tw"
+  },
+  "zh-tw-pol": {
+   "n": 20,
+   "from": "news.ltn.com.tw"
+  },
+  "zh-tw-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "zh-tw-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-us-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-us-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-us-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-us-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-uk-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "zh-tw-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-uk-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-uk-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-us-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "zh-tw-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-uk-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-us-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-au-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-au-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "zh-tw-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-au-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-au-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-au-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-us-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-uk-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-uk-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-nz-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-nz-world": {
+   "n": 8,
+   "from": "news.google.com"
+  },
+  "en-ca-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-au-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-uk-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-nz-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ca-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-au-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ca-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-nz-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ca-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-nz-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-sg-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-sg-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-nz-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-sg-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ca-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ca-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-sg-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-sg-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-nz-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ie-world": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "en-ie-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "en-ca-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ie-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "en-sg-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ie-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "en-ie-health": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "en-mt-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "en-ie-life": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "en-sg-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-mt-pol": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "en-in-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-mt-fin": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "en-in-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-mt-health": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "en-ie-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-mt-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "en-mt-life": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "en-in-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-mt-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-in-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-in-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-pk-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-pk-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-pk-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-in-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ae-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ae-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-in-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ae-local": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "en-pk-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ae-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-ae-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-pk-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-pk-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-pk-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-jm-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "en-jm-world": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "en-jm-pol": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "en-jm-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "en-ae-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-jm-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "en-ae-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-jm-health": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "en-tt-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "en-tt-fin": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "en-tt-life": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "en-tt-pol": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "en-tt-tech": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "en-jm-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-tt-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-tt-health": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "en-bz-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-bz-local": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "en-bz-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ja-jp-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-bz-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "en-bz-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "en-bz-health": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "en-bz-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ko-kr-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ja-jp-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ko-kr-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ko-kr-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ja-jp-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ja-jp-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ja-jp-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ja-jp-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ko-kr-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ja-jp-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ko-kr-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-fr-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ko-kr-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ch-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ko-kr-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-fr-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-fr-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-fr-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-fr-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ca-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-fr-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-fr-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ca-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ch-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ca-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ch-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ch-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ca-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-be-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ca-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ca-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ca-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-be-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-be-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-lu-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "fr-be-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-be-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-lu-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "fr-ch-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-be-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-lu-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "fr-be-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-lu-world": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "fr-ch-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-lu-health": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "fr-ch-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-lu-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "fr-mc-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "fr-mc-pol": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "fr-mc-world": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "fr-ma-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-lu-life": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "fr-mc-health": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "fr-mc-fin": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "fr-ma-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-mc-tech": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "fr-ma-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ht-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "fr-ht-world": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "fr-ma-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ht-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "fr-ht-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "fr-ma-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ma-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-mc-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ma-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ht-tech": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "fr-ht-health": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "de-ch-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fr-ht-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-de-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-de-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-de-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-de-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-ch-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-de-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-at-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-at-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-de-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-de-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-ch-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-ch-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-at-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-ch-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-ch-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-at-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-lu-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "de-at-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-lu-pol": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "de-at-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-lu-tech": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "de-lu-health": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "de-lu-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-at-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-lu-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-ch-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-li-local": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "de-li-pol": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "de-li-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-li-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-es-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-li-life": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "de-li-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-lu-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "de-li-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-mx-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-mx-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-es-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-es-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-es-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-es-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-es-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-mx-health": {
+   "n": 3,
+   "from": "news.google.com"
+  },
+  "es-mx-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-mx-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-es-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ar-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ar-health": {
+   "n": 15,
+   "from": "news.google.com"
+  },
+  "es-ar-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-co-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-co-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-co-health": {
+   "n": 3,
+   "from": "news.google.com"
+  },
+  "es-co-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-mx-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ar-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ar-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cl-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cl-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cl-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ar-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ar-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-co-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cl-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-mx-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-co-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-pe-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-pe-fin": {
+   "n": 5,
+   "from": "news.google.com"
+  },
+  "es-co-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-pe-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ve-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-pe-world": {
+   "n": 7,
+   "from": "news.google.com"
+  },
+  "es-cl-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ve-fin": {
+   "n": 7,
+   "from": "news.google.com"
+  },
+  "es-cl-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cl-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cu-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ve-world": {
+   "n": 19,
+   "from": "news.google.com"
+  },
+  "es-cu-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-pe-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-pe-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-pe-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cu-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ve-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ve-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ec-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-ve-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ec-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-ve-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ec-world": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "es-cu-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cu-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-cu-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ec-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-ec-health": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-ec-tech": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "es-ec-life": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "es-bo-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-bo-world": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "es-bo-health": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-bo-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-bo-life": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "es-bo-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-bo-tech": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "es-py-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-py-world": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "es-py-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-py-tech": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "es-py-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-py-life": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "es-py-health": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-uy-local": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-cu-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-uy-tech": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "es-uy-pol": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "es-uy-health": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "es-cr-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-uy-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-cr-world": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "es-uy-world": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "es-cr-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-cr-health": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-cr-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-cr-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-cr-life": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "es-pa-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-pa-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-pa-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-pa-tech": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "es-pa-world": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "es-pa-life": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "es-pa-health": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-gt-world": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "es-gt-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-gt-fin": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "es-gt-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-hn-local": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-gt-health": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-hn-world": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "es-uy-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-hn-fin": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "es-hn-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-gt-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-hn-health": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-hn-life": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "es-sv-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-sv-world": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "es-sv-life": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "es-sv-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-sv-health": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-gt-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ni-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-sv-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-ni-world": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "es-hn-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-sv-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-ni-health": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-ni-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-ni-life": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "es-ni-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-do-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-do-world": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-do-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-ni-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "es-do-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "es-do-life": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "es-pr-local": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-do-tech": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-pr-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-pr-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-do-health": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "es-pr-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-pr-health": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "es-pr-tech": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "es-pr-life": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "it-it-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-ch-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "it-it-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-it-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-ch-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-ch-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-sm-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "it-it-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-sm-world": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "it-ch-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-it-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-sm-pol": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "it-it-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-ch-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-it-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-ch-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-sm-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "id-id-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-sm-health": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "it-sm-tech": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "it-sm-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "it-ch-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "th-th-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "id-id-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "id-id-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "id-id-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "id-id-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "th-th-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "id-id-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "th-th-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "id-id-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "vi-vn-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "th-th-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "th-th-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "th-th-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "vi-vn-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "th-th-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-pt-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "vi-vn-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "vi-vn-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "vi-vn-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "vi-vn-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "vi-vn-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-br-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-pt-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-pt-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-br-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-br-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-pt-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-br-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-pt-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-nl-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-br-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-br-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-pt-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-pt-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-be-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pt-br-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-nl-health": {
+   "n": 17,
+   "from": "news.google.com"
+  },
+  "nl-be-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-nl-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-be-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-nl-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-nl-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-nl-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-sr-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "nl-sr-world": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "nl-be-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-nl-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-sr-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "nl-sr-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "nl-be-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-sr-health": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "nl-be-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-sr-tech": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "no-no-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-be-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "nl-sr-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sv-se-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sv-se-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sv-se-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sv-se-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sv-se-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sv-se-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sv-se-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "da-dk-local": {
+   "n": 20,
+   "from": "www.dr.dk"
+  },
+  "no-no-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "no-no-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "no-no-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "no-no-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "no-no-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "da-dk-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "no-no-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "da-dk-life": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "da-dk-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "da-dk-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "fi-fi-local": {
+   "n": 20,
+   "from": "yle.fi"
+  },
+  "da-dk-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "da-dk-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fi-fi-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "fi-fi-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "fi-fi-tech": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "fi-fi-pol": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "fi-fi-health": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "is-is-world": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "is-is-local": {
+   "n": 20,
+   "from": "www.ruv.is"
+  },
+  "fi-fi-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "is-is-tech": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "cs-cz-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "is-is-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sk-sk-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "cs-cz-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "is-is-pol": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%C3%8Dsland%20Stj%C3%B3rnm%C3%A1l&format=rss&setlang=is&cc=IS&mkt=is-IS → 0 則",
+    "https://news.google.com/rss/search?q=stj%C3%B3rnm%C3%A1l%20when%3A2d&hl=is&gl=IS&ceid=IS:is → 0 則"
+   ]
+  },
+  "is-is-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "cs-cz-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "cs-cz-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "cs-cz-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pl-pl-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "cs-cz-health": {
+   "n": 9,
+   "from": "news.google.com"
+  },
+  "cs-cz-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "is-is-life": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%C3%8Dsland%20l%C3%ADfsst%C3%ADll&format=rss&setlang=is&cc=IS&mkt=is-IS → 2 則",
+    "https://news.google.com/rss/search?q=l%C3%ADfsst%C3%ADll%20when%3A2d&hl=is&gl=IS&ceid=IS:is → 0 則"
+   ]
+  },
+  "sk-sk-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sk-sk-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sk-sk-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sk-sk-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sk-sk-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sk-sk-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hu-hu-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pl-pl-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pl-pl-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pl-pl-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pl-pl-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pl-pl-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sl-si-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "pl-pl-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hu-hu-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hu-hu-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hu-hu-world": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "hu-hu-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hu-hu-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sl-si-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hu-hu-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sl-si-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sl-si-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sl-si-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "et-ee-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "sl-si-life": {
+   "n": 19,
+   "from": "news.google.com"
+  },
+  "sl-si-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lv-lv-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "et-ee-health": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "et-ee-tech": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "et-ee-fin": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "et-ee-world": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "et-ee-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "et-ee-life": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "lv-lv-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lt-lt-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lv-lv-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lv-lv-health": {
+   "n": 6,
+   "from": "news.google.com"
+  },
+  "lv-lv-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lv-lv-fin": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "lv-lv-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lt-lt-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "uk-ua-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lt-lt-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lt-lt-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-ro-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lt-lt-life": {
+   "n": 10,
+   "from": "news.google.com"
+  },
+  "lt-lt-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "lt-lt-world": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "uk-ua-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "uk-ua-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "uk-ua-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "uk-ua-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "uk-ua-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-md-local": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "uk-ua-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-ro-fin": {
+   "n": 16,
+   "from": "news.google.com"
+  },
+  "ro-ro-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-ro-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "bg-bg-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-ro-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-ro-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-md-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-md-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ro-ro-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-md-fin": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "ru-ru-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-md-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ro-md-pol": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "ro-md-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "bg-bg-fin": {
+   "n": 8,
+   "from": "news.google.com"
+  },
+  "bg-bg-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "bg-bg-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "bg-bg-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "bg-bg-health": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "bg-bg-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-kz-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ru-ru-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-ru-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-ru-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-ru-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-ru-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-ru-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-kz-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-kg-local": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ru-kg-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "ru-kg-world": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ru-kg-pol": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "ru-kg-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-kz-world": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ru-kz-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ru-kz-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ru-kz-life": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%D0%9A%D0%B0%D0%B7%D0%B0%D1%85%D1%81%D1%82%D0%B0%D0%BD%20%D1%81%D1%82%D0%B8%D0%BB%D1%8C%20%D0%B6%D0%B8%D0%B7%D0%BD%D0%B8&format=rss&setlang=ru&cc=KZ&mkt=ru-KZ → 1 則",
+    "https://news.google.com/rss/search?q=%D0%BE%D0%B1%D1%80%D0%B0%D0%B7%20%D0%B6%D0%B8%D0%B7%D0%BD%D0%B8%20when%3A2d&hl=ru&gl=KZ&ceid=KZ:ru → HTTP 429"
+   ]
+  },
+  "ru-kg-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "el-gr-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "el-cy-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ru-kg-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ru-kz-tech": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%D0%9A%D0%B0%D0%B7%D0%B0%D1%85%D1%81%D1%82%D0%B0%D0%BD%20AGM%20(%D0%A1%D1%82%D0%B5%D0%BA%D0%BB%D0%BE%D0%B2%D0%BE%D0%BB%D0%BE%D0%BA%D0%BE%D0%BD%D0%BD%D1%8B%D0%B9%20%D1%81%D0%B5%D0%BF%D0%B0%D1%80%D0%B0%D1%82%D0%BE%D1%80%20%D1%81%20%D1%81%D0%B6%D0%B0%D1%82%D0%BE%D0%BC%20%D1%81%D0%BE%D1%81%D1%82%D0%BE%D1%8F%D0%BD%D0%B8%D0%B8)&format=rss&setlang=ru&cc=KZ&mkt=ru-KZ → 0 則",
+    "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=ru&gl=KZ&ceid=KZ:ru → HTTP 429"
+   ]
+  },
+  "el-gr-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "el-cy-world": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "el-gr-health": {
+   "n": 16,
+   "from": "news.google.com"
+  },
+  "el-gr-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "el-gr-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "el-gr-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "el-cy-life": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "el-cy-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "el-cy-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "hr-hr-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "el-cy-tech": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "el-gr-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "el-cy-health": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "sr-rs-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hr-hr-world": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "hr-hr-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "hr-hr-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "hr-hr-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "hr-hr-health": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "hr-hr-life": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "sr-me-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "sr-rs-fin": {
+   "n": 6,
+   "from": "news.google.com"
+  },
+  "sr-me-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "sr-rs-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sr-rs-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sr-me-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "bs-ba-local": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "sr-me-world": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "sr-rs-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sr-rs-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sr-rs-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sr-me-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "sq-al-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "sr-me-life": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "sr-me-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "bs-ba-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "bs-ba-fin": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "bs-ba-pol": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "bs-ba-health": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "bs-ba-tech": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "bs-ba-life": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "sq-xk-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "sq-al-world": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "sq-al-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "sq-xk-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "sq-al-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "sq-al-tech": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "mk-mk-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "sq-xk-world": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "sq-xk-fin": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "sq-al-health": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "sq-al-life": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "sq-xk-health": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "sq-xk-tech": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "mt-mt-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "sq-xk-life": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=Kosov%C3%AB%20Stili%20i%20jetes%C3%ABs&format=rss&setlang=sq&cc=XK&mkt=sq-XK → 0 則",
+    "https://news.google.com/rss/search?q=stili%20i%20jetes%C3%ABs%20when%3A2d&hl=sq&gl=XK&ceid=XK:sq → 0 則"
+   ]
+  },
+  "mk-mk-tech": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "mk-mk-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "mk-mk-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "mk-mk-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "mk-mk-health": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ca-ad-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "mt-mt-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "mk-mk-life": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%D0%A1%D0%B5%D0%B2%D0%B5%D1%80%D0%BD%D0%B0%20%D0%9C%D0%B0%D0%BA%D0%B5%D0%B4%D0%BE%D0%BD%D0%B8%D1%98%D0%B0%20Lifestyle&format=rss&setlang=mk&cc=MK&mkt=mk-MK → 0 則",
+    "https://news.google.com/rss/search?q=%D0%B6%D0%B8%D0%B2%D0%BE%D1%82%D0%B5%D0%BD%20%D1%81%D1%82%D0%B8%D0%BB%20when%3A2d&hl=mk&gl=MK&ceid=MK:mk → 0 則"
+   ]
+  },
+  "mt-mt-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "mt-mt-tech": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "ca-es-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "mt-mt-health": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "mt-mt-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ca-ad-world": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "mt-mt-life": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "ca-ad-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ca-ad-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ca-ad-health": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "ca-ad-tech": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ca-es-world": {
+   "n": 0,
+   "tried": [
+    "https://news.google.com/rss/headlines/section/topic/WORLD?hl=ca&gl=ES&ceid=ES:ca → HTTP 429",
+    "https://www.bing.com/news/search?q=internacional&format=rss&setlang=ca&cc=ES&mkt=ca-ES → 0 則"
+   ]
+  },
+  "ca-ad-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hi-in-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ca-es-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ca-es-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ca-es-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ca-es-tech": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ca-es-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hi-in-world": {
+   "n": 18,
+   "from": "news.google.com"
+  },
+  "hi-in-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ur-pk-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hi-in-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hi-in-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "hi-in-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ae-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ur-pk-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "hi-in-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ur-pk-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ur-pk-life": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "ur-pk-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ur-pk-pol": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ar-sa-local": {
+   "n": 18,
+   "from": "news.google.com"
+  },
+  "ur-pk-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-sa-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ae-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ae-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ae-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-sa-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-qa-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-ae-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ae-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-sa-tech": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ar-ae-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-qa-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ar-sa-fin": {
+   "n": 16,
+   "from": "news.google.com"
+  },
+  "ar-sa-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-qa-health": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "ar-qa-life": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "ar-qa-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ar-kw-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-kw-world": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "ar-qa-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "ar-kw-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-qa-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-kw-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-kw-life": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "ar-bh-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-bh-fin": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ar-bh-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-bh-life": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "ar-bh-health": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "ar-om-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ar-bh-tech": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ar-om-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-kw-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-bh-world": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%D8%A7%D9%84%D9%85%D8%AE%D8%B2%D9%88%D9%86&format=rss&setlang=ar&cc=BH&mkt=ar-BH → 0 則",
+    "https://news.google.com/rss/headlines/section/topic/WORLD?hl=ar&gl=BH&ceid=BH:ar → HTTP 429"
+   ]
+  },
+  "ar-om-fin": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ar-kw-health": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%D8%A7%D9%84%D9%83%D9%88%D9%8A%D8%AA%20%D8%B5%D8%AD%D8%A9&format=rss&setlang=ar&cc=KW&mkt=ar-KW → 0 則",
+    "https://news.google.com/rss/headlines/section/topic/HEALTH?hl=ar&gl=KW&ceid=KW:ar → HTTP 429"
+   ]
+  },
+  "ar-sa-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-om-tech": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ar-jo-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ar-om-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-om-life": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ar-jo-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ar-lb-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-jo-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-jo-life": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "ar-jo-health": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ar-jo-tech": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-lb-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-om-health": {
+   "n": 9,
+   "from": "news.google.com"
+  },
+  "ar-jo-pol": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%D8%A7%D9%84%D8%A3%D8%B1%D8%AF%D9%86%20%D8%B3%D9%8A%D8%A7%D8%B3%D8%A9%2C%20%D8%B9%D9%84%D9%85%20%D8%A7%D9%84%D8%B3%D9%8A%D8%A7%D8%B3%D8%A9%2C%20%D8%A7%D9%84%D8%B9%D9%84%D9%88%D9%85%20%D8%A7%D9%84%D8%B3%D9%8A%D8%A7%D8%B3%D8%A9%2C%20%D8%A2%D8%B1%D8%A7%D8%A1%20%D8%A7%D9%84%D9%85%D8%B1%D8%A1%20%D8%A7%D9%84%D8%B3%D9%8A%D8%A7%D8%B3%D9%8A%D8%A9&format=rss&setlang=ar&cc=JO&mkt=ar-JO → 0 則",
+    "https://news.google.com/rss/search?q=%D8%B3%D9%8A%D8%A7%D8%B3%D8%A9%20when%3A2d&hl=ar&gl=JO&ceid=JO:ar → HTTP 429"
+   ]
+  },
+  "ar-iq-world": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "ar-iq-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-lb-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-lb-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-iq-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-iq-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-iq-life": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "ar-lb-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-iq-tech": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "ar-iq-health": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-lb-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-eg-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-eg-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-eg-health": {
+   "n": 9,
+   "from": "news.google.com"
+  },
+  "ar-lb-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ma-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-eg-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-eg-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ma-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ma-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ma-health": {
+   "n": 9,
+   "from": "news.google.com"
+  },
+  "ar-eg-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-eg-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "fa-ir-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-ma-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ar-ma-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "ar-ma-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "he-il-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "fa-ir-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "fa-ir-pol": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "fa-ir-fin": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "fa-ir-health": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "fa-ir-tech": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "fa-ir-life": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "kk-kz-local": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "he-il-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "he-il-pol": {
+   "n": 14,
+   "from": "news.google.com"
+  },
+  "he-il-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "he-il-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "uz-uz-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "he-il-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "kk-kz-world": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "he-il-life": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "kk-kz-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "kk-kz-fin": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "kk-kz-pol": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "kk-kz-health": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "ky-kg-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "uz-uz-world": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "kk-kz-life": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "uz-uz-fin": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "uz-uz-tech": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "uz-uz-pol": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=O%CA%BBzbekiston%20%26%2310%3B%26%23x09%3B%26%23x09%3B%26%23x09%3B%26%23x09%3BSiyosat%26%23x09%3B%26%23x09%3B%26%23x09%3B&format=rss&setlang=uz&cc=UZ&mkt=uz-UZ → 0 則",
+    "https://news.google.com/rss/search?q=siyosat%20when%3A2d&hl=uz&gl=UZ&ceid=UZ:uz → 1 則"
+   ]
+  },
+  "uz-uz-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "tg-tj-local": {
+   "n": 11,
+   "from": "www.bing.com"
+  },
+  "uz-uz-life": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "ky-kg-tech": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "ky-kg-fin": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "ky-kg-pol": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "ky-kg-world": {
+   "n": 10,
+   "from": "www.bing.com"
+  },
+  "tk-tm-local": {
+   "n": 12,
+   "from": "www.bing.com"
+  },
+  "tg-tj-tech": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "tg-tj-fin": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "ky-kg-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "ky-kg-life": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=%D0%9A%D1%8B%D1%80%D0%B3%D1%8B%D0%B7%D1%81%D1%82%D0%B0%D0%BD%20%D0%B6%D0%B0%D1%88%D0%BE%D0%BE%20%D0%BE%D0%B1%D1%80%D0%B0%D0%B7%D1%8B&format=rss&setlang=ky&cc=KG&mkt=ky-KG → 2 則",
+    "https://news.google.com/rss/search?q=%D0%B6%D0%B0%D1%88%D0%BE%D0%BE%20%D0%BE%D0%B1%D1%80%D0%B0%D0%B7%D1%8B%20when%3A2d&hl=ky&gl=KG&ceid=KG:ky → 0 則"
+   ]
+  },
+  "tg-tj-pol": {
+   "n": 8,
+   "from": "www.bing.com"
+  },
+  "tg-tj-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "tr-tr-local": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "tk-tm-world": {
+   "n": 3,
+   "from": "www.bing.com"
+  },
+  "tg-tj-health": {
+   "n": 9,
+   "from": "www.bing.com"
+  },
+  "tg-tj-life": {
+   "n": 5,
+   "from": "www.bing.com"
+  },
+  "tk-tm-tech": {
+   "n": 7,
+   "from": "www.bing.com"
+  },
+  "tk-tm-pol": {
+   "n": 6,
+   "from": "www.bing.com"
+  },
+  "tk-tm-fin": {
+   "n": 4,
+   "from": "www.bing.com"
+  },
+  "tk-tm-life": {
+   "n": 0,
+   "tried": [
+    "https://www.bing.com/news/search?q=T%C3%BCrkmenistan%20durmu%C5%9F%20%C3%BD%C3%B6relgesi&format=rss&setlang=tk&cc=TM&mkt=tk-TM → 0 則",
+    "https://news.google.com/rss/search?q=durmu%C5%9F%20when%3A2d&hl=tk&gl=TM&ceid=TM:tk → 1 則"
+   ]
+  },
+  "tk-tm-health": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "tr-tr-tech": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "tr-tr-pol": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "tr-tr-world": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "tr-tr-health": {
+   "n": 11,
+   "from": "news.google.com"
+  },
+  "tr-tr-fin": {
+   "n": 20,
+   "from": "news.google.com"
+  },
+  "tr-tr-life": {
+   "n": 20,
+   "from": "news.google.com"
+  }
+ }
+}
