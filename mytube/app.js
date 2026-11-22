@@ -1366,3 +1366,10 @@ $('#bannerClose').onclick = () => { $('#installBanner').hidden = true; LS.set('b
     navigator.serviceWorker?.register('sw.js').catch(() => {});
   }
 })();
+
+// 「複製」按鈕
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-copy]'); if (!b) return;
+  const t = document.getElementById(b.dataset.copy)?.textContent || '';
+  try { await navigator.clipboard.writeText(t); toast('已複製'); } catch { toast('請長按文字手動複製'); }
+});

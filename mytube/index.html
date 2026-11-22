@@ -127,6 +127,20 @@
         </button>
       </div>
 
+      <details class="card settings" id="ashellBox" open>
+        <summary>a-Shell 手機下載（最穩，免費）</summary>
+        <p class="hint">網路上的下載網站常被 YouTube 擋掉。這個方法用<b>你自己手機的網路</b>，比較不會被擋。只要設定一次：</p>
+        <p class="hint"><b>1.</b> App Store 安裝免費的 <b>a-Shell</b>，打開它，執行這兩行（長按複製）：</p>
+        <pre class="cmd" id="cmd1">python3 -m pip install -U yt-dlp
+curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main/mytube/tools/mt.py</pre>
+        <button class="pill-btn ghost" data-copy="cmd1">複製這兩行</button>
+        <p class="hint"><b>2.</b> 以後要下載，在 a-Shell 執行：</p>
+        <pre class="cmd" id="cmd2">python3 mt.py</pre>
+        <button class="pill-btn ghost" data-copy="cmd2">複製</button>
+        <p class="hint">貼上網址就會下載（要音樂：<code>python3 mt.py mp3 網址</code>）。檔案會在「檔案」App → a-Shell → myTube → 影片／音樂。</p>
+        <p class="hint"><b>3.</b> 回到 myTube，按「影片」或「音樂」分頁的「載入手機裡的…」，選剛下載的檔案就能播放。</p>
+      </details>
+
       <details class="card settings" id="settingsBox">
         <summary>下載設定</summary>
         <label class="label" for="apiList">App 內下載：額外加入的 API 網址（選填，一行一個）</label>

@@ -256,3 +256,7 @@ mark{background:rgba(255,0,51,.18);color:inherit;border-radius:3px;padding:0 1px
   .keypad button{width:62px;height:62px;font-size:24px}
   .lock-link{margin-top:12px}
 }
+
+#ashellBox summary::before{content:"📲 "}
+pre.cmd{margin:6px 0;padding:10px 12px;border-radius:10px;background:var(--chip);font:13px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all;user-select:text;-webkit-user-select:text}
+code{background:var(--chip);padding:1px 5px;border-radius:4px;font-size:12.5px}
