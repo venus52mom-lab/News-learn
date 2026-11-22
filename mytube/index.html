@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>myTube</title>
+<meta name="theme-color" content="#ffffff" id="themeColorMeta">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="myTube">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <!-- ===== 頂部：Logo + 深淺色切換 ===== -->
+  <header class="topbar">
+    <div class="logo" id="logoBtn">
+      <svg class="logo-mark" viewBox="0 0 40 28" aria-hidden="true">
+        <rect x="0" y="0" width="40" height="28" rx="7" fill="#FF0033"/>
+        <path d="M16 8 L27 14 L16 20 Z" fill="#fff"/>
+      </svg>
+      <span class="logo-text">myTube</span>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="searchBtn" aria-label="搜尋" title="搜尋">
+        <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+      </button>
+      <button class="icon-btn" id="lockBtn" aria-label="密碼鎖" title="密碼鎖">
+        <svg viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path id="lockShackle" d="M8 10.5V7.5a4 4 0 0 1 8 0"/></svg>
+      </button>
+      <button class="icon-btn" id="themeBtn" aria-label="切換深色/淺色模式" title="深色 / 淺色模式">
+        <svg class="ic-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v2.5M12 20v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M1.5 12H4M20 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 搜尋列 -->
+  <div class="searchbar" id="searchBar" hidden>
+    <button class="icon-btn" id="searchBack" aria-label="關閉搜尋"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input type="search" id="searchInput" placeholder="搜尋影片和音樂" enterkeyhint="search" autocomplete="off">
+    <button class="icon-btn" id="searchClear" aria-label="清除"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+
+  <!-- ===== Logo 下方分頁：影片 / 音樂 / 下載（下載固定最右） ===== -->
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-page="video">影片</button>
+    <button class="tab" data-page="audio">音樂</button>
+    <span class="tab-spacer"></span>
+    <button class="tab tab-download" data-page="download">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>下載
+    </button>
+  </nav>
+
+  <main id="main">
+    <div class="banner" id="installBanner" hidden>
+      <div>📲 <b>請加到主畫面使用</b><br>按 Safari 下方的「分享」→「加入主畫面」，再從桌面的 myTube 打開。這樣匯入的影片才會長期保存，不會被 Safari 自動清掉。</div>
+      <button class="icon-btn" id="bannerClose" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <!-- 影片頁 -->
+    <section class="page active" id="page-video">
+      <div class="chips" id="videoChips"></div>
+      <div class="page-tools">
+        <label class="pill-btn">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>載入手機裡的影片
+          <input type="file" accept="video/*" multiple hidden id="importVideo">
+        </label>
+        <button class="pill-btn ghost" id="videoPlayAll"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>全部播放</button>
+      </div>
+      <div class="playlist-head" id="videoPlHead" hidden></div>
+      <div class="feed" id="videoFeed"></div>
+    </section>
+
+    <!-- 音樂頁 -->
+    <section class="page" id="page-audio">
+      <div class="chips" id="audioChips"></div>
+      <div class="page-tools">
+        <label class="pill-btn">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>載入手機裡的音樂
+          <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.flac" multiple hidden id="importAudio">
+        </label>
+        <button class="pill-btn ghost" id="audioPlayAll"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>全部播放</button>
+        <button class="pill-btn ghost" id="audioShuffle"><svg viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>隨機</button>
+      </div>
+      <div class="playlist-head" id="audioPlHead" hidden></div>
+      <div class="music-list" id="audioList"></div>
+    </section>
+
+    <!-- 下載頁 -->
+    <section class="page" id="page-download">
+      <div class="card">
+        <h2>下載 YouTube 影片</h2>
+        <p class="hint">在 YouTube 按「分享 → 複製連結」，貼到下面。一行一個網址，可以一次貼很多個。</p>
+        <textarea id="urlInput" rows="4" placeholder="https://youtu.be/xxxxxxxx&#10;https://www.youtube.com/watch?v=yyyyyyyy"></textarea>
+        <div class="row">
+          <button class="pill-btn ghost" id="pasteBtn"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/></svg>貼上</button>
+          <button class="pill-btn ghost" id="clearUrlBtn">清除</button>
+        </div>
+
+        <div class="seg" id="formatSeg">
+          <button class="active" data-fmt="mp4">MP4 影片</button>
+          <button data-fmt="mp3">MP3 音樂</button>
+        </div>
+        <div class="row" id="qualityRow">
+          <span class="label">畫質</span>
+          <select id="qualitySel">
+            <option value="best">最高（iPhone 相容）</option>
+            <option value="1080">1080p</option>
+            <option value="720" selected>720p</option>
+            <option value="480">480p</option>
+            <option value="360">360p</option>
+          </select>
+        </div>
+        <button class="primary-btn" id="startDlBtn">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>開始下載
+        </button>
+      </div>
+
+      <details class="card settings" id="settingsBox">
+        <summary>下載伺服器與儲存設定</summary>
+        <label class="label" for="serverInput">下載伺服器網址</label>
+        <div class="row">
+          <input id="serverInput" type="url" placeholder="https://xxxx.trycloudflare.com">
+          <button class="pill-btn ghost" id="testServerBtn">測試</button>
+        </div>
+        <p class="hint" id="serverStatus">YouTube 不允許網頁直接下載，需要搭配資料夾裡的 server（放在你的電腦執行）。說明在 README。</p>
+
+        <label class="switch-row"><input type="checkbox" id="autoSaveChk" checked><span>下載完自動存到裝置</span></label>
+        <div id="folderBox" hidden>
+          <button class="pill-btn ghost" id="pickFolderBtn"><svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></svg>選擇儲存位置（自動建立 myTube/影片、myTube/音樂）</button>
+          <p class="hint" id="folderStatus"></p>
+        </div>
+        <p class="hint" id="iosSaveHint"></p>
+        <p class="hint" id="storageInfo"></p>
+      </details>
+
+      <div class="history-head">
+        <h3>下載紀錄</h3>
+        <button class="text-btn" id="clearHistoryBtn">清除紀錄</button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </section>
+  </main>
+</div>
+
+<!-- ===== 播放器（全螢幕 / 縮小 共用同一個元素，切換不中斷） ===== -->
+<div id="player" class="player hidden">
+  <div class="player-stage" id="playerStage">
+    <video id="videoEl" playsinline webkit-playsinline preload="auto" controls></video>
+    <div class="audio-art" id="audioArt"><img id="artImg" alt=""><div class="art-badge" id="artBadge">背景音訊模式</div></div>
+    <div class="mini-tap" id="miniTap"></div>
+  </div>
+  <audio id="audioEl" preload="auto"></audio>
+
+  <!-- 縮小版控制列 -->
+  <div class="mini-bar" id="miniBar">
+    <div class="mini-info" id="miniInfo">
+      <div class="mini-title" id="miniTitle"></div>
+      <div class="mini-sub" id="miniSub"></div>
+    </div>
+    <button class="icon-btn" id="miniPlay" aria-label="播放/暫停"></button>
+    <button class="icon-btn" id="miniNext" aria-label="下一個"><svg viewBox="0 0 24 24"><path d="M5 5l10 7-10 7zM18 5v14"/></svg></button>
+    <button class="icon-btn" id="miniClose" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="mini-progress"><div id="miniProgress"></div></div>
+  </div>
+
+  <!-- 完整播放頁 -->
+  <div class="player-body" id="playerBody">
+    <div class="player-top">
+      <button class="icon-btn" id="minimizeBtn" aria-label="縮小"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <span class="player-top-title">正在播放</span>
+      <span style="width:40px"></span>
+    </div>
+    <div class="custom-audio" id="customAudio">
+      <input type="range" id="seekBar" min="0" max="1000" value="0">
+      <div class="time-row"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
+      <div class="big-controls">
+        <button class="icon-btn" id="shuffleBtn" aria-label="隨機"><svg viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></svg></button>
+        <button class="icon-btn" id="prevBtn" aria-label="上一個"><svg viewBox="0 0 24 24"><path d="M19 5L9 12l10 7zM6 5v14"/></svg></button>
+        <button class="icon-btn big" id="bigPlay" aria-label="播放/暫停"></button>
+        <button class="icon-btn" id="nextBtn" aria-label="下一個"><svg viewBox="0 0 24 24"><path d="M5 5l10 7-10 7zM18 5v14"/></svg></button>
+        <button class="icon-btn" id="repeatBtn" aria-label="循環"><svg viewBox="0 0 24 24"><path d="M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4"/></svg><span class="rep-one" id="repOne">1</span></button>
+      </div>
+    </div>
+    <h2 class="np-title" id="npTitle"></h2>
+    <div class="np-sub" id="npSub"></div>
+    <div class="action-chips">
+      <button class="chip-btn" id="bgBtn"><svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H4zM17 14h3v6h-3z"/></svg>背景播放</button>
+      <button class="chip-btn" id="pipBtn"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="12" width="8" height="6" rx="1" class="fill"/></svg>子母畫面</button>
+      <button class="chip-btn" id="addToPlBtn"><svg viewBox="0 0 24 24"><path d="M3 6h12M3 12h12M3 18h8M18 14v8M14 18h8"/></svg>加入清單</button>
+      <button class="chip-btn" id="saveDevBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>存到裝置</button>
+    </div>
+    <p class="hint bg-hint" id="bgHint"></p>
+    <h3 class="upnext-h">接下來播放</h3>
+    <div class="upnext" id="upNext"></div>
+  </div>
+</div>
+
+<!-- 底部選單（bottom sheet） -->
+<div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
+<div class="sheet" id="sheet" hidden></div>
+<div class="toast" id="toast"></div>
+
+<!-- PIN 密碼鎖畫面 -->
+<div class="lock" id="lockScreen" hidden>
+  <div class="lock-inner">
+    <svg class="lock-logo" viewBox="0 0 40 28" aria-hidden="true"><rect width="40" height="28" rx="7" fill="#FF0033"/><path d="M16 8 L27 14 L16 20 Z" fill="#fff"/></svg>
+    <div class="lock-title" id="lockTitle">輸入 PIN 碼</div>
+    <div class="lock-desc" id="lockDesc">請輸入 4 位數密碼解鎖 myTube</div>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+    <div class="keypad" id="keypad">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button data-k="cancel" class="kp-text" id="kpCancel">取消</button><button data-k="0">0</button>
+      <button data-k="del" class="kp-text" aria-label="刪除"><svg viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12zM12 9l6 6M18 9l-6 6"/></svg></button>
+    </div>
+    <div class="lock-warn" id="lockWarn" hidden></div>
+    <button class="lock-link" id="forgotBtn" hidden>忘記密碼？</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
