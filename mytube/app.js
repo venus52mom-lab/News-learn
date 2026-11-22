@@ -1046,14 +1046,58 @@ function openInSafari(id) {
   if (isIOS()) location.href = 'x-safari-' + url;
   else window.open(url, '_blank');
 }
-function watchHere(id) {
+/* 用 YouTube 官方 IFrame API，才能知道它什麼時候被暫停、並叫它繼續播 */
+const YTW = { player: null, state: -1, wantPlay: false, apiP: null };
+function loadYtApi() {
+  if (window.YT?.Player) return Promise.resolve();
+  if (YTW.apiP) return YTW.apiP;
+  YTW.apiP = new Promise((res, rej) => {
+    window.onYouTubeIframeAPIReady = () => res();
+    const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api';
+    sc.onerror = () => { YTW.apiP = null; rej(new Error('載入 YouTube 播放器失敗')); };
+    document.head.appendChild(sc);
+  });
+  return YTW.apiP;
+}
+function ytResume() { try { if (YTW.player && YTW.wantPlay && YTW.state !== 1) YTW.player.playVideo(); } catch {} }
+async function watchHere(id) {
   if (P.item && !Player.active().paused) Player.active().pause();   // 避免兩個一起播
   Preview.stop(true);
-  $('#ytFrame').innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?playsinline=1&autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
   $('#ytWatch').hidden = false; $('#ytWatch').dataset.id = id;
   document.body.style.overflow = 'hidden';
+  $('#ytFrame').innerHTML = '<div id="ytPlayerBox" style="width:100%;height:100%"></div>';
+  YTW.wantPlay = false; YTW.state = -1;
+  try { await loadYtApi(); } catch (e) {
+    // 備用：沒有 API 就用一般嵌入
+    $('#ytFrame').innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?playsinline=1&autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+    return;
+  }
+  if ($('#ytWatch').dataset.id !== id || $('#ytWatch').hidden) return;
+  YTW.player = new YT.Player('ytPlayerBox', {
+    host: 'https://www.youtube-nocookie.com', videoId: id, width: '100%', height: '100%',
+    playerVars: { playsinline: 1, autoplay: 1, rel: 0, origin: location.origin },
+    events: {
+      onStateChange: e => {
+        YTW.state = e.data;
+        if (e.data === 1) YTW.wantPlay = true;                         // 播放中
+        if (e.data === 0) YTW.wantPlay = false;                        // 播完
+        if (e.data === 2) {                                            // 被暫停
+          if (document.hidden) setTimeout(ytResume, 250);              // 在背景被暫停 → 叫它繼續
+          else if (!YTW.justReturned) YTW.wantPlay = false;            // 你自己按暫停 → 尊重
+        }
+      },
+    },
+  });
 }
+// 離開 App 時：YouTube 會自己暫停，多試幾次叫它繼續播
+document.addEventListener('visibilitychange', () => {
+  if ($('#ytWatch').hidden || !YTW.player) return;
+  if (document.hidden) { [300, 1000, 2500].forEach(t => setTimeout(ytResume, t)); }
+  else { YTW.justReturned = true; setTimeout(() => { YTW.justReturned = false; ytResume(); }, 400); }
+});
 function closeWatch() {
+  try { YTW.player?.destroy(); } catch {}
+  YTW.player = null; YTW.wantPlay = false;
   $('#ytFrame').innerHTML = ''; $('#ytWatch').hidden = true;
   if (P.view !== 'full') document.body.style.overflow = '';
 }
