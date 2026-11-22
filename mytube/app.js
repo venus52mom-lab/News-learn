@@ -250,8 +250,18 @@ async function importFiles(files, type) {
   }
   toast(`已載入 ${list.length} 個${type === 'video' ? '影片' : '音樂'}`);
 }
-$('#importVideo').onchange = e => { importFiles(e.target.files, 'video'); e.target.value = ''; };
-$('#importAudio').onchange = e => { importFiles(e.target.files, 'audio'); e.target.value = ''; };
+async function onImport(e, type) {
+  const files = e.target.files; const hid = S.pendingImport; S.pendingImport = null;
+  const before = S.media.length;
+  await importFiles(files, type); e.target.value = '';
+  const h = hid && S.history.find(x => x.id === hid);
+  if (h && S.media.length > before) {
+    const m = S.media[S.media.length - 1];
+    setH(h, { status: 'imported', mediaId: m.id, title: m.title, size: m.size });
+  }
+}
+$('#importVideo').onchange = e => onImport(e, 'video');
+$('#importAudio').onchange = e => onImport(e, 'audio');
 
 /* ---------------- 播放清單 ---------------- */
 function currentList(type) {
@@ -855,11 +865,12 @@ addEventListener('keydown', e => {
 });
 $('#lockBtn').onclick = () => {
   if (!Lock.has()) return openSheet(`<h4>密碼鎖</h4>
-    <p class="hint" style="padding:0 20px">設定 4 位數 PIN 碼後，打開 myTube 或離開超過 3 分鐘回來時，要輸入密碼才能看。</p>
+    <p class="hint" style="padding:0 20px">密碼鎖是選用的。設定 4 位數 PIN 碼後，打開 myTube 或離開超過 3 分鐘回來時，要輸入密碼才能看。</p>
     <button class="sheet-item" data-a="set">🔒 設定 PIN 碼</button>`, a => { if (a === 'set') Lock.open('set'); });
   openSheet(`<h4>密碼鎖（已開啟）</h4>
     <button class="sheet-item" data-a="now">🔒 立即上鎖</button>
-    <button class="sheet-item" data-a="change">🔑 更改 PIN 碼</button>`, a => {
+    <button class="sheet-item" data-a="change">🔑 更改 PIN 碼</button>
+    <button class="sheet-item danger" data-a="remove">🔓 關閉密碼鎖</button>`, a => {
     if (a === 'now') Lock.open('unlock');
     if (a === 'change') Lock.open('change');
     if (a === 'remove') Lock.open('remove');
@@ -885,8 +896,8 @@ $('#forgotBtn').onclick = async () => {
   location.reload();
 };
 LS.del('pin'); // 舊版本留下的密碼不再使用
-// 一打開就先上鎖；第一次使用一定要先設定密碼（在載入資料之前）
-Lock.open(Lock.has() ? 'unlock' : 'setup');
+// 一打開：有設定 PIN 才要求輸入（在載入資料之前）
+if (Lock.has()) Lock.open('unlock');   // 有設密碼才上鎖；沒設就直接進去
 Lock.updateBtn();
 
 /* =========================================================
@@ -918,8 +929,8 @@ $('#formatSeg').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   S.fmt = b.dataset.fmt;
   $$('#formatSeg button').forEach(x => x.classList.toggle('active', x === b));
-  $('#qualityRow').hidden = S.fmt !== 'mp4';
   LS.set('fmt', S.fmt);
+  applyMode();
 };
 $('#pasteBtn').onclick = async () => {
   try {
@@ -935,9 +946,50 @@ function parseUrls(text) {
   return [...new Set(found.filter(u => /youtu\.?be|youtube\.com/i.test(u)))];
 }
 
+/* ---------- 下載方式：手機直接下載（外部網站）/ 電腦伺服器 ---------- */
+const DEFAULT_SITE = 'https://cobalt.tools/';
+const extSiteInput = $('#extSiteInput');
+extSiteInput.value = LS.get('extSite') || DEFAULT_SITE;
+extSiteInput.onchange = () => LS.set('extSite', extSiteInput.value.trim() || DEFAULT_SITE);
+S.mode = LS.get('dlmode') || (LS.get('server') ? 'server' : 'external');
+function applyMode() {
+  $$('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
+  $('#qualityRow').hidden = S.mode !== 'server' || S.fmt !== 'mp4';
+  $('#modeHint').innerHTML = S.mode === 'external'
+    ? '按「開始下載」會<b>自動複製網址</b>並打開下載網站：把網址貼上 → 下載' + (S.fmt === 'mp3' ? '（請在網站選<b>音訊 audio</b>）' : '') + ' → 存到「檔案」App。<br>下載好後回到這裡，按紀錄上的「<b>匯入 myTube</b>」選那個檔案就能看。'
+    : '用你電腦上的 server 下載，可以一次下載很多個，下載完會<b>自動</b>出現在影片/音樂裡。需要電腦開著（設定方式見 README）。';
+  $('#startDlBtn').lastChild.textContent = S.mode === 'external' ? '開始下載（打開下載網站）' : '開始下載';
+}
+$('#modeSeg').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.mode = b.dataset.mode; LS.set('dlmode', S.mode); applyMode();
+  if (S.mode === 'server' && !getServer()) { $('#settingsBox').open = true; toast('請在下面的設定填入伺服器網址'); }
+};
+function openExternal(h) {
+  // 必須在點擊當下執行：先複製網址，再開新分頁
+  try { navigator.clipboard.writeText(h.url).catch(() => {}); } catch {}
+  const site = (LS.get('extSite') || DEFAULT_SITE).trim();
+  const w = window.open(site, '_blank');
+  if (!w) location.href = site;
+  toast('網址已複製，到網站裡貼上就可以下載', 3500);
+}
+function importFor(h) {
+  S.pendingImport = h.id;
+  $(h.format === 'mp3' ? '#importAudio' : '#importVideo').click();
+}
+
 $('#startDlBtn').onclick = async () => {
   const urls = parseUrls($('#urlInput').value);
   if (!urls.length) return toast('請貼上 YouTube 網址');
+  if (S.mode === 'external') {
+    const items = urls.map(url => ({ id: uid(), url, format: S.fmt, title: url, status: 'external', progress: 0, created: Date.now() }));
+    for (const h of items.slice().reverse()) { S.history.unshift(h); DB.put('history', h); }
+    $('#urlInput').value = '';
+    renderHistory();
+    openExternal(items[0]);
+    if (items.length > 1) setTimeout(() => toast(`共 ${items.length} 個：第一個已複製，其他的在下面紀錄按「打開下載網站」`, 4500), 3600);
+    return;
+  }
   if (!getServer()) { $('#settingsBox').open = true; return toast('請先在設定填入下載伺服器網址'); }
   for (const url of urls) {
     const h = { id: uid(), url, format: S.fmt, quality: $('#qualitySel').value, title: url, status: 'queued', progress: 0, created: Date.now() };
@@ -1022,11 +1074,11 @@ async function runJob(hid) {
 }
 
 /* ---------------- 下載紀錄 ---------------- */
-const STATUS = { queued: '等待中', starting: '連線中…', server: '伺服器下載中', processing: '轉檔中…', transfer: '傳到手機中', done: '完成', error: '失敗' };
+const STATUS = { external: '請在下載網站完成，再按「匯入 myTube」', imported: '已匯入', queued: '等待中', starting: '連線中…', server: '伺服器下載中', processing: '轉檔中…', transfer: '傳到手機中', done: '完成', error: '失敗' };
 function historyHTML(h) {
   const m = h.mediaId && S.media.find(x => x.id === h.mediaId);
   const pct = Math.round((h.progress || 0) * 100);
-  const busy = !['done', 'error', 'queued'].includes(h.status);
+  const busy = !['done', 'error', 'queued', 'external', 'imported'].includes(h.status);
   let st = STATUS[h.status] || h.status;
   if (busy && h.status !== 'starting' && h.status !== 'processing') st += ` ${pct}%`;
   return `<div class="hitem" data-id="${h.id}">
@@ -1042,6 +1094,7 @@ function historyHTML(h) {
       <div class="hactions">
         ${m ? '<button data-a="play">▶ 播放</button><button data-a="save">📁 存到檔案</button>' : ''}
         ${h.status === 'error' ? '<button data-a="retry">↻ 重試</button>' : ''}
+        ${h.status === 'external' ? '<button data-a="ext">🌐 打開下載網站</button><button data-a="imp">📥 匯入 myTube</button>' : ''}
         <button data-a="copy">複製網址</button>
         ${busy ? '' : '<button data-a="del">移除紀錄</button>'}
       </div>
@@ -1063,12 +1116,14 @@ $('#historyList').onclick = async e => {
   const a = b.dataset.a;
   if (a === 'play' && m) Player.playList([m], 0);
   if (a === 'save' && m) { const ok = await saveFlow(m); if (ok) setH(h, { saved: true }); }
+  if (a === 'ext') { openExternal(h); return; }
+  if (a === 'imp') { importFor(h); return; }
   if (a === 'retry') { setH(h, { status: 'queued', error: null, progress: 0 }); DL.queue.push(h.id); pump(); }
   if (a === 'copy') { try { await navigator.clipboard.writeText(h.url); toast('已複製'); } catch { toast(h.url); } }
   if (a === 'del') { S.history = S.history.filter(x => x !== h); await DB.del('history', h.id); renderHistory(); }
 };
 $('#clearHistoryBtn').onclick = async () => {
-  const keep = S.history.filter(h => !['done', 'error', 'queued'].includes(h.status));
+  const keep = S.history.filter(h => !['done', 'error', 'queued', 'external', 'imported'].includes(h.status));
   for (const h of S.history) if (!keep.includes(h)) await DB.del('history', h.id);
   S.history = keep; renderHistory(); toast('已清除下載紀錄（已下載的影片/音樂仍保留）');
 };
@@ -1178,13 +1233,13 @@ $('#bannerClose').onclick = () => { $('#installBanner').hidden = true; LS.set('b
     const [media, pls, hist] = await Promise.all([DB.all('media'), DB.all('playlists'), DB.all('history')]);
     S.media = media || []; S.playlists = pls || [];
     S.history = (hist || []).sort((a, b) => b.created - a.created);
-    for (const h of S.history) if (!['done', 'error'].includes(h.status)) { h.status = 'error'; h.error = '下載中斷，請按重試'; DB.put('history', h); }
+    for (const h of S.history) if (!['done', 'error', 'external', 'imported'].includes(h.status)) { h.status = 'error'; h.error = '下載中斷，請按重試'; DB.put('history', h); }
     S.dirHandle = (await DB.get('kv', 'dir').catch(() => null)) || null;
   } catch (e) { console.error(e); toast('無法開啟資料庫：' + e.message); }
 
   S.fmt = LS.get('fmt') || 'mp4';
   $$('#formatSeg button').forEach(b => b.classList.toggle('active', b.dataset.fmt === S.fmt));
-  $('#qualityRow').hidden = S.fmt !== 'mp4';
+  applyMode();
   $('#autoSaveChk').checked = LS.get('autoSave') !== '0';
   $('#autoSaveChk').onchange = e => LS.set('autoSave', e.target.checked ? '1' : '0');
   showFolder();

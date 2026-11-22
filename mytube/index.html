@@ -101,6 +101,12 @@
           <button class="pill-btn ghost" id="clearUrlBtn">清除</button>
         </div>
 
+        <div class="label" style="margin-top:12px">下載方式</div>
+        <div class="seg" id="modeSeg">
+          <button class="active" data-mode="external">📱 手機直接下載</button>
+          <button data-mode="server">💻 我的電腦伺服器</button>
+        </div>
+        <p class="hint" id="modeHint"></p>
         <div class="seg" id="formatSeg">
           <button class="active" data-fmt="mp4">MP4 影片</button>
           <button data-fmt="mp3">MP3 音樂</button>
@@ -121,7 +127,10 @@
       </div>
 
       <details class="card settings" id="settingsBox">
-        <summary>下載伺服器與儲存設定</summary>
+        <summary>下載設定</summary>
+        <label class="label" for="extSiteInput">手機直接下載用的網站</label>
+        <input id="extSiteInput" type="url" placeholder="https://cobalt.tools/">
+        <p class="hint">預設是 cobalt.tools。如果這個網站下載 YouTube 失敗，可以換成其他下載網站的網址。</p>
         <label class="label" for="serverInput">下載伺服器網址</label>
         <div class="row">
           <input id="serverInput" type="url" placeholder="https://xxxx.trycloudflare.com">
