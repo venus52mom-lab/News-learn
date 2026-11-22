@@ -15,6 +15,14 @@ try:
 except ImportError:
     sys.exit("找不到 yt-dlp，請先執行：python3 -m pip install -U yt-dlp")
 
+# iPhone 上沒有 deno，用這個外掛借 iOS 內建的 Safari 引擎跑 YouTube 的 JavaScript
+try:
+    import importlib.metadata as md
+    md.version("yt-dlp-apple-webkit-jsi")
+except Exception:
+    print("⚠️  還沒安裝 iPhone 用的 JavaScript 外掛，YouTube 很可能下載失敗。")
+    print("   請先執行：python3 -m pip install -U yt-dlp-apple-webkit-jsi\n")
+
 args = sys.argv[1:]
 audio = False
 if args and args[0].lower() in ("mp3", "m4a", "audio", "music"):
@@ -39,19 +47,25 @@ opts = {
     "noplaylist": True,
     "windowsfilenames": True,
     # a-Shell 沒有 ffmpeg，所以只選「本來就是一個檔案」的格式，不需要合併
-    "format": "bestaudio[ext=m4a]/bestaudio" if audio else "b[ext=mp4][height<=720]/b[ext=mp4]/b",
+    "format": "bestaudio[ext=m4a]/bestaudio/b" if audio else "b[ext=mp4][height<=720]/b[ext=mp4]/b",
 }
 
 ok = 0
 for u in urls:
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            ydl.download([u])
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                ydl.download([u])
+        except Exception as e:
+            if "format is not available" not in str(e):
+                raise
+            print("\n指定格式沒有，改用可用的最佳格式再試一次…")
+            with yt_dlp.YoutubeDL({**opts, "format": "best/b*"}) as ydl:
+                ydl.download([u])
         ok += 1
     except Exception as e:
         print("\n❌ 失敗：", u, "\n  ", str(e)[:300])
-        if "JavaScript" in str(e) or "runtime" in str(e):
-            print("   提示：試試 python3 -m pip install -U yt-dlp-apple-webkit-jsi")
+        print("   請執行：python3 -m pip install -U yt-dlp yt-dlp-apple-webkit-jsi  然後再試一次")
 
 print(f"\n完成 {ok}/{len(urls)} 個。")
 print("到「檔案」App → a-Shell → myTube →", "音樂" if audio else "影片")
