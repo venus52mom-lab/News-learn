@@ -951,11 +951,22 @@ const DEFAULT_SITE = 'https://cobalt.tools/';
 const extSiteInput = $('#extSiteInput');
 extSiteInput.value = LS.get('extSite') || DEFAULT_SITE;
 extSiteInput.onchange = () => LS.set('extSite', extSiteInput.value.trim() || DEFAULT_SITE);
-S.mode = LS.get('dlmode') || (LS.get('server') ? 'server' : 'external');
+const apiListEl = $('#apiList'), apiKeyEl = $('#apiKey');
+apiKeyEl.type = 'text';
+apiListEl.value = LS.get('apiList') || '';
+apiKeyEl.value = LS.get('apiKey') || '';
+apiListEl.onchange = () => { LS.set('apiList', apiListEl.value.trim()); applyMode(); };
+apiKeyEl.onchange = () => LS.set('apiKey', apiKeyEl.value.trim());
+const getApis = () => (apiListEl.value || '').split(/\s+/).map(x => x.trim()).filter(x => /^https?:\/\//.test(x)).map(x => x.replace(/\/+$/, '') + '/');
+S.mode = LS.get('dlmode') || 'api';
 function applyMode() {
   $$('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
-  $('#qualityRow').hidden = S.mode !== 'server' || S.fmt !== 'mp4';
-  $('#modeHint').innerHTML = S.mode === 'external'
+  $('#qualityRow').hidden = S.mode === 'external' || S.fmt !== 'mp4';
+  $('#modeHint').innerHTML = S.mode === 'api'
+    ? (getApis().length
+      ? '直接在 myTube 裡下載，<b>不用電腦</b>。可以一次貼很多個網址，下載完會自動出現在影片／音樂裡，馬上就能播。'
+      : '直接在 myTube 裡下載，<b>不用電腦</b>。<br>⚠️ 第一次使用：請打開下面的「⚙️ 下載設定」，貼上一個下載 API 網址。')
+    : S.mode === 'external'
     ? '按「開始下載」會<b>自動複製網址</b>並打開下載網站：把網址貼上 → 下載' + (S.fmt === 'mp3' ? '（請在網站選<b>音訊 audio</b>）' : '') + ' → 存到「檔案」App。<br>下載好後回到這裡，按紀錄上的「<b>匯入 myTube</b>」選那個檔案就能看。'
     : '用你電腦上的 server 下載，可以一次下載很多個，下載完會<b>自動</b>出現在影片/音樂裡。需要電腦開著（設定方式見 README）。';
   $('#startDlBtn').lastChild.textContent = S.mode === 'external' ? '開始下載（打開下載網站）' : '開始下載';
@@ -964,6 +975,7 @@ $('#modeSeg').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   S.mode = b.dataset.mode; LS.set('dlmode', S.mode); applyMode();
   if (S.mode === 'server' && !getServer()) { $('#settingsBox').open = true; toast('請在下面的設定填入伺服器網址'); }
+  if (S.mode === 'api' && !getApis().length) { $('#settingsBox').open = true; toast('請在下面的設定貼上下載 API 網址'); }
 };
 function openExternal(h) {
   // 必須在點擊當下執行：先複製網址，再開新分頁
@@ -990,9 +1002,10 @@ $('#startDlBtn').onclick = async () => {
     if (items.length > 1) setTimeout(() => toast(`共 ${items.length} 個：第一個已複製，其他的在下面紀錄按「打開下載網站」`, 4500), 3600);
     return;
   }
-  if (!getServer()) { $('#settingsBox').open = true; return toast('請先在設定填入下載伺服器網址'); }
+  if (S.mode === 'api' && !getApis().length) { $('#settingsBox').open = true; apiListEl.focus(); return toast('請先在設定貼上下載 API 網址'); }
+  if (S.mode === 'server' && !getServer()) { $('#settingsBox').open = true; return toast('請先在設定填入下載伺服器網址'); }
   for (const url of urls) {
-    const h = { id: uid(), url, format: S.fmt, quality: $('#qualitySel').value, title: url, status: 'queued', progress: 0, created: Date.now() };
+    const h = { id: uid(), url, mode: S.mode, format: S.fmt, quality: $('#qualitySel').value, title: url, status: 'queued', progress: 0, created: Date.now() };
     S.history.unshift(h); DB.put('history', h); DL.queue.push(h.id);
   }
   $('#urlInput').value = '';
@@ -1017,18 +1030,105 @@ async function errText(r) { try { const j = await r.json(); return j.detail || j
 async function fetchWithProgress(url, onProg) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(await errText(r));
-  const total = +r.headers.get('Content-Length') || 0;
+  const total = +r.headers.get('Content-Length') || +r.headers.get('Estimated-Content-Length') || 0;
   if (!r.body || !total) return r.blob();
   const reader = r.body.getReader(), chunks = []; let got = 0;
   for (;;) {
     const { done, value } = await reader.read(); if (done) break;
-    chunks.push(value); got += value.length; onProg(got / total);
+    chunks.push(value); got += value.length; onProg(Math.min(1, got / total));
   }
   return new Blob(chunks, { type: r.headers.get('Content-Type') || '' });
 }
 
+/* ---------- App 內下載（cobalt 格式 API，直接在手機上完成） ---------- */
+const API_ERR = {
+  'error.api.link.invalid': '網址格式不對', 'error.api.link.unsupported': '這個 API 不支援這個網址',
+  'error.api.content.video.unavailable': '影片無法下載（可能是私人或地區限制）', 'error.api.content.video.age': '有年齡限制的影片無法下載',
+  'error.api.content.video.live': '直播無法下載', 'error.api.content.too_long': '影片太長，這個 API 不接受',
+  'error.api.rate_exceeded': '這個 API 使用太頻繁，請稍後再試', 'error.api.youtube.login': 'YouTube 擋住了這個 API（要求登入）',
+  'error.api.youtube.token_expired': '這個 API 的 YouTube 設定過期了', 'error.api.fetch.fail': '這個 API 從 YouTube 抓取失敗',
+  'error.api.fetch.critical': '這個 API 從 YouTube 抓取失敗', 'error.api.auth.jwt.missing': '這個 API 需要驗證，不能從 App 使用',
+  'error.api.auth.key.missing': '這個 API 需要金鑰', 'error.api.auth.key.invalid': 'API 金鑰不正確',
+};
+function ytId(u) { const m = u.match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/); return m ? m[1] : null; }
+async function fetchTimeout(url, opts = {}, ms = 30000) {
+  const c = new AbortController(); const t = setTimeout(() => c.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: c.signal }); } finally { clearTimeout(t); }
+}
+async function ytInfo(url) {
+  const out = {};
+  try {
+    const r = await fetchTimeout('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(url), {}, 8000);
+    if (r.ok) { const j = await r.json(); out.title = j.title; }
+  } catch {}
+  const id = ytId(url);
+  if (id) try { const r = await fetchTimeout(`https://i.ytimg.com/vi/${id}/hqdefault.jpg`, {}, 8000); if (r.ok) out.thumb = await r.blob(); } catch {}
+  return out;
+}
+async function cobaltRequest(api, h) {
+  const body = h.format === 'mp3'
+    ? { url: h.url, downloadMode: 'audio', audioFormat: 'mp3', audioBitrate: '192', filenameStyle: 'basic' }
+    : { url: h.url, downloadMode: 'auto', videoQuality: h.quality === 'best' ? '1080' : (h.quality || '720'), youtubeVideoCodec: 'h264', filenameStyle: 'basic' };
+  const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
+  const key = (LS.get('apiKey') || '').trim();
+  if (key) headers.Authorization = /\s/.test(key) ? key : 'Api-Key ' + key;
+  const send = async b => {
+    const r = await fetchTimeout(api, { method: 'POST', headers, body: JSON.stringify(b) }, 45000);
+    let j; try { j = await r.json(); } catch { throw new Error(`API 回應錯誤（${r.status}）`); }
+    return j;
+  };
+  let j = await send({ ...body, localProcessing: 'disabled' });     // 新版 cobalt：請伺服器幫忙合併好
+  if (j.status === 'error' && /invalid_body|invalid/.test(j.error?.code || '')) j = await send(body); // 舊版不認得這個參數
+  if (j.status === 'tunnel' || j.status === 'redirect') return { url: j.url, filename: j.filename };
+  if (j.status === 'picker' && j.picker?.length) {
+    const it = j.picker.find(x => x.type === 'video') || j.picker[0];
+    return { url: it.url, filename: j.filename };
+  }
+  if (j.status === 'local-processing') throw new Error('這個 API 需要手機自己轉檔，請換一個 API');
+  const code = j.error?.code || j.text || 'unknown';
+  throw new Error(API_ERR[code] || `下載失敗（${code}）`);
+}
+async function runApiJob(h) {
+  const apis = getApis();
+  if (!apis.length) throw new Error('還沒設定下載 API 網址');
+  setH(h, { status: 'starting', progress: 0, error: null });
+  const infoP = ytInfo(h.url);
+  let lastErr, blob, filename;
+  for (const api of apis) {
+    try {
+      const { url, filename: fn } = await cobaltRequest(api, h);
+      setH(h, { status: 'transfer', progress: 0 });
+      blob = await fetchWithProgress(url, p => {
+        if (!h._t || Date.now() - h._t > 300) { h._t = Date.now(); setH(h, { progress: p }); }
+      });
+      if (!blob.size || blob.size < 2048) throw new Error('下載到的檔案是空的');
+      filename = fn; break;
+    } catch (e) {
+      lastErr = e.name === 'AbortError' ? new Error('API 沒有回應（逾時）') : (e.message === 'Failed to fetch' || e.message === 'Load failed' ? new Error('連不到這個 API，或它不允許從網頁下載') : e);
+      console.warn(api, e);
+      if (apis.length > 1) setH(h, { status: 'starting', error: `${new URL(api).host}：${lastErr.message}，換下一個…` });
+    }
+  }
+  if (!blob) throw lastErr;
+  const info = await infoP;
+  const type = h.format === 'mp3' ? 'audio' : 'video';
+  const ext = type === 'audio' ? 'mp3' : 'mp4';
+  const fromFile = (filename || '').replace(/\.[^.]+$/, '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const title = info.title || fromFile || h.url;
+  const typed = blob.type && blob.type !== 'application/octet-stream' ? blob : new Blob([blob], { type: type === 'video' ? 'video/mp4' : 'audio/mpeg' });
+  const m = await addMedia(typed, { type, title, source: 'download', thumb: info.thumb || null, filename: `${safeName(title)}.${ext}` });
+  setH(h, { status: 'done', progress: 1, mediaId: m.id, size: blob.size, title, error: null, saved: false });
+  if ($('#autoSaveChk').checked && await saveToDevice(m, false)) setH(h, { saved: true });
+  toast(`✅ 下載完成：${title}`);
+}
+
 async function runJob(hid) {
   const h = S.history.find(x => x.id === hid); if (!h) return;
+  if (h.mode === 'api') {
+    try { await runApiJob(h); }
+    catch (e) { console.error(e); setH(h, { status: 'error', error: e.message }); }
+    return;
+  }
   const server = getServer();
   try {
     setH(h, { status: 'starting', progress: 0, error: null });
@@ -1074,12 +1174,14 @@ async function runJob(hid) {
 }
 
 /* ---------------- 下載紀錄 ---------------- */
-const STATUS = { external: '請在下載網站完成，再按「匯入 myTube」', imported: '已匯入', queued: '等待中', starting: '連線中…', server: '伺服器下載中', processing: '轉檔中…', transfer: '傳到手機中', done: '完成', error: '失敗' };
+const STATUS = { api: '', external: '請在下載網站完成，再按「匯入 myTube」', imported: '已匯入', queued: '等待中', starting: '連線中…', server: '伺服器下載中', processing: '轉檔中…', transfer: '傳到手機中', done: '完成', error: '失敗' };
 function historyHTML(h) {
   const m = h.mediaId && S.media.find(x => x.id === h.mediaId);
   const pct = Math.round((h.progress || 0) * 100);
   const busy = !['done', 'error', 'queued', 'external', 'imported'].includes(h.status);
   let st = STATUS[h.status] || h.status;
+  if (h.mode === 'api' && h.status === 'starting') st = '準備下載中…';
+  if (h.mode === 'api' && h.status === 'transfer') st = '下載到手機中';
   if (busy && h.status !== 'starting' && h.status !== 'processing') st += ` ${pct}%`;
   return `<div class="hitem" data-id="${h.id}">
     <img class="hthumb" src="${m ? thumbURL(m) : placeholderArt({ title: h.url, type: h.format === 'mp3' ? 'audio' : 'video' })}" alt="">
