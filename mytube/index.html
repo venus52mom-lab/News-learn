@@ -100,6 +100,11 @@
           <button class="pill-btn ghost" id="pasteBtn"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/></svg>貼上</button>
           <button class="pill-btn ghost" id="clearUrlBtn">清除</button>
         </div>
+        <div class="row watch-row">
+          <button class="pill-btn" id="watchHereBtn"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>在 myTube 看</button>
+          <button class="pill-btn" id="watchSafariBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor"/></svg>在 Safari 看（無廣告）</button>
+        </div>
+        <p class="hint">不想下載只想看：「在 myTube 看」可能會有廣告；「在 Safari 看」搭配 Vinegar 擴充功能就沒有廣告，還能子母畫面。</p>
 
         <div class="label" style="margin-top:12px">下載方式</div>
         <div class="seg" id="modeSeg">
@@ -228,6 +233,17 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
     <h3 class="upnext-h">接下來播放</h3>
     <div class="upnext" id="upNext"></div>
   </div>
+</div>
+
+<!-- 直接看 YouTube（嵌入播放器） -->
+<div class="yt-watch" id="ytWatch" hidden>
+  <div class="yt-watch-top">
+    <button class="icon-btn" id="ytClose" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <span class="player-top-title">YouTube</span>
+    <button class="pill-btn ghost" id="ytToSafari">在 Safari 看</button>
+  </div>
+  <div class="yt-frame" id="ytFrame"></div>
+  <p class="hint" style="padding:8px 14px">廣告是 YouTube 決定的，這裡擋不掉。想沒有廣告，請按右上角「在 Safari 看」並安裝 Vinegar 擴充功能。</p>
 </div>
 
 <!-- 底部選單（bottom sheet） -->

@@ -1032,6 +1032,36 @@ function parseUrls(text) {
   return [...new Set(found.filter(u => /youtu\.?be|youtube\.com/i.test(u)))];
 }
 
+/* ---------- 不下載，直接看 ---------- */
+function firstYt() {
+  const urls = parseUrls($('#urlInput').value);
+  if (!urls.length) { toast('請先貼上 YouTube 網址'); return null; }
+  const id = (urls[0].match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/) || [])[1];
+  if (!id) { toast('看不懂這個網址，請貼 YouTube 影片連結'); return null; }
+  return { id, url: urls[0] };
+}
+function openInSafari(id) {
+  const url = 'https://www.youtube.com/watch?v=' + id;
+  // iPhone：用 x-safari- 強制用真正的 Safari 打開（App 內建的小瀏覽器跑不了 Vinegar）
+  if (isIOS()) location.href = 'x-safari-' + url;
+  else window.open(url, '_blank');
+}
+function watchHere(id) {
+  if (P.item && !Player.active().paused) Player.active().pause();   // 避免兩個一起播
+  Preview.stop(true);
+  $('#ytFrame').innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?playsinline=1&autoplay=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  $('#ytWatch').hidden = false; $('#ytWatch').dataset.id = id;
+  document.body.style.overflow = 'hidden';
+}
+function closeWatch() {
+  $('#ytFrame').innerHTML = ''; $('#ytWatch').hidden = true;
+  if (P.view !== 'full') document.body.style.overflow = '';
+}
+$('#watchHereBtn').onclick = () => { const v = firstYt(); if (v) watchHere(v.id); };
+$('#watchSafariBtn').onclick = () => { const v = firstYt(); if (v) openInSafari(v.id); };
+$('#ytClose').onclick = closeWatch;
+$('#ytToSafari').onclick = () => { const id = $('#ytWatch').dataset.id; closeWatch(); openInSafari(id); };
+
 /* ---------- 下載方式：手機直接下載（外部網站）/ 電腦伺服器 ---------- */
 const DEFAULT_SITE = 'https://cobalt.meowing.de/';
 const extSiteInput = $('#extSiteInput');
