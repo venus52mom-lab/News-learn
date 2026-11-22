@@ -71,6 +71,7 @@
         </label>
         <button class="pill-btn ghost" id="videoPlayAll"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>全部播放</button>
       </div>
+      <p class="hint" style="padding:0 14px">一次選很多個：點選檔案後，按右上角「打開」。</p>
       <div class="playlist-head" id="videoPlHead" hidden></div>
       <div class="feed" id="videoFeed"></div>
     </section>
@@ -143,7 +144,7 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
         <p class="hint"><b>2.</b> 以後要下載，在 a-Shell 執行：</p>
         <pre class="cmd" id="cmd2">python3 mt.py</pre>
         <button class="pill-btn ghost" data-copy="cmd2">複製</button>
-        <p class="hint">貼上網址就會下載。<b>會自動判斷</b>：music.youtube.com 的連結下載成音樂，其他下載成影片（想把一般影片只存聲音，網址前面加 <code>mp3</code>）。檔案會在「檔案」App → a-Shell → myTube → 影片／音樂。</p>
+        <p class="hint">貼上網址就會下載（下載時請停在 a-Shell，跳到 YouTube App 就按左上角「◀ a-Shell」回來）。<b>會自動判斷</b>：music.youtube.com 的連結下載成音樂，其他下載成影片（想把一般影片只存聲音，網址前面加 <code>mp3</code>）。檔案會在「檔案」App → a-Shell → myTube → 影片／音樂。</p>
         <p class="hint"><b>3.</b> 回到 myTube，按「匯入手機檔案」，選剛下載的檔案（可以一次選很多個），myTube 會<b>自動分到影片或音樂</b>。</p>
       </details>
 
@@ -245,6 +246,9 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   <div class="yt-frame" id="ytFrame"></div>
   <p class="hint" style="padding:8px 14px"><b>背景播放：</b>離開 myTube 時會自動嘗試繼續播。如果還是停了，打開<b>控制中心或鎖定畫面</b>按 ▶ 播放，通常就能繼續聽。<br>廣告是 YouTube 決定的，這裡擋不掉；想沒有廣告，按右上角「在 Safari 看」並安裝 Vinegar。</p>
 </div>
+
+<!-- 匯入單一檔案：點一下就匯入，不用再按「打開」 -->
+<input type="file" accept="video/*,audio/*,.mp3,.m4a,.aac,.wav,.flac,.mp4,.mov" hidden id="importOne">
 
 <!-- 底部選單（bottom sheet） -->
 <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>

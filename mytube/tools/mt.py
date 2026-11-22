@@ -114,7 +114,8 @@ def is_ts(path):
 
 
 # 向 YouTube 要影片的不同「身分」：一個不給，就自動換下一個
-CLIENTS = [None, "android_vr", "tv", "web_safari", "mweb", "ios", "web_embedded"]
+# android_vr 放第一個：它不需要解 YouTube 的 JavaScript 驗證，就不會跳到 YouTube App
+CLIENTS = ["android_vr", None, "tv", "web_safari", "mweb", "ios", "web_embedded"]
 
 
 def download(url, audio):
@@ -151,12 +152,13 @@ def download_once(url, audio, client):
         "progress_hooks": [hook],
         # 允許從 GitHub 下載 YouTube 解題腳本（就是錯誤訊息建議的 --remote-components ejs:github）
         "remote_components": ["ejs:github"],
-        "quiet": client is not None,
-        "no_warnings": client is not None,
+        "quiet": client != CLIENTS[0],
+        "no_warnings": client != CLIENTS[0],
+        "continuedl": True,   # 之前下載到一半（.part）會接著下載
     }
     if client:
         opts["extractor_args"] = {"youtube": {"player_client": [client]}}
-    if client is None:
+    if client == CLIENTS[0]:
         print(f"\n▶ {'音樂' if audio else '影片'}：{url}")
     with yt_dlp.YoutubeDL(opts) as ydl:
         ydl.download([url])
@@ -176,6 +178,7 @@ def main():
     jobs = parse(text)
     if not jobs:
         sys.exit("沒有看到網址")
+    print("💡 下載時請停在 a-Shell。如果跳到 YouTube App，馬上按左上角「◀ a-Shell」回來，不然下載會被 iPhone 暫停。")
 
     ok = {"影片": 0, "音樂": 0}
     for url, audio in jobs:
@@ -189,7 +192,9 @@ def main():
                 print("   請執行：python3 -m pip install -U yt-dlp yt-dlp-ejs yt-dlp-apple-webkit-jsi 再試一次")
 
     print(f"\n✅ 完成：影片 {ok['影片']} 個、音樂 {ok['音樂']} 個（共 {len(jobs)} 個）")
-    print("回到 myTube 按「匯入手機檔案」，到 a-Shell → myTube 選檔案，會自動分到影片或音樂。")
+    if ok["影片"] + ok["音樂"] < len(jobs):
+        print("沒下載完的檔案（.part）：再貼一次同樣的指令，會從中斷的地方接著下載。")
+    print("回到 myTube 按「匯入 myTube」，到 a-Shell → myTube 點檔案就會匯入，會自動分到影片或音樂。")
 
 
 if __name__ == "__main__":

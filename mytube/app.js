@@ -265,10 +265,11 @@ async function detectType(file) {
 }
 async function importFiles(files) {
   const list = [...files]; if (!list.length) return;
-  let n = 0; const cnt = { video: 0, audio: 0 }; const bad = [];
+  let n = 0; const cnt = { video: 0, audio: 0 }; const bad = []; const partial = [];
   for (const f of list) {
     toast(`正在載入 ${++n}/${list.length}…`, 60000);
     try {
+      if (/\.(part|ytdl)$/i.test(f.name)) { partial.push(f.name); continue; }
       if (await isMpegTS(f)) { bad.push(f.name); continue; }
       const type = await detectType(f);
       await addMedia(f, { type, title: f.name.replace(/\.[^.]+$/, ''), source: 'import', filename: f.name });
@@ -278,12 +279,18 @@ async function importFiles(files) {
   const parts = [];
   if (cnt.video) parts.push(`${cnt.video} 個影片（在「影片」）`);
   if (cnt.audio) parts.push(`${cnt.audio} 個音樂（在「音樂」）`);
+  if (partial.length && !bad.length) {
+    openSheet(`<h4>這個檔案還沒下載完</h4>
+      <p class="hint" style="padding:0 20px">${partial.map(esc).join('<br>')}<br><br>檔名最後是 <b>.part</b>，表示下載到一半被中斷（通常是跳到 YouTube App 時 a-Shell 被暫停）。<br>回到「下載」按紀錄上的「📲 再開一次 a-Shell」，貼上同樣的指令，會從中斷的地方接著下載完。</p>
+      <button class="sheet-item" data-a="ok">知道了</button>`);
+  }
   if (bad.length) {
     openSheet(`<h4>有 ${bad.length} 個檔案無法播放</h4>
       <p class="hint" style="padding:0 20px">${bad.map(esc).join('<br>')}<br><br>這是 YouTube 的串流格式（TS），iPhone 網頁播不了。請在 a-Shell 先更新下載程式再重新下載：<br><code>curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main/mytube/tools/mt.py</code></p>
       <button class="sheet-item" data-a="ok">知道了</button>`);
   }
-  if (parts.length) toast('已載入 ' + parts.join('、'), 3500);
+  if (parts.length) toast('✅ 已匯入 ' + parts.join('、'), 3500);
+  else if (!bad.length && !partial.length) toast('沒有匯入任何檔案，請再試一次');
   if (cnt.video && !cnt.audio && S.page === 'audio') showPage('video');
   if (cnt.audio && !cnt.video && S.page === 'video') showPage('audio');
 }
@@ -298,6 +305,7 @@ async function onImport(e, type) {
   }
 }
 $('#importVideo').onchange = e => onImport(e, 'video');
+$('#importOne').onchange = e => onImport(e, 'video');
 $('#importAudio').onchange = e => onImport(e, 'audio');
 
 /* ---------------- 播放清單 ---------------- */
@@ -1205,7 +1213,7 @@ function openExternal(h) {
 }
 function importFor(h) {
   S.pendingImport = h.id;
-  $(h.format === 'mp3' ? '#importAudio' : '#importVideo').click();
+  $('#importOne').click();   // 單選：點檔案就直接匯入
 }
 
 $('#startDlBtn').onclick = async () => {
