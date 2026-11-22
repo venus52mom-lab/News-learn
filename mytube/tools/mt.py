@@ -25,6 +25,11 @@ try:
 except Exception:
     print("⚠️  還沒安裝 iPhone 用的 JavaScript 外掛，影片可能只能抓到無法播放的格式。")
     print("   請先執行：python3 -m pip install -U yt-dlp-apple-webkit-jsi\n")
+try:
+    md.version("yt-dlp-ejs")
+except Exception:
+    print("⚠️  還沒安裝 YouTube 解題腳本（yt-dlp-ejs），會改從 GitHub 線上下載。")
+    print("   建議執行：python3 -m pip install -U yt-dlp-ejs\n")
 
 BASE = os.path.expanduser("~/Documents/myTube")
 
@@ -79,6 +84,8 @@ def download(url, audio):
         "windowsfilenames": True,
         "format": AUDIO_FMT if audio else VIDEO_FMT,
         "progress_hooks": [hook],
+        # 允許從 GitHub 下載 YouTube 解題腳本（就是錯誤訊息建議的 --remote-components ejs:github）
+        "remote_components": ["ejs:github"],
     }
     print(f"\n▶ {'音樂' if audio else '影片'}：{url}")
     with yt_dlp.YoutubeDL(opts) as ydl:
@@ -88,7 +95,7 @@ def download(url, audio):
         if os.path.exists(p) and is_ts(p):
             os.remove(p)
             raise RuntimeError("YouTube 只給了串流格式（iPhone 網頁播不了），已刪除。"
-                               "請執行：python3 -m pip install -U yt-dlp yt-dlp-apple-webkit-jsi 再試一次")
+                               "請執行：python3 -m pip install -U yt-dlp yt-dlp-ejs yt-dlp-apple-webkit-jsi 再試一次")
     return saved
 
 
@@ -109,7 +116,7 @@ def main():
             msg = str(e)
             print("\n❌ 失敗：", url, "\n  ", msg[:300])
             if "format is not available" in msg:
-                print("   請執行：python3 -m pip install -U yt-dlp yt-dlp-apple-webkit-jsi 再試一次")
+                print("   請執行：python3 -m pip install -U yt-dlp yt-dlp-ejs yt-dlp-apple-webkit-jsi 再試一次")
 
     print(f"\n✅ 完成：影片 {ok['影片']} 個、音樂 {ok['音樂']} 個（共 {len(jobs)} 個）")
     print("回到 myTube 按「匯入手機檔案」，到 a-Shell → myTube 選檔案，會自動分到影片或音樂。")
