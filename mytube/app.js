@@ -1007,16 +1007,61 @@ const getApis = () => {
   return [...new Set([...mine, ...DEFAULT_APIS])];
 };
 apiListEl.placeholder = '不用填也可以。內建：\n' + DEFAULT_APIS.join('\n') + '\n（你自己加的會優先使用）';
-S.mode = LS.get('dlmode') || 'api';
+/* ---------- a-Shell 引導下載 ---------- */
+const MT_URL = 'https://raw.githubusercontent.com/venus52mom-lab/News-learn/main/mytube/tools/mt.py';
+const ASHELL_STORE = 'https://apps.apple.com/app/id1473805438';
+const SETUP_CMD1 = 'python3 -m pip install -U yt-dlp yt-dlp-ejs yt-dlp-apple-webkit-jsi';
+const SETUP_CMD2 = 'curl -sLo mt.py ' + MT_URL;
+function copyText(t) {
+  // 在點擊當下同步複製（iPhone 規定）
+  try { navigator.clipboard.writeText(t).catch(() => fallbackCopy(t)); } catch { fallbackCopy(t); }
+}
+function fallbackCopy(t) {
+  const ta = document.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch {} ta.remove();
+}
+function openAShell() { setTimeout(() => { location.href = 'ashell://'; }, 150); }
+function ashellSetup(after) {
+  const step = (n, title, body, btn, a) => `<div style="padding:10px 20px;border-bottom:1px solid var(--line)">
+    <div style="font-weight:700;margin-bottom:4px">${n}. ${title}</div><div class="hint" style="margin:0 0 8px">${body}</div>
+    <button class="pill-btn" data-a="${a}" data-keep>${btn}</button></div>`;
+  openSheet(`<h4>第一次使用：設定 a-Shell（約 2 分鐘，只要做一次）</h4>
+    ${step(1, '安裝 a-Shell', '免費 App，用你手機自己的網路下載 YouTube。', '前往 App Store', 'store')}
+    ${step(2, '安裝下載工具', '按下面按鈕會<b>自動複製指令</b>並打開 a-Shell → 在 a-Shell <b>長按貼上</b> → 按 Enter，等它跑完（約 1 分鐘）。', '複製指令並打開 a-Shell', 'c1')}
+    ${step(3, '下載 myTube 小程式', '回到這裡按下面按鈕 → 一樣在 a-Shell 貼上 → Enter。', '複製指令並打開 a-Shell', 'c2')}
+    <button class="sheet-item" data-a="done">✅ 我都完成了，開始下載</button>`, a => {
+    if (a === 'store') location.href = ASHELL_STORE;
+    if (a === 'c1') { copyText(SETUP_CMD1); toast('已複製，到 a-Shell 貼上按 Enter'); openAShell(); }
+    if (a === 'c2') { copyText(SETUP_CMD2); toast('已複製，到 a-Shell 貼上按 Enter'); openAShell(); }
+    if (a === 'done') { LS.set('ashellReady', '1'); applyMode(); after?.(); }
+  });
+}
+function ashellCommand(items) {
+  const parts = ['python3 mt.py'];
+  for (const h of items) parts.push((h.format === 'mp3' ? 'mp3 ' : 'mp4 ') + h.url);
+  return parts.join(' ');
+}
+function runAShell(items) {
+  copyText(ashellCommand(items));
+  toast('指令已複製！到 a-Shell 長按貼上 → 按 Enter', 4000);
+  openAShell();
+}
+S.mode = LS.get('dlmode') || 'ashell';
+if (S.mode === 'api' && !LS.get('apiList')) S.mode = 'ashell';
 function applyMode() {
   $$('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
-  $('#qualityRow').hidden = S.mode === 'external' || S.fmt !== 'mp4';
-  $('#modeHint').innerHTML = S.mode === 'api'
+  $('#qualityRow').hidden = S.mode === 'external' || S.mode === 'ashell' || S.fmt !== 'mp4';
+  $('#modeHint').innerHTML = S.mode === 'ashell'
+    ? (LS.get('ashellReady') === '1'
+      ? '按「開始下載」→ myTube 會<b>自動複製指令並打開 a-Shell</b> → 在 a-Shell <b>長按貼上、按 Enter</b> → 下載完回到這裡，按紀錄上的「<b>📥 匯入 myTube</b>」，到 a-Shell › myTube 資料夾選檔案（會自動分到影片／音樂）。可以一次貼很多個網址。<br><a href="#" id="redoSetup" style="color:#3ea6ff">重新設定 a-Shell</a>'
+      : '用免費的 a-Shell App 下載，<b>用你自己手機的網路，比較不會被 YouTube 擋</b>。<br>第一次使用請先按「開始下載」，照著 3 個步驟設定（只要做一次）。')
+    : S.mode === 'api'
     ? '直接在 myTube 裡下載，<b>不用電腦、不用設定</b>。可以一次貼很多個網址，下載完會自動出現在影片／音樂裡，馬上就能播。內建 ' + DEFAULT_APIS.length + ' 個下載服務，一個失敗會自動換下一個。'
     : S.mode === 'external'
     ? '按「開始下載」會<b>自動複製網址</b>並打開下載網站：把網址貼上 → 下載' + (S.fmt === 'mp3' ? '（請在網站選<b>音訊 audio</b>）' : '') + ' → 存到「檔案」App。<br>下載好後回到這裡，按紀錄上的「<b>匯入 myTube</b>」選那個檔案就能看。'
     : '用你電腦上的 server 下載，可以一次下載很多個，下載完會<b>自動</b>出現在影片/音樂裡。需要電腦開著（設定方式見 README）。';
-  $('#startDlBtn').lastChild.textContent = S.mode === 'external' ? '開始下載（打開下載網站）' : '開始下載';
+  $('#startDlBtn').lastChild.textContent = S.mode === 'external' ? '開始下載（打開下載網站）' : S.mode === 'ashell' ? '開始下載（打開 a-Shell）' : '開始下載';
+  const redo = $('#redoSetup'); if (redo) redo.onclick = e => { e.preventDefault(); ashellSetup(); };
 }
 $('#modeSeg').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1039,6 +1084,15 @@ function importFor(h) {
 $('#startDlBtn').onclick = async () => {
   const urls = parseUrls($('#urlInput').value);
   if (!urls.length) return toast('請貼上 YouTube 網址');
+  if (S.mode === 'ashell') {
+    if (LS.get('ashellReady') !== '1') return ashellSetup();
+    const items = urls.map(url => ({ id: uid(), url, mode: 'ashell', format: S.fmt, title: url, status: 'external', progress: 0, created: Date.now() }));
+    for (const h of items.slice().reverse()) { S.history.unshift(h); DB.put('history', h); }
+    $('#urlInput').value = '';
+    renderHistory();
+    runAShell(items);
+    return;
+  }
   if (S.mode === 'external') {
     const items = urls.map(url => ({ id: uid(), url, format: S.fmt, title: url, status: 'external', progress: 0, created: Date.now() }));
     for (const h of items.slice().reverse()) { S.history.unshift(h); DB.put('history', h); }
@@ -1225,6 +1279,7 @@ function historyHTML(h) {
   const pct = Math.round((h.progress || 0) * 100);
   const busy = !['done', 'error', 'queued', 'external', 'imported'].includes(h.status);
   let st = STATUS[h.status] || h.status;
+  if (h.status === 'external' && h.mode === 'ashell') st = '在 a-Shell 下載完後，按「匯入 myTube」';
   if (h.mode === 'api' && h.status === 'starting') st = '準備下載中…';
   if (h.mode === 'api' && h.status === 'transfer') st = '下載到手機中';
   if (busy && h.status !== 'starting' && h.status !== 'processing') st += ` ${pct}%`;
@@ -1241,7 +1296,7 @@ function historyHTML(h) {
       <div class="hactions">
         ${m ? '<button data-a="play">▶ 播放</button><button data-a="save">📁 存到檔案</button>' : ''}
         ${h.status === 'error' ? '<button data-a="retry">↻ 重試</button>' : ''}
-        ${h.status === 'external' ? '<button data-a="ext">🌐 打開下載網站</button><button data-a="imp">📥 匯入 myTube</button>' : ''}
+        ${h.status === 'external' ? (h.mode === 'ashell' ? '<button data-a="ash">📲 再開一次 a-Shell</button>' : '<button data-a="ext">🌐 打開下載網站</button>') + '<button data-a="imp">📥 匯入 myTube</button>' : ''}
         <button data-a="copy">複製網址</button>
         ${busy ? '' : '<button data-a="del">移除紀錄</button>'}
       </div>
@@ -1264,6 +1319,7 @@ $('#historyList').onclick = async e => {
   if (a === 'play' && m) Player.playList([m], 0);
   if (a === 'save' && m) { const ok = await saveFlow(m); if (ok) setH(h, { saved: true }); }
   if (a === 'ext') { openExternal(h); return; }
+  if (a === 'ash') { runAShell([h]); return; }
   if (a === 'imp') { importFor(h); return; }
   if (a === 'retry') { setH(h, { status: 'queued', error: null, progress: 0 }); DL.queue.push(h.id); pump(); }
   if (a === 'copy') { try { await navigator.clipboard.writeText(h.url); toast('已複製'); } catch { toast(h.url); } }

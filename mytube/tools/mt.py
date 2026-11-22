@@ -14,6 +14,36 @@ import os
 import re
 import sys
 
+MT_URL = "https://raw.githubusercontent.com/venus52mom-lab/News-learn/main/mytube/tools/mt.py"
+
+
+def self_update():
+    """每次執行先看 GitHub 上有沒有新版，有就自動換成新版（朋友不用自己更新）"""
+    if os.environ.get("MT_UPDATED"):
+        return
+    try:
+        import urllib.request
+        with urllib.request.urlopen(MT_URL, timeout=6) as r:
+            new = r.read()
+        me = os.path.abspath(__file__)
+        with open(me, "rb") as f:
+            old = f.read()
+        if new and new != old and b"def main" in new:
+            with open(me, "wb") as f:
+                f.write(new)
+            print("🔄 下載程式已自動更新到最新版\n")
+            os.environ["MT_UPDATED"] = "1"
+            import runpy
+            runpy.run_path(me, run_name="__main__")
+            sys.exit(0)
+    except SystemExit:
+        raise
+    except Exception:
+        pass
+
+
+self_update()
+
 try:
     import yt_dlp
 except ImportError:
@@ -69,7 +99,28 @@ def is_ts(path):
         return False
 
 
+# 向 YouTube 要影片的不同「身分」：一個不給，就自動換下一個
+CLIENTS = [None, "android_vr", "tv", "web_safari", "mweb", "ios", "web_embedded"]
+
+
 def download(url, audio):
+    last = None
+    for i, client in enumerate(CLIENTS):
+        try:
+            if i:
+                print(f"   ↻ 換方法再試（{i + 1}/{len(CLIENTS)}：{client}）…")
+            return download_once(url, audio, client)
+        except Exception as e:
+            last = e
+            msg = str(e)
+            retry = ("format is not available" in msg or "串流格式" in msg
+                     or "Sign in" in msg or "login" in msg.lower() or "403" in msg)
+            if not retry:
+                raise
+    raise last
+
+
+def download_once(url, audio, client):
     folder = os.path.join(BASE, "音樂" if audio else "影片")
     os.makedirs(folder, exist_ok=True)
     saved = []
@@ -86,8 +137,13 @@ def download(url, audio):
         "progress_hooks": [hook],
         # 允許從 GitHub 下載 YouTube 解題腳本（就是錯誤訊息建議的 --remote-components ejs:github）
         "remote_components": ["ejs:github"],
+        "quiet": client is not None,
+        "no_warnings": client is not None,
     }
-    print(f"\n▶ {'音樂' if audio else '影片'}：{url}")
+    if client:
+        opts["extractor_args"] = {"youtube": {"player_client": [client]}}
+    if client is None:
+        print(f"\n▶ {'音樂' if audio else '影片'}：{url}")
     with yt_dlp.YoutubeDL(opts) as ydl:
         ydl.download([url])
 

@@ -103,8 +103,9 @@
 
         <div class="label" style="margin-top:12px">下載方式</div>
         <div class="seg" id="modeSeg">
-          <button class="active" data-mode="api">📱 App 內下載</button>
-          <button data-mode="external">🌐 下載網站</button>
+          <button class="active" data-mode="ashell">📲 a-Shell 下載</button>
+          <button data-mode="api">📱 App 內</button>
+          <button data-mode="external">🌐 網站</button>
           <button data-mode="server">💻 電腦</button>
         </div>
         <p class="hint" id="modeHint"></p>
@@ -127,8 +128,8 @@
         </button>
       </div>
 
-      <details class="card settings" id="ashellBox" open>
-        <summary>a-Shell 手機下載（最穩，免費）</summary>
+      <details class="card settings" id="ashellBox">
+        <summary>a-Shell 手動指令（進階）</summary>
         <p class="hint">網路上的下載網站常被 YouTube 擋掉。這個方法用<b>你自己手機的網路</b>，比較不會被擋。只要設定一次：</p>
         <p class="hint"><b>1.</b> App Store 安裝免費的 <b>a-Shell</b>，打開它，執行這兩行：</p>
         <pre class="cmd" id="cmd1">python3 -m pip install -U yt-dlp yt-dlp-apple-webkit-jsi
