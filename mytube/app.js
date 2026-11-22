@@ -514,6 +514,8 @@ const Preview = {
   card: null, video: null, timer: null, finished: false,
   check() {
     if (S.page !== 'video' || $('#player').classList.contains('full') || document.hidden) return this.stop(true);
+    // 正在播放影片/音樂時不跑預覽（iPhone 播另一個影片可能會把正在播的暫停）
+    if (P.item && !Player.active().paused) return this.stop(true);
     const mid = innerHeight / 2;
     let best = null, bd = Infinity;
     for (const c of $$('#videoFeed .vcard')) {
@@ -638,21 +640,40 @@ const Player = {
     if (on) toast('背景播放已開啟：現在可以切到別的 App 或關掉螢幕', 3500);
   },
 
-  async pip() {
+  /* 從背景音訊切回影片：影片先接上同一秒開始播，成功了才停掉音訊，所以不會中斷 */
+  resumeVideo() {
+    if (!P.bgVideo || P.item?.type !== 'video') return;
+    P.autoBg = false;
+    const wasPlaying = !audioEl.paused, url = mediaURLSync(P.item.id);
+    const finish = () => {
+      P.bgVideo = false;
+      audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load();
+      this.updateUI(); this.setSession();
+    };
+    videoEl.src = url;
+    videoEl.addEventListener('loadedmetadata', () => {
+      try { videoEl.currentTime = audioEl.currentTime; } catch {}
+      if (!wasPlaying) return finish();
+      videoEl.play().then(finish).catch(() => { videoEl.removeAttribute('src'); videoEl.load(); });
+    }, { once: true });
+  },
+  pip() {
     if (!P.item || P.item.type !== 'video') return toast('子母畫面只適用於影片');
-    if (P.bgVideo) { this.setBgVideo(false); await sleep(400); }
+    // 一定要在按下的當下開啟（iPhone 規定），所以不能等待
+    if (P.bgVideo) this.setBgVideo(false);
+    if (videoEl.paused) videoEl.play().catch(() => {});
     try {
       if (document.pictureInPictureElement) return document.exitPictureInPicture();
       if (videoEl.webkitSupportsPresentationMode?.('picture-in-picture')) {
         videoEl.webkitSetPresentationMode(videoEl.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture');
       } else if (document.pictureInPictureEnabled) {
-        if (videoEl.paused) await videoEl.play();
-        await videoEl.requestPictureInPicture();
-      } else toast('這個瀏覽器不支援子母畫面，請改用「背景播放」');
-    } catch (e) { toast('無法開啟子母畫面：' + e.message); }
+        videoEl.requestPictureInPicture().catch(() => toast('影片還在準備，請再按一次子母畫面'));
+      } else toast('這個瀏覽器不支援子母畫面');
+    } catch (e) { toast('影片還在準備，請再按一次子母畫面'); }
   },
 
   openFull() {
+    this.keepPlaying();
     P.view = 'full';
     playerBox.classList.remove('hidden', 'mini'); playerBox.classList.add('full');
     videoEl.controls = true;
@@ -661,7 +682,12 @@ const Player = {
     if (!history.state?.player) history.pushState({ player: 1 }, '');
     this.updateUI();
   },
+  /* 在畫面切換的這段時間內，如果被系統暫停就自動接著播 */
+  keepPlaying(ms = 1500) {
+    if (P.item && !this.active().paused) P.guardUntil = Date.now() + ms;
+  },
   minimize() {
+    this.keepPlaying();
     P.view = 'mini';
     playerBox.classList.remove('hidden', 'full'); playerBox.classList.add('mini');
     videoEl.controls = false;
@@ -692,12 +718,13 @@ const Player = {
     $('#miniTitle').textContent = m.title;
     $('#miniSub').textContent = P.bgVideo ? '背景播放中' : (m.type === 'video' ? '影片' : '音樂');
     const bg = $('#bgBtn');
-    bg.hidden = m.type !== 'video';
-    bg.classList.toggle('on', P.bgVideo);
-    bg.lastChild.textContent = P.bgVideo ? '回到影片畫面' : '背景播放';
+    bg.hidden = !(m.type === 'video' && P.bgVideo);
+    bg.classList.add('on');
+    bg.lastChild.textContent = '回到影片畫面';
     $('#pipBtn').hidden = m.type !== 'video';
+    $('#miniPip').hidden = m.type !== 'video';
     $('#bgHint').textContent = m.type === 'video'
-      ? (P.bgVideo ? '正在用音訊模式播放，可以離開 App 或鎖定螢幕。按「回到影片畫面」繼續看。' : '想看別的 App：按「子母畫面」繼續看；只想聽聲音：按「背景播放」。')
+      ? (P.bgVideo ? '正在背景播放聲音。按「回到影片畫面」繼續看。' : '直接離開 App 或鎖螢幕，聲音會自動繼續播；回來會自動接回影片。想邊看邊用別的 App，按「子母畫面」。')
       : '音樂可以直接背景播放，也能用鎖定畫面控制。';
     $('#shuffleBtn').classList.toggle('on', P.shuffle);
     const rb = $('#repeatBtn'); rb.classList.toggle('on', P.repeat > 0); rb.classList.toggle('one', P.repeat === 2);
@@ -754,7 +781,17 @@ const Player = {
 let seeking = false;
 for (const el of [videoEl, audioEl]) {
   el.addEventListener('play', () => { if (el === Player.active()) Player.updatePlayIcons(); });
-  el.addEventListener('pause', () => { if (el === Player.active()) Player.updatePlayIcons(); });
+  el.addEventListener('pause', () => {
+    if (el !== Player.active()) return;
+    if (!el.ended && P.guardUntil && Date.now() < P.guardUntil) { el.play().catch(() => {}); return; }
+    P.lastPause = { t: Date.now(), el };
+    Player.updatePlayIcons();
+  });
+  // 調音量時如果被暫停（iPhone 偶爾會），自動接著播
+  el.addEventListener('volumechange', () => {
+    if (el === Player.active() && el.paused && !el.ended && P.lastPause?.el === el && Date.now() - P.lastPause.t < 1000) el.play().catch(() => {});
+    else Player.keepPlaying(1000);
+  });
   el.addEventListener('timeupdate', () => { if (el === Player.active()) Player.updateTime(); });
   el.addEventListener('ended', () => {
     if (el !== Player.active()) return;
@@ -775,8 +812,9 @@ $('#miniClose').onclick = e => { e.stopPropagation(); Player.close(); };
 $('#miniTap').onclick = () => Player.openFull();
 $('#miniInfo').onclick = () => Player.openFull();
 $('#minimizeBtn').onclick = () => Player.minimize();
-$('#bgBtn').onclick = () => Player.setBgVideo(!P.bgVideo);
+$('#bgBtn').onclick = () => { P.autoBg = false; Player.setBgVideo(false); };
 $('#pipBtn').onclick = () => Player.pip();
+$('#miniPip').onclick = e => { e.stopPropagation(); Player.pip(); };
 $('#shuffleBtn').onclick = () => { P.shuffle = !P.shuffle; Player.updateUI(); toast(P.shuffle ? '隨機播放：開' : '隨機播放：關'); };
 $('#repeatBtn').onclick = () => { P.repeat = (P.repeat + 1) % 3; Player.updateUI(); toast(['循環：關', '循環：全部', '循環：單首'][P.repeat]); };
 $('#addToPlBtn').onclick = () => P.item && playlistSheet(P.item);
@@ -787,8 +825,16 @@ addEventListener('popstate', () => { if (P.view === 'full') Player.minimize(); }
 (() => {
   let y0 = null;
   const stage = $('#playerStage');
-  stage.addEventListener('touchstart', e => { if (P.view === 'full') y0 = e.touches[0].clientY; }, { passive: true });
-  stage.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 90) Player.minimize(); y0 = null; }, { passive: true });
+  let wasPlaying = false;
+  stage.addEventListener('touchstart', e => { if (P.view === 'full') { y0 = e.touches[0].clientY; wasPlaying = P.item && !Player.active().paused; } }, { passive: true });
+  stage.addEventListener('touchend', e => {
+    if (y0 != null && e.changedTouches[0].clientY - y0 > 90) {
+      Player.minimize();
+      // 往下滑時手指可能碰到影片的暫停鍵，原本在播就接著播
+      setTimeout(() => { const el = Player.active(); if (wasPlaying && el.paused) el.play().catch(() => {}); }, 60);
+    }
+    y0 = null;
+  }, { passive: true });
 })();
 
 // 離開 App 時：影片自動改成背景音訊繼續播放（除非正在子母畫面）
@@ -797,9 +843,12 @@ document.addEventListener('visibilitychange', () => {
     Preview.stop(true);
     const inPip = document.pictureInPictureElement || videoEl.webkitPresentationMode === 'picture-in-picture';
     if (P.item?.type === 'video' && !P.bgVideo && !videoEl.paused && !inPip && LS.get('autoBg') !== '0') {
-      Player.setBgVideo(true);
+      Player.setBgVideo(true); P.autoBg = true;
     }
-  } else requestAnimationFrame(() => Preview.check());
+  } else {
+    if (P.bgVideo && P.autoBg) Player.resumeVideo();
+    requestAnimationFrame(() => Preview.check());
+  }
 });
 
 /* =========================================================
