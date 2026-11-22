@@ -66,8 +66,8 @@
       <div class="chips" id="videoChips"></div>
       <div class="page-tools">
         <label class="pill-btn">
-          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>載入手機裡的影片
-          <input type="file" accept="video/*" multiple hidden id="importVideo">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>匯入手機檔案
+          <input type="file" accept="video/*,audio/*,.mp3,.m4a,.aac,.wav,.flac,.mp4,.mov" multiple hidden id="importVideo">
         </label>
         <button class="pill-btn ghost" id="videoPlayAll"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>全部播放</button>
       </div>
@@ -80,8 +80,8 @@
       <div class="chips" id="audioChips"></div>
       <div class="page-tools">
         <label class="pill-btn">
-          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>載入手機裡的音樂
-          <input type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.flac" multiple hidden id="importAudio">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>匯入手機檔案
+          <input type="file" accept="video/*,audio/*,.mp3,.m4a,.aac,.wav,.flac,.mp4,.mov" multiple hidden id="importAudio">
         </label>
         <button class="pill-btn ghost" id="audioPlayAll"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>全部播放</button>
         <button class="pill-btn ghost" id="audioShuffle"><svg viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>隨機</button>
@@ -137,8 +137,8 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
         <p class="hint"><b>2.</b> 以後要下載，在 a-Shell 執行：</p>
         <pre class="cmd" id="cmd2">python3 mt.py</pre>
         <button class="pill-btn ghost" data-copy="cmd2">複製</button>
-        <p class="hint">貼上網址就會下載（要音樂：<code>python3 mt.py mp3 網址</code>）。檔案會在「檔案」App → a-Shell → myTube → 影片／音樂。</p>
-        <p class="hint"><b>3.</b> 回到 myTube，按「影片」或「音樂」分頁的「載入手機裡的…」，選剛下載的檔案就能播放。</p>
+        <p class="hint">貼上網址就會下載。<b>會自動判斷</b>：music.youtube.com 的連結下載成音樂，其他下載成影片（想把一般影片只存聲音，網址前面加 <code>mp3</code>）。檔案會在「檔案」App → a-Shell → myTube → 影片／音樂。</p>
+        <p class="hint"><b>3.</b> 回到 myTube，按「匯入手機檔案」，選剛下載的檔案（可以一次選很多個），myTube 會<b>自動分到影片或音樂</b>。</p>
       </details>
 
       <details class="card settings" id="settingsBox">

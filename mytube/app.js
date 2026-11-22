@@ -240,20 +240,57 @@ async function deleteMedia(id) {
   toast('已刪除');
 }
 
-async function importFiles(files, type) {
+/* 自動分辨：影片 or 音樂（看檔案內容有沒有畫面） */
+const AUDIO_EXT = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|weba|caf|aiff?)$/i;
+async function isMpegTS(file) {
+  try { const b = new Uint8Array(await file.slice(0, 377).arrayBuffer()); return b[0] === 0x47 && b[188] === 0x47; } catch { return false; }
+}
+function hasPicture(file) {
+  return new Promise(res => {
+    const v = document.createElement('video'); const u = URL.createObjectURL(file);
+    let done = false; const fin = r => { if (done) return; done = true; URL.revokeObjectURL(u); v.removeAttribute('src'); v.load(); res(r); };
+    v.muted = true; v.playsInline = true; v.preload = 'metadata';
+    v.onloadedmetadata = () => fin(v.videoWidth > 0 ? 'video' : 'audio');
+    v.onerror = () => fin('unknown');
+    setTimeout(() => fin(v.videoWidth > 0 ? 'video' : 'unknown'), 8000);
+    v.src = u;
+  });
+}
+async function detectType(file) {
+  const t = (file.type || '').toLowerCase();
+  if (t.startsWith('audio/') || AUDIO_EXT.test(file.name)) return 'audio';
+  const r = await hasPicture(file);
+  if (r !== 'unknown') return r;
+  return t.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv)$/i.test(file.name) ? 'video' : 'audio';
+}
+async function importFiles(files) {
   const list = [...files]; if (!list.length) return;
-  let n = 0;
+  let n = 0; const cnt = { video: 0, audio: 0 }; const bad = [];
   for (const f of list) {
     toast(`正在載入 ${++n}/${list.length}…`, 60000);
-    try { await addMedia(f, { type, title: f.name.replace(/\.[^.]+$/, ''), source: 'import', filename: f.name }); }
-    catch (e) { console.error(e); toast('載入失敗：' + (e.message || e)); await sleep(1500); }
+    try {
+      if (await isMpegTS(f)) { bad.push(f.name); continue; }
+      const type = await detectType(f);
+      await addMedia(f, { type, title: f.name.replace(/\.[^.]+$/, ''), source: 'import', filename: f.name });
+      cnt[type]++;
+    } catch (e) { console.error(e); toast('載入失敗：' + (e.message || e)); await sleep(1500); }
   }
-  toast(`已載入 ${list.length} 個${type === 'video' ? '影片' : '音樂'}`);
+  const parts = [];
+  if (cnt.video) parts.push(`${cnt.video} 個影片（在「影片」）`);
+  if (cnt.audio) parts.push(`${cnt.audio} 個音樂（在「音樂」）`);
+  if (bad.length) {
+    openSheet(`<h4>有 ${bad.length} 個檔案無法播放</h4>
+      <p class="hint" style="padding:0 20px">${bad.map(esc).join('<br>')}<br><br>這是 YouTube 的串流格式（TS），iPhone 網頁播不了。請在 a-Shell 先更新下載程式再重新下載：<br><code>curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main/mytube/tools/mt.py</code></p>
+      <button class="sheet-item" data-a="ok">知道了</button>`);
+  }
+  if (parts.length) toast('已載入 ' + parts.join('、'), 3500);
+  if (cnt.video && !cnt.audio && S.page === 'audio') showPage('video');
+  if (cnt.audio && !cnt.video && S.page === 'video') showPage('audio');
 }
 async function onImport(e, type) {
   const files = e.target.files; const hid = S.pendingImport; S.pendingImport = null;
   const before = S.media.length;
-  await importFiles(files, type); e.target.value = '';
+  await importFiles(files); e.target.value = '';
   const h = hid && S.history.find(x => x.id === hid);
   if (h && S.media.length > before) {
     const m = S.media[S.media.length - 1];
