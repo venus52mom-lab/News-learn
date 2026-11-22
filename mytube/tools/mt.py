@@ -19,8 +19,8 @@ MT_URL = "https://raw.githubusercontent.com/venus52mom-lab/News-learn/main/mytub
 
 def self_update():
     """每次執行先看 GitHub 上有沒有新版，有就自動換成新版（朋友不用自己更新）"""
-    if os.environ.get("MT_UPDATED"):
-        return
+    if os.environ.get("MT_UPDATED") or "__file__" not in globals():
+        return  # 用 myTube 複製的指令時，本來就是直接跑 GitHub 上的最新版
     try:
         import urllib.request
         with urllib.request.urlopen(MT_URL, timeout=6) as r:
@@ -44,22 +44,36 @@ def self_update():
 
 self_update()
 
+# 第一次使用：缺少的工具自動安裝（不用自己打指令）
+NEEDED = ["yt-dlp", "yt-dlp-ejs", "yt-dlp-apple-webkit-jsi"]
+
+
+def ensure_tools():
+    import importlib
+    import importlib.metadata as md
+    missing = []
+    for p in NEEDED:
+        try:
+            md.version(p)
+        except Exception:
+            missing.append(p)
+    if not missing:
+        return
+    print("📦 第一次使用，正在安裝下載工具（約 1 分鐘，只有第一次）…")
+    try:
+        from pip._internal.cli.main import main as pip_main
+        pip_main(["install", "-q", "-U"] + missing)
+    except Exception as e:
+        print("   自動安裝失敗：", e)
+        print("   請手動執行：python3 -m pip install -U " + " ".join(NEEDED))
+    importlib.invalidate_caches()
+
+
+ensure_tools()
 try:
     import yt_dlp
 except ImportError:
-    sys.exit("找不到 yt-dlp，請先執行：python3 -m pip install -U yt-dlp yt-dlp-apple-webkit-jsi")
-
-try:
-    import importlib.metadata as md
-    md.version("yt-dlp-apple-webkit-jsi")
-except Exception:
-    print("⚠️  還沒安裝 iPhone 用的 JavaScript 外掛，影片可能只能抓到無法播放的格式。")
-    print("   請先執行：python3 -m pip install -U yt-dlp-apple-webkit-jsi\n")
-try:
-    md.version("yt-dlp-ejs")
-except Exception:
-    print("⚠️  還沒安裝 YouTube 解題腳本（yt-dlp-ejs），會改從 GitHub 線上下載。")
-    print("   建議執行：python3 -m pip install -U yt-dlp-ejs\n")
+    sys.exit("找不到 yt-dlp，請執行：python3 -m pip install -U " + " ".join(NEEDED))
 
 BASE = os.path.expanduser("~/Documents/myTube")
 

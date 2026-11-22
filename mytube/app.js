@@ -1159,9 +1159,15 @@ function ashellSetup(after) {
     if (a === 'done') { LS.set('ashellReady', '1'); applyMode(); after?.(); }
   });
 }
+// 一行就能跑：直接從 GitHub 執行最新版下載程式（缺工具會自己裝），不用先設定
+function cleanYtUrl(u) {
+  const id = (u.match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/) || [])[1];
+  if (!id) return u.replace(/'/g, '');
+  return /music\.youtube\.com/i.test(u) ? `https://music.youtube.com/watch?v=${id}` : `https://youtu.be/${id}`;
+}
 function ashellCommand(items) {
-  const parts = ['python3 mt.py'];
-  for (const h of items) parts.push((h.format === 'mp3' ? 'mp3 ' : 'mp4 ') + h.url);
+  const parts = [`python3 -c "import urllib.request as u;exec(u.urlopen('${MT_URL}').read())"`];
+  for (const h of items) parts.push((h.format === 'mp3' ? 'mp3 ' : 'mp4 ') + `'${cleanYtUrl(h.url)}'`);
   return parts.join(' ');
 }
 function runAShell(items) {
@@ -1175,9 +1181,7 @@ function applyMode() {
   $$('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
   $('#qualityRow').hidden = S.mode === 'external' || S.mode === 'ashell' || S.fmt !== 'mp4';
   $('#modeHint').innerHTML = S.mode === 'ashell'
-    ? (LS.get('ashellReady') === '1'
-      ? '按「開始下載」→ myTube 會<b>自動複製指令並打開 a-Shell</b> → 在 a-Shell <b>長按貼上、按 Enter</b> → 下載完回到這裡，按紀錄上的「<b>📥 匯入 myTube</b>」，到 a-Shell › myTube 資料夾選檔案（會自動分到影片／音樂）。可以一次貼很多個網址。<br><a href="#" id="redoSetup" style="color:#3ea6ff">重新設定 a-Shell</a>'
-      : '用免費的 a-Shell App 下載，<b>用你自己手機的網路，比較不會被 YouTube 擋</b>。<br>第一次使用請先按「開始下載」，照著 3 個步驟設定（只要做一次）。')
+    ? '按「開始下載」→ <b>自動複製好指令並跳到 a-Shell</b> → 在 a-Shell <b>長按、貼上、按 Enter</b> 就開始下載。<br>下載完回到這裡，按紀錄上的「<b>📥 匯入 myTube</b>」選檔案（在 a-Shell › myTube 資料夾，會自動分到影片／音樂）。可以一次貼很多個網址。'
     : S.mode === 'api'
     ? '直接在 myTube 裡下載，<b>不用電腦、不用設定</b>。可以一次貼很多個網址，下載完會自動出現在影片／音樂裡，馬上就能播。內建 ' + DEFAULT_APIS.length + ' 個下載服務，一個失敗會自動換下一個。'
     : S.mode === 'external'
@@ -1208,7 +1212,15 @@ $('#startDlBtn').onclick = async () => {
   const urls = parseUrls($('#urlInput').value);
   if (!urls.length) return toast('請貼上 YouTube 網址');
   if (S.mode === 'ashell') {
-    if (LS.get('ashellReady') !== '1') return ashellSetup();
+    if (LS.get('ashellSeen') !== '1') {
+      return openSheet(`<h4>用 a-Shell 下載</h4>
+        <p class="hint" style="padding:0 20px">按「開始」會<b>自動複製好下載指令並打開 a-Shell</b>，你只要在 a-Shell <b>長按 → 貼上 → 按 Enter</b>。第一次會自動安裝工具（約 1 分鐘），之後都很快。</p>
+        <button class="sheet-item" data-a="store">📲 還沒安裝 a-Shell（免費）→ 前往 App Store</button>
+        <button class="sheet-item" data-a="go">✅ 已經安裝，開始下載</button>`, a => {
+        if (a === 'store') location.href = ASHELL_STORE;
+        if (a === 'go') { LS.set('ashellSeen', '1'); applyMode(); $('#startDlBtn').click(); }
+      });
+    }
     const items = urls.map(url => ({ id: uid(), url, mode: 'ashell', format: S.fmt, title: url, status: 'external', progress: 0, created: Date.now() }));
     for (const h of items.slice().reverse()) { S.history.unshift(h); DB.put('history', h); }
     $('#urlInput').value = '';
