@@ -732,8 +732,9 @@ const Player = {
     bg.lastChild.textContent = '回到影片畫面';
     $('#pipBtn').hidden = m.type !== 'video';
     $('#miniPip').hidden = m.type !== 'video';
-    $('#bgHint').textContent = m.type === 'video'
-      ? (P.bgVideo ? '正在背景播放聲音。按「回到影片畫面」繼續看。' : '直接離開 App 或鎖螢幕，聲音會自動繼續播；回來會自動接回影片。想邊看邊用別的 App，按「子母畫面」。')
+    $('#fsBtn').hidden = m.type !== 'video';
+    $('#bgHint').innerHTML = m.type === 'video'
+      ? (P.bgVideo ? '正在背景播放聲音。按「回到影片畫面」繼續看。' : '想滑回桌面變<b>小視窗</b>：先按「全螢幕」，再從底部往上滑回桌面，就會自動變小圖繼續播（也可以直接按「子母畫面」）。不是全螢幕時滑走，會改成只播聲音。')
       : '音樂可以直接背景播放，也能用鎖定畫面控制。';
     $('#shuffleBtn').classList.toggle('on', P.shuffle);
     const rb = $('#repeatBtn'); rb.classList.toggle('on', P.repeat > 0); rb.classList.toggle('one', P.repeat === 2);
@@ -823,6 +824,13 @@ $('#miniInfo').onclick = () => Player.openFull();
 $('#minimizeBtn').onclick = () => Player.minimize();
 $('#bgBtn').onclick = () => { P.autoBg = false; Player.setBgVideo(false); };
 $('#pipBtn').onclick = () => Player.pip();
+$('#fsBtn').onclick = () => {
+  if (P.bgVideo) Player.setBgVideo(false);
+  try {
+    if (videoEl.webkitEnterFullscreen) videoEl.webkitEnterFullscreen();
+    else videoEl.requestFullscreen?.();
+  } catch { toast('影片還在準備，請再按一次'); }
+};
 $('#miniPip').onclick = e => { e.stopPropagation(); Player.pip(); };
 $('#shuffleBtn').onclick = () => { P.shuffle = !P.shuffle; Player.updateUI(); toast(P.shuffle ? '隨機播放：開' : '隨機播放：關'); };
 $('#repeatBtn').onclick = () => { P.repeat = (P.repeat + 1) % 3; Player.updateUI(); toast(['循環：關', '循環：全部', '循環：單首'][P.repeat]); };
@@ -851,7 +859,9 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     Preview.stop(true);
     const inPip = document.pictureInPictureElement || videoEl.webkitPresentationMode === 'picture-in-picture';
-    if (P.item?.type === 'video' && !P.bgVideo && !videoEl.paused && !inPip && LS.get('autoBg') !== '0') {
+    // 全螢幕播放時滑回桌面，iPhone 會自動變成子母畫面小視窗 → 不要改成背景音訊，交給 iPhone
+    const fullscreen = videoEl.webkitDisplayingFullscreen || videoEl.webkitPresentationMode === 'fullscreen' || document.fullscreenElement === videoEl;
+    if (P.item?.type === 'video' && !P.bgVideo && !videoEl.paused && !inPip && !fullscreen && LS.get('autoBg') !== '0') {
       Player.setBgVideo(true); P.autoBg = true;
     }
   } else {

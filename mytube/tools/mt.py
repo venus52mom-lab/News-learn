@@ -121,14 +121,31 @@ def is_ts(path):
 
 
 # 向 YouTube 要影片的不同「身分」：一個不給，就自動換下一個
-# android_vr 放第一個：它不需要解 YouTube 的 JavaScript 驗證，就不會跳到 YouTube App
-CLIENTS = ["android_vr", None, "tv", "web_safari", "mweb", "ios", "web_embedded"]
+# 第一階段：完全不用外掛（不會碰到 iPhone 的網頁元件）
+SAFE_CLIENTS = ["android_vr", "ios"]
+# 第二階段：需要外掛幫忙解 YouTube 驗證
+JS_CLIENTS = [None, "tv", "web_safari", "mweb", "web_embedded"]
+CLIENTS = SAFE_CLIENTS + JS_CLIENTS
+os.environ["YTDLP_NO_PLUGINS"] = "1"   # 一開始先關掉外掛
+
+
+def enable_plugins():
+    if not os.environ.pop("YTDLP_NO_PLUGINS", None):
+        return
+    try:
+        from yt_dlp.globals import all_plugins_loaded
+        all_plugins_loaded.value = False   # 下次建立下載器時重新載入外掛
+    except Exception:
+        pass
+    print("   ⚠️ 改用需要外掛的方法。如果跳到 YouTube App，請馬上按左上角「◀ a-Shell」回來。")
 
 
 def download(url, audio):
     last = None
     for i, client in enumerate(CLIENTS):
         try:
+            if client in JS_CLIENTS:
+                enable_plugins()
             if i:
                 print(f"   ↻ 換方法再試（{i + 1}/{len(CLIENTS)}）…")
             return download_once(url, audio, client)
@@ -194,7 +211,7 @@ def main():
     jobs = parse(text)
     if not jobs:
         sys.exit("沒有看到網址")
-    print("💡 下載時請停在 a-Shell。如果跳到 YouTube App，馬上按左上角「◀ a-Shell」回來，不然下載會被 iPhone 暫停。")
+    print("💡 下載時請停在 a-Shell，不要切到別的 App，不然 iPhone 會暫停下載。")
 
     ok = {"影片": 0, "音樂": 0}
     for i, (url, audio) in enumerate(jobs, 1):
