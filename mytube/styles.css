@@ -225,8 +225,8 @@ body.searching .tabs{top:calc(104px + var(--safe-t))}
 mark{background:rgba(255,0,51,.18);color:inherit;border-radius:3px;padding:0 1px}
 
 /* ---------- PIN 密碼鎖 ---------- */
-.lock{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:calc(20px + var(--safe-t)) 20px calc(20px + var(--safe-b))}
-.lock-inner{width:100%;max-width:320px;text-align:center}
+.lock{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(20px + var(--safe-t)) 20px calc(20px + var(--safe-b))}
+.lock-inner{width:100%;max-width:320px;text-align:center;margin:auto}
 .lock-logo{width:56px;height:40px;stroke:none;margin-bottom:12px}
 .lock-title{font-size:20px;font-weight:700}
 .lock-desc{color:var(--text2);font-size:14px;margin-top:6px;min-height:20px}
@@ -248,3 +248,11 @@ mark{background:rgba(255,0,51,.18);color:inherit;border-radius:3px;padding:0 1px
 .lock-link.danger{color:#e53935}
 .banner{display:flex;gap:6px;align-items:flex-start;margin:10px 14px 0;padding:10px 4px 10px 12px;border-radius:12px;background:rgba(255,170,0,.14);font-size:13px;line-height:1.5}
 .banner>div{flex:1}
+
+@media (max-height:720px){
+  .lock-logo{width:44px;height:31px;margin-bottom:6px}
+  .pin-dots{margin:16px 0 18px}
+  .keypad{gap:10px 20px}
+  .keypad button{width:62px;height:62px;font-size:24px}
+  .lock-link{margin-top:12px}
+}

@@ -782,7 +782,7 @@ searchInput.onkeydown = e => { if (e.key === 'Enter') searchInput.blur(); };
    PIN 密碼鎖（4 位數）
    ========================================================= */
 const Lock = {
-  KEY: 'pin', AWAY_MS: 3 * 60 * 1000,
+  KEY: 'pin_v2', AWAY_MS: 3 * 60 * 1000,
   entry: '', mode: 'unlock', first: null, hiddenAt: 0, pending: false, buffer: [],
   hash(pin) { let h = 2166136261; for (const c of 'myTube#' + pin) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); },
   has() { return !!LS.get(this.KEY); },
@@ -794,7 +794,7 @@ const Lock = {
       change: ['更改 PIN 碼', '請先輸入目前的密碼'], remove: ['關閉密碼鎖', '請輸入目前的密碼'] }[mode];
     $('#lockTitle').textContent = t[0]; this.desc(t[1]);
     $('#kpCancel').classList.toggle('hide', mode === 'unlock' || mode === 'setup');
-    const fb = $('#forgotBtn'); fb.hidden = mode !== 'unlock'; fb.classList.remove('danger'); fb.textContent = '忘記密碼？'; this.resetArmed = false;
+    const fb = $('#forgotBtn'); fb.hidden = mode !== 'unlock'; fb.classList.remove('danger'); fb.textContent = '忘記密碼／重新設定'; this.resetArmed = false;
     const warn = $('#lockWarn');
     warn.hidden = !(mode === 'setup' && needsInstall());
     warn.innerHTML = '⚠️ 建議先按 Safari 的「分享」→「加入主畫面」，再從桌面的 myTube 打開來設定。<br>在 Safari 網頁裡和桌面 App 裡的資料是<b>分開</b>的，桌面 App 的資料才會長期保存。';
@@ -875,8 +875,8 @@ $('#forgotBtn').onclick = async () => {
   if (!Lock.resetArmed) {
     Lock.resetArmed = true; fb.classList.add('danger');
     fb.textContent = '再按一次：清除這支手機的所有 myTube 影片、音樂與設定';
-    Lock.desc('忘記密碼只能清除資料重新開始', true);
-    setTimeout(() => { if (Lock.resetArmed) { Lock.resetArmed = false; fb.classList.remove('danger'); fb.textContent = '忘記密碼？'; } }, 6000);
+    Lock.desc('重新設定會清除這支手機的 myTube 資料', true);
+    setTimeout(() => { if (Lock.resetArmed) { Lock.resetArmed = false; fb.classList.remove('danger'); fb.textContent = '忘記密碼／重新設定'; } }, 6000);
     return;
   }
   fb.textContent = '清除中…';
@@ -884,6 +884,7 @@ $('#forgotBtn').onclick = async () => {
   LS.clearAll();
   location.reload();
 };
+LS.del('pin'); // 舊版本留下的密碼不再使用
 // 一打開就先上鎖；第一次使用一定要先設定密碼（在載入資料之前）
 Lock.open(Lock.has() ? 'unlock' : 'setup');
 Lock.updateBtn();
