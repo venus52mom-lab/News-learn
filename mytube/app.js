@@ -947,7 +947,7 @@ function parseUrls(text) {
 }
 
 /* ---------- 下載方式：手機直接下載（外部網站）/ 電腦伺服器 ---------- */
-const DEFAULT_SITE = 'https://cobalt.tools/';
+const DEFAULT_SITE = 'https://cobalt.meowing.de/';
 const extSiteInput = $('#extSiteInput');
 extSiteInput.value = LS.get('extSite') || DEFAULT_SITE;
 extSiteInput.onchange = () => LS.set('extSite', extSiteInput.value.trim() || DEFAULT_SITE);
@@ -957,15 +957,25 @@ apiListEl.value = LS.get('apiList') || '';
 apiKeyEl.value = LS.get('apiKey') || '';
 apiListEl.onchange = () => { LS.set('apiList', apiListEl.value.trim()); applyMode(); };
 apiKeyEl.onchange = () => LS.set('apiKey', apiKeyEl.value.trim());
-const getApis = () => (apiListEl.value || '').split(/\s+/).map(x => x.trim()).filter(x => /^https?:\/\//.test(x)).map(x => x.replace(/\/+$/, '') + '/');
+// 內建的預設下載服務（依序嘗試，前一個失敗就自動換下一個）。你自己填的會排在最前面。
+const DEFAULT_APIS = [
+  'https://cobalt-api.meowing.de/',
+  'https://cobalt-backend.canine.tools/',
+  'https://capi.3kh0.net/',
+  'https://cobalt-alpha.wolfy.love/',
+];
+const normApi = x => x.trim().replace(/\/+$/, '') + '/';
+const getApis = () => {
+  const mine = (apiListEl.value || '').split(/\s+/).filter(x => /^https?:\/\//.test(x)).map(normApi);
+  return [...new Set([...mine, ...DEFAULT_APIS])];
+};
+apiListEl.placeholder = '不用填也可以。內建：\n' + DEFAULT_APIS.join('\n') + '\n（你自己加的會優先使用）';
 S.mode = LS.get('dlmode') || 'api';
 function applyMode() {
   $$('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
   $('#qualityRow').hidden = S.mode === 'external' || S.fmt !== 'mp4';
   $('#modeHint').innerHTML = S.mode === 'api'
-    ? (getApis().length
-      ? '直接在 myTube 裡下載，<b>不用電腦</b>。可以一次貼很多個網址，下載完會自動出現在影片／音樂裡，馬上就能播。'
-      : '直接在 myTube 裡下載，<b>不用電腦</b>。<br>⚠️ 第一次使用：請打開下面的「⚙️ 下載設定」，貼上一個下載 API 網址。')
+    ? '直接在 myTube 裡下載，<b>不用電腦、不用設定</b>。可以一次貼很多個網址，下載完會自動出現在影片／音樂裡，馬上就能播。內建 ' + DEFAULT_APIS.length + ' 個下載服務，一個失敗會自動換下一個。'
     : S.mode === 'external'
     ? '按「開始下載」會<b>自動複製網址</b>並打開下載網站：把網址貼上 → 下載' + (S.fmt === 'mp3' ? '（請在網站選<b>音訊 audio</b>）' : '') + ' → 存到「檔案」App。<br>下載好後回到這裡，按紀錄上的「<b>匯入 myTube</b>」選那個檔案就能看。'
     : '用你電腦上的 server 下載，可以一次下載很多個，下載完會<b>自動</b>出現在影片/音樂裡。需要電腦開著（設定方式見 README）。';
@@ -975,7 +985,6 @@ $('#modeSeg').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   S.mode = b.dataset.mode; LS.set('dlmode', S.mode); applyMode();
   if (S.mode === 'server' && !getServer()) { $('#settingsBox').open = true; toast('請在下面的設定填入伺服器網址'); }
-  if (S.mode === 'api' && !getApis().length) { $('#settingsBox').open = true; toast('請在下面的設定貼上下載 API 網址'); }
 };
 function openExternal(h) {
   // 必須在點擊當下執行：先複製網址，再開新分頁
@@ -1002,7 +1011,6 @@ $('#startDlBtn').onclick = async () => {
     if (items.length > 1) setTimeout(() => toast(`共 ${items.length} 個：第一個已複製，其他的在下面紀錄按「打開下載網站」`, 4500), 3600);
     return;
   }
-  if (S.mode === 'api' && !getApis().length) { $('#settingsBox').open = true; apiListEl.focus(); return toast('請先在設定貼上下載 API 網址'); }
   if (S.mode === 'server' && !getServer()) { $('#settingsBox').open = true; return toast('請先在設定填入下載伺服器網址'); }
   for (const url of urls) {
     const h = { id: uid(), url, mode: S.mode, format: S.fmt, quality: $('#qualitySel').value, title: url, status: 'queued', progress: 0, created: Date.now() };

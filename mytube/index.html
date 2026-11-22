@@ -129,13 +129,13 @@
 
       <details class="card settings" id="settingsBox">
         <summary>下載設定</summary>
-        <label class="label" for="apiList">App 內下載用的 API 網址（一行一個，失敗會自動換下一個）</label>
+        <label class="label" for="apiList">App 內下載：額外加入的 API 網址（選填，一行一個）</label>
         <textarea id="apiList" rows="3" placeholder="https://cobalt-api.example.com/"></textarea>
         <input id="apiKey" type="url" placeholder="API 金鑰（選填，有的 API 才需要）" style="margin-top:8px">
-        <p class="hint">支援 cobalt 格式的 API。可以到 <a href="https://instances.cobalt.best/" target="_blank" rel="noopener" style="color:#3ea6ff">instances.cobalt.best</a> 找 YouTube 標示可用的，把它的 API 網址貼上；也可以填自己架的 cobalt。</p>
+        <p class="hint">已經內建 4 個下載服務，不填也能用；你加的會排在最前面優先使用。支援 cobalt 格式的 API，可以到 <a href="https://instances.cobalt.best/" target="_blank" rel="noopener" style="color:#3ea6ff">instances.cobalt.best</a> 找 YouTube 標示可用的，把它的 API 網址貼上；也可以填自己架的 cobalt。</p>
         <label class="label" for="extSiteInput">「下載網站」模式要打開的網站</label>
-        <input id="extSiteInput" type="url" placeholder="https://cobalt.tools/">
-        <p class="hint">預設是 cobalt.tools。如果這個網站下載 YouTube 失敗，可以換成其他下載網站的網址。</p>
+        <input id="extSiteInput" type="url" placeholder="https://cobalt.meowing.de/">
+        <p class="hint">預設是 cobalt.meowing.de。如果這個網站下載 YouTube 失敗，可以換成其他下載網站的網址。</p>
         <label class="label" for="serverInput">下載伺服器網址</label>
         <div class="row">
           <input id="serverInput" type="url" placeholder="https://xxxx.trycloudflare.com">
