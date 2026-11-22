@@ -98,6 +98,13 @@ def parse(text):
         if low in ("mp4", "video", "影片"):
             force_audio = False
             continue
+        m = re.match(r"^([vm]):([\w-]{11})$", tok)   # myTube 傳來的影片代號（畫面上不出現網址，避免誤點跳到 YouTube）
+        if m:
+            vid = m.group(2)
+            audio = force_audio or m.group(1) == "m"
+            url = f"https://music.youtube.com/watch?v={vid}" if m.group(1) == "m" else f"https://www.youtube.com/watch?v={vid}"
+            jobs.append((url, audio))
+            continue
         if re.match(r"https?://", tok):
             audio = force_audio or "music.youtube.com" in low
             jobs.append((tok, audio))
@@ -123,7 +130,7 @@ def download(url, audio):
     for i, client in enumerate(CLIENTS):
         try:
             if i:
-                print(f"   ↻ 換方法再試（{i + 1}/{len(CLIENTS)}：{client}）…")
+                print(f"   ↻ 換方法再試（{i + 1}/{len(CLIENTS)}）…")
             return download_once(url, audio, client)
         except Exception as e:
             last = e
@@ -141,8 +148,16 @@ def download_once(url, audio, client):
     saved = []
 
     def hook(d):
+        if d.get("status") == "downloading":
+            tot = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+            if tot:
+                pct = int(d.get("downloaded_bytes", 0) * 100 / tot)
+                if pct // 10 != hook.last // 10:
+                    hook.last = pct
+                    print(f"   下載中 {pct}%")
         if d.get("status") == "finished" and d.get("filename"):
             saved.append(d["filename"])
+    hook.last = -10
 
     opts = {
         "outtmpl": os.path.join(folder, "%(title).100B.%(ext)s"),
@@ -152,14 +167,15 @@ def download_once(url, audio, client):
         "progress_hooks": [hook],
         # 允許從 GitHub 下載 YouTube 解題腳本（就是錯誤訊息建議的 --remote-components ejs:github）
         "remote_components": ["ejs:github"],
-        "quiet": client != CLIENTS[0],
-        "no_warnings": client != CLIENTS[0],
+        "quiet": True,           # 不印出 YouTube 網址，避免不小心點到跳去 YouTube App
+        "no_warnings": True,
+        "noprogress": True,
         "continuedl": True,   # 之前下載到一半（.part）會接著下載
     }
     if client:
         opts["extractor_args"] = {"youtube": {"player_client": [client]}}
     if client == CLIENTS[0]:
-        print(f"\n▶ {'音樂' if audio else '影片'}：{url}")
+        print(f"\n▶ 第 {download.n} 個（{'音樂' if audio else '影片'}）準備下載…")
     with yt_dlp.YoutubeDL(opts) as ydl:
         ydl.download([url])
 
@@ -173,7 +189,7 @@ def download_once(url, audio, client):
 
 def main():
     text = " ".join(sys.argv[1:])
-    if not re.search(r"https?://", text):
+    if not re.search(r"https?://|\b[vm]:[\w-]{11}\b", text):
         text = input("貼上 YouTube 網址（可以貼很多個，用空白隔開）：")
     jobs = parse(text)
     if not jobs:
@@ -181,20 +197,25 @@ def main():
     print("💡 下載時請停在 a-Shell。如果跳到 YouTube App，馬上按左上角「◀ a-Shell」回來，不然下載會被 iPhone 暫停。")
 
     ok = {"影片": 0, "音樂": 0}
-    for url, audio in jobs:
+    for i, (url, audio) in enumerate(jobs, 1):
+        download.n = i
         try:
             download(url, audio)
             ok["音樂" if audio else "影片"] += 1
         except Exception as e:
             msg = str(e)
-            print("\n❌ 失敗：", url, "\n  ", msg[:300])
+            msg = re.sub(r"https?://\S+", "", msg)
+            print(f"\n❌ 第 {i} 個失敗：", msg[:300])
             if "format is not available" in msg:
                 print("   請執行：python3 -m pip install -U yt-dlp yt-dlp-ejs yt-dlp-apple-webkit-jsi 再試一次")
 
     print(f"\n✅ 完成：影片 {ok['影片']} 個、音樂 {ok['音樂']} 個（共 {len(jobs)} 個）")
     if ok["影片"] + ok["音樂"] < len(jobs):
         print("沒下載完的檔案（.part）：再貼一次同樣的指令，會從中斷的地方接著下載。")
-    print("回到 myTube 按「匯入 myTube」，到 a-Shell → myTube 點檔案就會匯入，會自動分到影片或音樂。")
+    print("\n" + "=" * 34)
+    print("👉 按螢幕最左上角的「◀ myTube」回到 myTube")
+    print("   myTube 會自動跳出「匯入」按鈕，點檔案就好")
+    print("=" * 34)
 
 
 if __name__ == "__main__":

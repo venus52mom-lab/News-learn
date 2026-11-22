@@ -302,6 +302,7 @@ async function onImport(e, type) {
   if (h && S.media.length > before) {
     const m = S.media[S.media.length - 1];
     setH(h, { status: 'imported', mediaId: m.id, title: m.title, size: m.size });
+    if (!S.history.some(x => x.mode === 'ashell' && x.status === 'external')) LS.del('ashellPending');
   }
 }
 $('#importVideo').onchange = e => onImport(e, 'video');
@@ -974,6 +975,21 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) Lock.hiddenAt = Date.now();
   else if (Lock.has() && !Lock.isOpen() && Lock.hiddenAt && Date.now() - Lock.hiddenAt > Lock.AWAY_MS) Lock.open('unlock');
 });
+// 從 a-Shell 回來：直接跳出「匯入」按鈕（點一下就打開檔案選擇）
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  const t = +(LS.get('ashellPending') || 0);
+  if (!t || Date.now() - t > 3 * 3600 * 1000 || Lock.isOpen()) return;
+  const pend = S.history.filter(h => h.mode === 'ashell' && h.status === 'external');
+  if (!pend.length) { LS.del('ashellPending'); return; }
+  setTimeout(() => openSheet(`<h4>a-Shell 下載好了嗎？</h4>
+    <p class="hint" style="padding:0 20px">按下面按鈕 → 打開「a-Shell › myTube › 影片／音樂」→ <b>點檔案</b>就會匯入。（還有 ${pend.length} 個等待匯入）</p>
+    <button class="sheet-item" data-a="imp">📥 匯入下載好的檔案</button>
+    <button class="sheet-item" data-a="later">還沒，等一下</button>`, a => {
+    if (a === 'imp') importFor(pend[pend.length - 1]);
+    if (a === 'later') LS.set('ashellPending', String(Date.now()));
+  }), 400);
+});
 // 忘記密碼：只能清除「這支手機」的 myTube 資料重新開始（別人的手機不受影響）
 $('#forgotBtn').onclick = async () => {
   const fb = $('#forgotBtn');
@@ -1175,10 +1191,16 @@ function cleanYtUrl(u) {
 }
 function ashellCommand(items) {
   const parts = [`python3 -c "import urllib.request as u;exec(u.urlopen('${MT_URL}').read())"`];
-  for (const h of items) parts.push((h.format === 'mp3' ? 'mp3 ' : 'mp4 ') + `'${cleanYtUrl(h.url)}'`);
+  // 只傳影片代號（v:影片 / m:YouTube Music），a-Shell 畫面上就不會出現能點的 YouTube 網址
+  for (const h of items) {
+    const id = (h.url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/|live\/)([\w-]{11})/) || [])[1];
+    const tok = id ? (/music\.youtube\.com/i.test(h.url) ? 'm:' : 'v:') + id : `'${cleanYtUrl(h.url)}'`;
+    parts.push((h.format === 'mp3' ? 'mp3 ' : 'mp4 ') + tok);
+  }
   return parts.join(' ');
 }
 function runAShell(items) {
+  LS.set('ashellPending', String(Date.now()));
   copyText(ashellCommand(items));
   toast('指令已複製！到 a-Shell 長按貼上 → 按 Enter', 4000);
   openAShell();
