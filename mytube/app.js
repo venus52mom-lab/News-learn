@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261123d';
+const APP_VER = '20261123e';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -1276,6 +1276,7 @@ function loadYtApi() {
 }
 function ytResume() { try { if (YTW.player && YTW.wantPlay && YTW.state !== 1) YTW.player.playVideo(); } catch {} }
 async function watchHere(id) {
+  document.getElementById('refMeta')?.remove();   // YouTube 播放器需要來源網站資訊
   if (P.item && !Player.active().paused) Player.active().pause();   // 避免兩個一起播
   Preview.stop(true);
   $('#ytWatch').hidden = false; $('#ytWatch').dataset.id = id;

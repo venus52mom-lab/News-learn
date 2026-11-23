@@ -328,8 +328,10 @@ function bookMenu(b) {
     <button class="sheet-item" data-a="open">📖 打開</button>
     <button class="sheet-item" data-a="save">${b.saved ? '📤 從手機移除（不刪這次的）' : '💾 存到手機'}</button>
     <button class="sheet-item" data-a="all">🌐 整本翻譯成${esc(langName(B.lang))}並存起來（開車前先做）</button>
+    <button class="sheet-item" data-a="test">🔈 測試朗讀聲音</button>
     <button class="sheet-item" data-a="rename">✏️ 重新命名</button>
     <button class="sheet-item danger" data-a="del">🗑️ 刪除</button>`, async a => {
+    if (a === 'test') return soundTest();
     if (a === 'open') openReader(b.id);
     if (a === 'save') saveBook(b, !b.saved);
     if (a === 'all') translateAll(b);
@@ -541,7 +543,7 @@ $('#rdBody').addEventListener('click', e => {
   if (!s || !p) return;
   const pos = { p: +p.dataset.p, s: +s.dataset.s };
   setPos(pos.p, pos.s);
-  if (TTS.on) TTS.start(B.book, pos);
+  if (TTS.on) { TTS.unlock(); TTS.start(B.book, pos); }
   else { markReading(pos); toast('按 🔊 從這一句開始朗讀', 1800); }
 });
 $('#rdBack').onclick = () => closeReader();
@@ -566,8 +568,24 @@ function markReading(pos) {
 }
 
 /* ---------------- 朗讀（用 <audio> 播放，鎖螢幕／開車也能繼續） ---------------- */
+const SILENT = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//NwwAAAAAAAAAAAAEluZm8AAAAPAAAACAAAA/oAR0dHR0dHR0dHR0dHYmJiYmJiYmJiYmJifHx8fHx8fHx8fHx8fJaWlpaWlpaWlpaWlrGxsbGxsbGxsbGxsbHLy8vLy8vLy8vLy8vl5eXl5eXl5eXl5eXl////////////////AAAAAExhdmM2MC4zMQAAAAAAAAAAAAAAACQC1AAAAAAAAAP6yysejgAAAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NCxKMAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NAxKQAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80LEowAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVX/80DEpAAAA0gAAAAAVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsSjAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==';
+// 送 Google 語音請求時不帶來源網站（比較不會被擋）；看 YouTube 時要恢復，不然 YouTube 播放器會出錯
+function noReferrer(on) {
+  let m = document.getElementById('refMeta');
+  if (on && !m) { m = document.createElement('meta'); m.id = 'refMeta'; m.name = 'referrer'; m.content = 'no-referrer'; document.head.appendChild(m); }
+  if (!on && m) m.remove();
+}
 const TTS = {
   el: $('#ttsEl'), on: false, playing: false, book: null, pos: null, phase: 0, token: 0, synthMode: false,
+  googleFails: 0, googleDown: false, unlocked: false,
+  /* 一定要在「按下按鈕的當下」呼叫：iPhone 只允許這時候開始出聲音，之後才能自動一句接一句播 */
+  unlock() {
+    try { if (!this.el.src || this.el.paused) { this.el.src = SILENT; this.el.play().catch(() => {}); } } catch {}
+    if (!this.unlocked && 'speechSynthesis' in window) {
+      try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch {}
+    }
+    this.unlocked = true;
+  },
   // 這一句要讀哪些：['o'] 原文、['t'] 譯文
   parts() {
     if (B.mode === 'orig') return ['o'];
@@ -583,7 +601,7 @@ const TTS = {
   },
   restart() { if (this.on && this.book) this.start(this.book, this.pos); },
   stop() {
-    this.on = false; this.playing = false; this.token++;
+    this.on = false; this.playing = false; this.token++; noReferrer(false);
     this.el.pause(); try { speechSynthesis.cancel(); } catch {}
     updateSpeakBtn(); markReading(null); renderBooks();
   },
@@ -650,6 +668,7 @@ const TTS = {
     return out;
   },
   url(text, lang) {
+    if (!serverReady()) noReferrer(true);
     if (serverReady()) return `${getServer()}/api/tts?key=${encodeURIComponent((serverKey.value || '').trim())}&lang=${encodeURIComponent(lang)}&text=${encodeURIComponent(text)}`;
     return `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${encodeURIComponent(lang)}&q=${encodeURIComponent(text)}`;
   },
@@ -658,7 +677,14 @@ const TTS = {
     const parts = this.chunks(text, serverReady() ? 900 : 180);
     for (const c of parts) {
       if (!this.on || tok !== this.token) return;
-      const ok = await this.playChunk(c, lang, tok);
+      let ok = false;
+      if (serverReady() || !this.googleDown) {
+        ok = await this.playChunk(c, lang, tok);
+        if (!serverReady()) {
+          if (ok) this.googleFails = 0;
+          else if (++this.googleFails >= 2) { this.googleDown = true; }   // Google 連不上：這次不再等它
+        }
+      }
       if (!ok && this.on && tok === this.token) await this.synth(c, lang, tok);
     }
   },
@@ -667,27 +693,42 @@ const TTS = {
       const el = this.el;
       let done = false;
       const fin = ok => { if (done) return; done = true; el.onended = el.onerror = null; clearTimeout(t); res(ok); };
-      const t = setTimeout(() => fin(false), 20000);   // 20 秒沒反應就換方法
+      const t = setTimeout(() => fin(false), 8000);    // 8 秒還沒開始播就換方法
       el.onended = () => fin(true);
       el.onerror = () => fin(false);
       this.synthMode = false;
       el.src = this.url(text, lang);
       el.playbackRate = B.rate;
       this.playing = true; updateSpeakBtn();
-      el.play().then(() => { clearTimeout(t); }).catch(() => fin(false));
+      el.play().then(() => { clearTimeout(t); }).catch(err => { console.warn('tts play', err); fin(false); });
     });
   },
   // 線上語音失敗時：用手機內建語音（這個在鎖螢幕時可能會停）
   synth(text, lang, tok) {
     return new Promise(res => {
       if (!('speechSynthesis' in window)) return res();
-      if (!this.synthWarned) { this.synthWarned = true; toast('線上語音連不上，改用手機內建語音（鎖螢幕可能會停）', 4000); }
+      if (!this.synthWarned) { this.synthWarned = true; toast('線上語音連不上，改用手機內建語音（鎖螢幕可能會停；請關閉靜音模式）', 4500); }
       this.synthMode = true;
       const u = new SpeechSynthesisUtterance(text);
       u.lang = lang === 'zh-TW' ? 'zh-TW' : lang === 'zh-CN' ? 'zh-CN' : lang;
-      u.rate = B.rate;
-      u.onend = u.onerror = () => res();
+      const v = speechSynthesis.getVoices().find(x => x.lang.replace('_', '-').toLowerCase().startsWith(u.lang.toLowerCase()));
+      if (v) u.voice = v;
+      u.rate = Math.min(2, B.rate);
+      let started = false, finished = false;
+      const warn = () => {
+        if (this.silentWarned) return;
+        this.silentWarned = true;
+        this.stop();
+        openSheet(`<h4>朗讀沒有聲音</h4>
+            <p class="hint" style="padding:0 20px">1. 請把 iPhone 側邊的<b>靜音開關關掉</b>（橘色那面朝內），並把音量調大。<br>2. 線上語音（Google）目前連不上。到「下載」設定好 ☁️ 伺服器後，會改用伺服器的語音，最穩定，鎖螢幕也能聽。<br>3. 可以在書的「⋯」選「🔈 測試朗讀聲音」，看是哪一段不通。</p>
+            <button class="sheet-item" data-a="ok">知道了</button>`);
+      };
+      const done = () => { if (!finished) { finished = true; res(); } };
+      u.onstart = () => { started = true; this.playing = true; updateSpeakBtn(); };
+      u.onend = done;
+      u.onerror = () => { if (!started && this.on && tok === this.token) warn(); done(); };
       speechSynthesis.speak(u);
+      setTimeout(() => { if (!started && this.on && tok === this.token) { warn(); done(); } }, 4000);
     });
   },
   setSession() {
@@ -712,11 +753,51 @@ function updateSpeakBtn() {
 }
 $('#rdSpeak').onclick = () => {
   const b = B.book; if (!b) return;
+  TTS.unlock();
   if (TTS.on && TTS.book === b) { TTS.playing ? TTS.pause() : TTS.resume(); return; }
+  TTS.googleDown = false; TTS.googleFails = 0; TTS.silentWarned = false;   // 每次重新開始都再試一次
   TTS.start(b, b.pos || { p: 0, s: 0 });
 };
-$('#rdPrev').onclick = () => (TTS.on ? TTS.step(-1) : null);
-$('#rdNext').onclick = () => (TTS.on ? TTS.step(1) : null);
+$('#rdPrev').onclick = () => { if (TTS.on) { TTS.unlock(); TTS.step(-1); } };
+$('#rdNext').onclick = () => { if (TTS.on) { TTS.unlock(); TTS.step(1); } };
+
+/* ---------------- 測試朗讀聲音：找出是哪一段不通 ---------------- */
+function soundTest() {
+  TTS.unlock();        // 這是按按鈕的當下
+  if (TTS.on) TTS.stop();
+  const out = [];
+  const show = () => openSheet(`<h4>🔈 測試朗讀聲音</h4><p class="hint" style="padding:0 20px">${out.join('<br>') || '測試中…'}</p><button class="sheet-item" data-a="ok">關閉</button>`);
+  show();
+  const el = TTS.el;
+  const tryUrl = (label, url) => new Promise(res => {
+    let done = false;
+    const fin = (ok, why) => { if (done) return; done = true; el.onended = el.onerror = el.onplaying = null; out.push(`${ok ? '✅' : '❌'} ${label}${why ? '：' + why : ''}`); show(); res(ok); };
+    el.onplaying = () => setTimeout(() => fin(true), 400);
+    el.onerror = () => fin(false, '連不上或被拒絕');
+    setTimeout(() => fin(false, '8 秒沒有回應'), 8000);
+    if (url.includes('translate.google.com')) noReferrer(true);
+    el.src = url; el.play().catch(e => fin(false, '被 iPhone 擋下（' + e.name + '）'));
+  });
+  (async () => {
+    out.push('會依序播放幾段「你好」，有聽到的就是可以用的。'); show();
+    if (serverReady()) await tryUrl('伺服器語音', `${getServer()}/api/tts?key=${encodeURIComponent((serverKey.value || '').trim())}&lang=zh-TW&text=${encodeURIComponent('伺服器語音測試，你好')}`);
+    else out.push('➖ 伺服器語音：還沒設定 ☁️ 伺服器');
+    await tryUrl('Google 線上語音', `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-TW&q=${encodeURIComponent('Google 語音測試，你好')}`);
+    noReferrer(false);
+    await new Promise(res => {
+      if (!('speechSynthesis' in window)) { out.push('❌ 手機內建語音：這個瀏覽器不支援'); return res(); }
+      const u = new SpeechSynthesisUtterance('手機內建語音測試，你好'); u.lang = 'zh-TW';
+      let started = false, done = false;
+      const fin = msg => { if (done) return; done = true; out.push(msg); show(); res(); };
+      u.onstart = () => { started = true; };
+      u.onend = () => fin(started ? '✅ 手機內建語音（如果沒聽到，請關閉靜音模式）' : '❌ 手機內建語音');
+      u.onerror = e => fin('❌ 手機內建語音：' + (e.error || '失敗'));
+      speechSynthesis.speak(u);
+      setTimeout(() => { if (!started) fin('❌ 手機內建語音：沒有開始（可能被靜音模式或 iPhone 擋下）'); }, 5000);
+    });
+    out.push('<br>請把這個畫面截圖給我。'); show();
+  })();
+}
 
 /* ---------------- 啟動 ---------------- */
 (async () => {
