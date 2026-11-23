@@ -236,6 +236,129 @@ def job_delete(jid: str):
     return {"ok": True}
 
 
+# ================= 電子書：翻譯 / 朗讀 / 抓網頁 =================
+import ipaddress
+import json as _json
+import urllib.parse
+from html.parser import HTMLParser
+
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+VOICES = {
+    "zh-TW": "zh-TW-HsiaoChenNeural", "zh-CN": "zh-CN-XiaoxiaoNeural", "en": "en-US-AriaNeural",
+    "ja": "ja-JP-NanamiNeural", "ko": "ko-KR-SunHiNeural", "de": "de-DE-KatjaNeural",
+    "fr": "fr-FR-DeniseNeural", "es": "es-ES-ElviraNeural", "it": "it-IT-ElsaNeural",
+    "pt": "pt-BR-FranciscaNeural", "ru": "ru-RU-SvetlanaNeural", "th": "th-TH-PremwadeeNeural",
+    "vi": "vi-VN-HoaiMyNeural",
+}
+
+
+class TransReq(BaseModel):
+    q: list[str]
+    tl: str = "zh-TW"
+    sl: str = "auto"
+
+
+def _gtx(text: str, tl: str, sl: str = "auto"):
+    data = urllib.parse.urlencode({"q": text}).encode()
+    url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={urllib.parse.quote(sl)}&tl={urllib.parse.quote(tl)}&dt=t"
+    req = urllib.request.Request(url, data=data, headers={"User-Agent": UA, "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        j = _json.loads(r.read().decode("utf-8"))
+    return "".join(x[0] for x in (j[0] or []) if x and x[0]), (j[2] if len(j) > 2 else None)
+
+
+@app.post("/api/translate")
+def translate(req: TransReq):
+    lines = [x.replace("\n", " ") for x in req.q][:200]
+    try:
+        text, src = _gtx("\n".join(lines), req.tl, req.sl)
+        out = text.split("\n")
+        if len(out) != len(lines):
+            out = [_gtx(l, req.tl, req.sl)[0] if l.strip() else "" for l in lines]
+        return {"lines": [o.strip() for o in out], "src": src}
+    except Exception as e:  # noqa
+        raise HTTPException(502, f"翻譯失敗：{e}")
+
+
+@app.get("/api/tts")
+async def tts(text: str, lang: str = "en"):
+    try:
+        import edge_tts
+    except ImportError:
+        raise HTTPException(501, "伺服器沒有安裝 edge-tts")
+    voice = VOICES.get(lang) or VOICES.get(lang.split("-")[0], VOICES["en"])
+    buf = bytearray()
+    try:
+        async for chunk in edge_tts.Communicate(text[:1200], voice).stream():
+            if chunk["type"] == "audio":
+                buf.extend(chunk["data"])
+    except Exception as e:  # noqa
+        raise HTTPException(502, f"語音產生失敗：{e}")
+    return Response(bytes(buf), media_type="audio/mpeg", headers={"Cache-Control": "public, max-age=604800"})
+
+
+def _safe_url(url: str):
+    """只允許抓公開網站，避免碰到伺服器內部的服務（例如你的交易程式）"""
+    p = urllib.parse.urlparse(url)
+    if p.scheme not in ("http", "https") or not p.hostname:
+        raise HTTPException(400, "網址格式不對")
+    try:
+        infos = socket.getaddrinfo(p.hostname, None)
+    except Exception:
+        raise HTTPException(400, "找不到這個網站")
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+            raise HTTPException(400, "不允許的網址")
+
+
+class _Text(HTMLParser):
+    SKIP = {"script", "style", "noscript", "nav", "header", "footer", "aside", "form", "svg"}
+    BLOCK = {"p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "pre", "div", "br", "tr", "section", "article"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.skip = 0; self.buf = []; self.paras = []; self.title = ""; self.in_title = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.SKIP: self.skip += 1
+        if tag == "title": self.in_title = True
+        if tag in self.BLOCK: self._flush()
+
+    def handle_endtag(self, tag):
+        if tag in self.SKIP and self.skip: self.skip -= 1
+        if tag == "title": self.in_title = False
+        if tag in self.BLOCK: self._flush()
+
+    def handle_data(self, d):
+        if self.in_title: self.title += d; return
+        if not self.skip: self.buf.append(d)
+
+    def _flush(self):
+        t = " ".join("".join(self.buf).split())
+        if len(t) > 1: self.paras.append(t)
+        self.buf = []
+
+
+@app.get("/api/fetch")
+def fetch_page(url: str, raw: int = 0):
+    _safe_url(url)
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8"})
+    try:
+        with urllib.request.urlopen(req, timeout=25) as r:
+            data = r.read(30 * 1024 * 1024)
+            ctype = r.headers.get("Content-Type", "")
+    except Exception as e:  # noqa
+        raise HTTPException(502, f"抓不到這個網頁：{e}")
+    if raw or not ctype.startswith("text/html"):
+        return Response(data, media_type=ctype or "application/octet-stream")
+    m = re.search(r"charset=([\w-]+)", ctype)
+    html = data.decode(m.group(1) if m else "utf-8", errors="replace")
+    t = _Text(); t.feed(html); t._flush()
+    paras = [p for p in t.paras if len(p) > 1]
+    return {"title": " ".join(t.title.split()), "paras": paras}
+
+
 # 同時提供 myTube 網頁（只有在 myTube 資料夾裡執行時；雲端只開 API）
 if not API_ONLY and (ROOT / "index.html").exists():
     app.mount("/", StaticFiles(directory=ROOT, html=True), name="web")

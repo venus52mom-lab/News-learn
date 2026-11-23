@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" data-ver="20261123c">
+<html lang="zh-Hant" data-ver="20261123d">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=20261123c">
+<link rel="stylesheet" href="styles.css?v=20261123d">
 </head>
 <body>
 <div id="app">
@@ -50,6 +50,7 @@
   <nav class="tabs" id="tabs">
     <button class="tab active" data-page="video">影片</button>
     <button class="tab" data-page="audio">音樂</button>
+    <button class="tab" data-page="book">電子書</button>
     <span class="tab-spacer"></span>
     <button class="tab tab-download" data-page="download">
       <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>下載
@@ -89,6 +90,20 @@
       </div>
       <div class="playlist-head" id="audioPlHead" hidden></div>
       <div class="music-list" id="audioList"></div>
+    </section>
+
+    <!-- 電子書頁 -->
+    <section class="page" id="page-book">
+      <div class="page-tools" style="padding-top:12px">
+        <label class="pill-btn">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>匯入檔案
+          <input type="file" accept=".pdf,.docx,.epub,.txt,.md,.html,.htm,application/pdf,application/epub+zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden id="bookFile">
+        </label>
+        <button class="pill-btn ghost" id="bookUrlBtn"><svg viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>貼網址</button>
+        <button class="pill-btn ghost" id="bookPasteBtn"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/></svg>貼上文字</button>
+      </div>
+      <p class="hint" style="padding:0 14px">支援 PDF、Word（.docx）、EPUB、TXT。也可以貼電子書網址，或直接把整本內容貼上。</p>
+      <div class="book-list" id="bookList"></div>
     </section>
 
     <!-- 下載頁 -->
@@ -269,6 +284,40 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
 <!-- 匯入單一檔案：點一下就匯入，不用再按「打開」 -->
 <input type="file" accept="video/*,audio/*,.mp3,.m4a,.aac,.wav,.flac,.mp4,.mov" hidden id="importOne">
 
+<!-- 電子書閱讀器 -->
+<div class="reader" id="reader" hidden>
+  <div class="rd-top">
+    <button class="icon-btn" id="rdBack" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="rd-title" id="rdTitle"></div>
+    <button class="icon-btn" id="rdFont" aria-label="字體大小"><svg viewBox="0 0 24 24"><path d="M4 19l5-14 5 14M6 14h6M15 19l3-8 3 8M16 16.5h4"/></svg></button>
+    <button class="icon-btn" id="rdMore" aria-label="更多">MORE</button>
+  </div>
+  <div class="rd-bar">
+    <select id="rdLang" aria-label="翻譯成"></select>
+    <div class="seg rd-mode" id="rdMode">
+      <button data-m="orig">原文</button>
+      <button data-m="sent">逐句翻譯</button>
+      <button data-m="full">全部翻譯</button>
+    </div>
+  </div>
+  <div class="rd-body" id="rdBody"></div>
+  <div class="rd-play">
+    <div class="rd-prog"><div id="rdProg"></div></div>
+    <div class="rd-ctl">
+      <select id="rdRead" aria-label="朗讀內容">
+        <option value="both">讀原文＋譯文</option>
+        <option value="trans">只讀譯文</option>
+        <option value="orig">只讀原文</option>
+      </select>
+      <button class="icon-btn" id="rdPrev" aria-label="上一句"><svg viewBox="0 0 24 24"><path d="M19 5L9 12l10 7z" fill="currentColor"/><path d="M6 5v14"/></svg></button>
+      <button class="icon-btn big" id="rdSpeak" aria-label="朗讀"></button>
+      <button class="icon-btn" id="rdNext" aria-label="下一句"><svg viewBox="0 0 24 24"><path d="M5 5l10 7-10 7z" fill="currentColor"/><path d="M18 5v14"/></svg></button>
+      <button class="rd-rate" id="rdRate">1.0×</button>
+    </div>
+  </div>
+</div>
+<audio id="ttsEl" preload="auto"></audio>
+
 <!-- 底部選單（bottom sheet） -->
 <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
@@ -293,6 +342,7 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   </div>
 </div>
 
-<script src="app.js?v=20261123c"></script>
+<script src="app.js?v=20261123d"></script>
+<script src="books.js?v=20261123d"></script>
 </body>
 </html>

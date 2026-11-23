@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261123c';
+const APP_VER = '20261123d';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -46,14 +46,16 @@ const ICON = {
 const DB = (() => {
   let dbp;
   const open = () => dbp || (dbp = new Promise((res, rej) => {
-    const r = indexedDB.open('mytube', 1);
+    const r = indexedDB.open('mytube', 2);
     r.onupgradeneeded = () => {
-      const d = r.result;
-      d.createObjectStore('media', { keyPath: 'id' });   // 影音資料（不含檔案本體）
-      d.createObjectStore('blobs');                      // 影音檔案本體
-      d.createObjectStore('playlists', { keyPath: 'id' });
-      d.createObjectStore('history', { keyPath: 'id' });
-      d.createObjectStore('kv');
+      const d = r.result, has = n => d.objectStoreNames.contains(n);
+      if (!has('media')) d.createObjectStore('media', { keyPath: 'id' });   // 影音資料（不含檔案本體）
+      if (!has('blobs')) d.createObjectStore('blobs');                      // 影音檔案本體
+      if (!has('playlists')) d.createObjectStore('playlists', { keyPath: 'id' });
+      if (!has('history')) d.createObjectStore('history', { keyPath: 'id' });
+      if (!has('kv')) d.createObjectStore('kv');
+      if (!has('books')) d.createObjectStore('books', { keyPath: 'id' });  // 電子書
+      if (!has('trans')) d.createObjectStore('trans', { keyPath: 'k' });   // 翻譯快取（書id|語言|段落）
     };
     r.onsuccess = () => res(r.result);
     r.onerror = () => rej(r.error);
@@ -76,6 +78,8 @@ const DB = (() => {
     put: (s, v, k) => tx(s, 'readwrite', st => (k === undefined ? st.put(v) : st.put(v, k))),
     del: (s, k) => tx(s, 'readwrite', st => st.delete(k)),
     clear: s => tx(s, 'readwrite', st => st.clear()),
+    allPrefix: (s, p) => tx(s, 'readonly', st => st.getAll(IDBKeyRange.bound(p, p + '\uffff'))),
+    delPrefix: (s, p) => tx(s, 'readwrite', st => st.delete(IDBKeyRange.bound(p, p + '\uffff'))),
   };
 })();
 
