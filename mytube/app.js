@@ -3,6 +3,20 @@
    ========================================================= */
 'use strict';
 
+/* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
+const APP_VER = '20261123b';
+(function selfHeal() {
+  const pageVer = document.documentElement.dataset.ver;
+  if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
+  try { if (sessionStorage.getItem('mytube_heal') === APP_VER) return; sessionStorage.setItem('mytube_heal', APP_VER); } catch {}
+  const go = () => location.replace(location.pathname + '?r=' + Date.now());
+  Promise.resolve()
+    .then(() => window.caches ? caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('mytube')).map(k => caches.delete(k)))) : 0)
+    .then(() => navigator.serviceWorker?.getRegistrations?.())
+    .then(rs => Promise.all((rs || []).filter(r => r.scope.includes('/mytube')).map(r => r.update().catch(() => {}))))
+    .catch(() => {}).then(go);
+})();
+
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1778,7 +1792,7 @@ $('#bannerClose').onclick = () => { $('#installBanner').hidden = true; LS.set('b
   if (getServer()) testServer(true);
 
   if ('serviceWorker' in navigator && location.protocol === 'https:' || location.hostname === 'localhost') {
-    navigator.serviceWorker?.register('sw.js').catch(() => {});
+    navigator.serviceWorker?.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
   }
 })();
 
