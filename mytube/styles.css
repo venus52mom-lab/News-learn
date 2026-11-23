@@ -339,8 +339,10 @@ html:not([data-theme="dark"]) .rd-body .bt{color:#065fd4}
 .rd-body .reading{background:rgba(255,0,51,.16)}
 .rd-more{height:1px}
 .rd-play{border-top:1px solid var(--line);padding:0 12px calc(8px + var(--safe-b));background:var(--bg)}
-.rd-prog{height:3px;background:var(--line);margin:0 -12px}
-.rd-prog div{height:100%;width:0;background:var(--red)}
+.rd-seek{display:flex;align-items:center;gap:8px;padding-top:6px;font-size:12px;color:var(--text2)}
+.rd-seek input{flex:1;accent-color:#ff0033;height:22px;margin:0}
+.rd-seek span{min-width:44px;text-align:center;white-space:nowrap}
+#rdLeft{min-width:64px}
 .rd-ctl{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:8px}
 .rd-ctl select{width:112px;padding:7px 6px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:13px}
 .rd-ctl .icon-btn.big{width:58px;height:58px}

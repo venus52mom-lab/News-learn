@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" data-ver="20261124a">
+<html lang="zh-Hant" data-ver="20261124b">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=20261124a">
+<link rel="stylesheet" href="styles.css?v=20261124b">
 </head>
 <body>
 <div id="app">
@@ -302,7 +302,11 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   </div>
   <div class="rd-body" id="rdBody"></div>
   <div class="rd-play">
-    <div class="rd-prog"><div id="rdProg"></div></div>
+    <div class="rd-seek">
+      <span id="rdCur">0%</span>
+      <input type="range" id="rdSeek" min="0" max="1000" value="0" aria-label="閱讀進度">
+      <span id="rdLeft"></span>
+    </div>
     <div class="rd-ctl">
       <select id="rdRead" aria-label="朗讀內容">
         <option value="both">讀原文＋譯文</option>
@@ -342,7 +346,7 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   </div>
 </div>
 
-<script src="app.js?v=20261124a"></script>
-<script src="books.js?v=20261124a"></script>
+<script src="app.js?v=20261124b"></script>
+<script src="books.js?v=20261124b"></script>
 </body>
 </html>

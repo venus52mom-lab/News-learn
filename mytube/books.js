@@ -609,10 +609,66 @@ function scrollToPos(p, s, smooth = true) {
   const el = $(`#rdBody .bp[data-p="${p}"] [data-s="${s}"]`) || $(`#rdBody .bp[data-p="${p}"]`);
   el?.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : 'auto' });
 }
+/* ---------- 整本書的「時間軸」：用每句字數估算朗讀時間，讓進度條可以拖、鎖定畫面顯示時間 ---------- */
+function timeline(b) {
+  const parts = TTS.parts().length, key = parts + '|' + B.rate;
+  if (b._tl && b._tl.key === key) return b._tl;
+  const ss = sentsOf(b), cum = [0], first = [];
+  let i = 0;
+  for (let p = 0; p < ss.length; p++) {
+    first.push(i);
+    for (const t of ss[p]) {
+      const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;
+      const secs = (cjk / 4.3 + (t.length - cjk) / 14 + 0.35) * parts / B.rate;   // 中日韓約每秒 4 字、英文約每秒 14 字母
+      cum.push(cum[i] + secs); i++;
+    }
+  }
+  const tl = { key, cum, first, total: cum[i] || 1, count: i };
+  Object.defineProperty(b, '_tl', { value: tl, enumerable: false, writable: true });
+  return tl;
+}
+const tlIndex = (b, pos) => timeline(b).first[pos.p] + pos.s;
+function tlPos(b, idx) {   // 第幾句 → {p, s}
+  const tl = timeline(b); idx = Math.max(0, Math.min(tl.count - 1, idx));
+  let lo = 0, hi = tl.first.length - 1;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (tl.first[m] <= idx) lo = m; else hi = m - 1; }
+  return { p: lo, s: idx - tl.first[lo] };
+}
+function tlSeek(b, secs) {   // 時間（秒）→ {p, s}
+  const c = timeline(b).cum; let lo = 0, hi = c.length - 2;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (c[m] <= secs) lo = m; else hi = m - 1; }
+  return tlPos(b, lo);
+}
+function fmtLeft(sec) {
+  sec = Math.max(0, Math.round(sec));
+  const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+  return h ? `剩約 ${h} 小時 ${m} 分` : `剩約 ${Math.max(1, m)} 分`;
+}
 function updateProg() {
   const b = B.book; if (!b) return;
-  $('#rdProg').style.width = (b.paras.length > 1 ? b.pos.p / (b.paras.length - 1) * 100 : 0) + '%';
+  const tl = timeline(b), now = tl.cum[tlIndex(b, b.pos)] || 0;
+  if (!B.seeking) $('#rdSeek').value = Math.round(now / tl.total * 1000);
+  $('#rdCur').textContent = Math.round(now / tl.total * 100) + '%';
+  $('#rdLeft').textContent = fmtLeft(tl.total - now);
 }
+// 拖閱讀器下面的進度條：放開後跳到那裡（正在朗讀就從那句接著讀）
+$('#rdSeek').addEventListener('input', () => {
+  const b = B.book; if (!b) return;
+  B.seeking = true;
+  const tl = timeline(b), secs = $('#rdSeek').value / 1000 * tl.total;
+  const pos = tlSeek(b, secs);
+  $('#rdCur').textContent = Math.round(secs / tl.total * 100) + '%';
+  $('#rdLeft').textContent = `第 ${pos.p + 1} 段`;
+});
+$('#rdSeek').addEventListener('change', () => {
+  const b = B.book; if (!b) return;
+  const tl = timeline(b), pos = tlSeek(b, $('#rdSeek').value / 1000 * tl.total);
+  B.seeking = false;
+  setPos(pos.p, pos.s);
+  if (TTS.on && TTS.book === b) { TTS.unlock(); TTS.start(b, pos); }
+  else { scrollToPos(pos.p, pos.s, false); markReading(pos); }
+  B.userScrollAt = 0;
+});
 let posSaveT;
 function setPos(p, s) {
   const b = B.book || TTS.book; if (!b) return;
@@ -642,7 +698,7 @@ $('#rdRead').onchange = () => { B.read = $('#rdRead').value; LS.set('bookRead', 
 $('#rdRate').onclick = () => {
   const rates = [0.75, 1, 1.25, 1.5, 2];
   B.rate = rates[(rates.indexOf(B.rate) + 1) % rates.length] || 1; LS.set('bookRate', B.rate);
-  TTS.el.playbackRate = B.rate; applyReaderUI();
+  TTS.el.playbackRate = B.rate; applyReaderUI(); updateProg(); TTS.pushPosition();
 };
 function markReading(pos) {
   $$('#rdBody .reading').forEach(x => x.classList.remove('reading'));
@@ -720,6 +776,7 @@ const TTS = {
       const parts = this.parts();
       if (B.book === b) { markReading(this.pos); if (Date.now() - B.userScrollAt > 4000) scrollToPos(p, s); }
       setPos(p, s);
+      this.pushPosition();
       for (let i = this.phase; i < parts.length; i++) {
         if (!this.on || tok !== this.token) return;
         this.phase = i;
@@ -835,12 +892,30 @@ const TTS = {
     const ms = navigator.mediaSession, set = (a, f) => { try { ms.setActionHandler(a, f); } catch {} };
     set('play', () => this.resume()); set('pause', () => this.pause());
     set('previoustrack', () => this.step(-1)); set('nexttrack', () => this.step(1));
-    set('seekbackward', () => this.step(-1)); set('seekforward', () => this.step(1));
-    set('seekto', null);
+    // 鎖定畫面的進度條和 ⟲10 / ⟳10：照估算的時間跳
+    set('seekbackward', d => this.seekBy(-(d?.seekOffset || 10)));
+    set('seekforward', d => this.seekBy(d?.seekOffset || 10));
+    set('seekto', d => { if (d && d.seekTime != null && this.book) this.start(this.book, tlSeek(this.book, d.seekTime)); });
+    this.pushPosition();
+  },
+  now() {   // 現在讀到整本書的第幾秒（估算）
+    if (!this.book || !this.pos) return 0;
+    const tl = timeline(this.book), i = tlIndex(this.book, this.pos);
+    const one = (tl.cum[i + 1] - tl.cum[i]) / Math.max(1, this.parts().length);
+    return Math.min(tl.total, tl.cum[i] + this.phase * one + Math.min(one, (this.el.currentTime || 0) / Math.max(0.5, B.rate)));
+  },
+  seekBy(sec) { if (this.book) this.start(this.book, tlSeek(this.book, Math.max(0, this.now() + sec))); },
+  pushPosition() {
+    if (!('mediaSession' in navigator) || !this.book || !navigator.mediaSession.setPositionState) return;
+    const tl = timeline(this.book);
+    try { navigator.mediaSession.setPositionState({ duration: tl.total, position: Math.min(tl.total, this.now()), playbackRate: this.playing ? 1 : 1 }); } catch {}
+    try { navigator.mediaSession.playbackState = this.playing ? 'playing' : 'paused'; } catch {}
   },
 };
-TTS.el.addEventListener('play', () => { TTS.playing = true; updateSpeakBtn(); });
-TTS.el.addEventListener('pause', () => { if (!TTS.el.ended) { TTS.playing = false; updateSpeakBtn(); } });
+TTS.el.addEventListener('play', () => { TTS.playing = true; updateSpeakBtn(); TTS.pushPosition(); });
+let lastPush = 0;
+TTS.el.addEventListener('timeupdate', () => { if (TTS.on && Date.now() - lastPush > 1000) { lastPush = Date.now(); TTS.pushPosition(); } });
+TTS.el.addEventListener('pause', () => { if (!TTS.el.ended) { TTS.playing = false; updateSpeakBtn(); TTS.pushPosition(); } });
 // 開始播影片／音樂時，停止朗讀
 audioEl.addEventListener('play', () => { if (TTS.on) TTS.stop(); });
 function updateSpeakBtn() {
