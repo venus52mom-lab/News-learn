@@ -24,13 +24,18 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 ROOT = Path(__file__).resolve().parent.parent          # myTube 網頁檔案所在資料夾
-WORK = Path(tempfile.gettempdir()) / "mytube-dl"       # 暫存下載檔
+WORK = Path(os.environ.get("MYTUBE_WORK", str(Path(tempfile.gettempdir()) / "mytube-dl")))   # 暫存下載檔
 WORK.mkdir(parents=True, exist_ok=True)
+# 啟動時清掉上次留下的暫存檔
+for _old in WORK.iterdir():
+    shutil.rmtree(_old, ignore_errors=True) if _old.is_dir() else _old.unlink(missing_ok=True)
+MIN_FREE_GB = float(os.environ.get("MYTUBE_MIN_FREE_GB", "3"))       # 硬碟剩不到這麼多就不接新下載，保護其他程式
+MAX_FILE_MB = int(os.environ.get("MYTUBE_MAX_FILE_MB", "1500"))      # 單一檔案上限
 MAX_PARALLEL = int(os.environ.get("MYTUBE_PARALLEL", "3"))
 TOKEN = os.environ.get("MYTUBE_TOKEN", "").strip()            # 下載密碼（雲端伺服器一定要設）
 API_ONLY = os.environ.get("MYTUBE_API_ONLY", "") == "1"       # 只提供下載 API，不提供網頁檔案
 COOKIES = Path(os.environ.get("MYTUBE_COOKIES", str(Path(__file__).resolve().parent / "cookies.txt")))
-KEEP_SECONDS = 2 * 3600
+KEEP_SECONDS = 30 * 60     # 手機沒來拿的檔案，30 分鐘後自動刪除
 
 app = FastAPI(title="myTube Server")
 app.add_middleware(
@@ -104,6 +109,7 @@ def run_job(job: dict):
         "postprocessor_hooks": [pp_hook],
         "concurrent_fragment_downloads": 4,
         "remote_components": ["ejs:github"],   # YouTube 驗證需要的解題腳本
+        "max_filesize": MAX_FILE_MB * 1024 * 1024,
     }
     if COOKIES.exists():
         opts["cookiefile"] = str(COOKIES)       # 雲端主機常被 YouTube 擋，用登入的 cookies 比較不會
@@ -130,15 +136,18 @@ def run_job(job: dict):
             files = [f for f in folder.iterdir() if f.is_file() and not f.name.endswith((".part", ".ytdl"))]
             match = [f for f in files if f.suffix.lower() == want] or files
             if not match:
-                raise RuntimeError("找不到下載好的檔案")
+                raise RuntimeError(f"沒有下載到檔案（可能影片超過 {MAX_FILE_MB} MB 上限，請改選較低畫質）")
             path = max(match, key=lambda f: f.stat().st_size)
             job.update(path=str(path), filename=path.name, size=path.stat().st_size, progress=1.0, status="done")
         except Exception as e:  # noqa
             msg = str(e)
             msg = re.sub(r"\x1b\[[0-9;]*m", "", msg).replace("ERROR: ", "")
-            if "ffmpeg" in msg.lower():
+            if "File is larger than max-filesize" in msg or "max-filesize" in msg:
+                msg = f"影片太大（超過 {MAX_FILE_MB} MB），為了保護伺服器不下載。可以改選較低畫質。"
+            elif "ffmpeg" in msg.lower():
                 msg = "需要安裝 ffmpeg 才能轉 MP3 / 合併高畫質影片。" + msg
             job.update(status="error", error=msg[:400])
+            shutil.rmtree(folder, ignore_errors=True)   # 失敗的暫存檔馬上刪掉
 
 
 def cleanup_loop():
@@ -170,6 +179,12 @@ def create_job(req: JobReq):
         raise HTTPException(400, "格式只能是 mp4 或 mp3")
     if req.quality not in ("best", "1080", "720", "480", "360"):
         req.quality = "720"
+    free_gb = shutil.disk_usage(WORK).free / 1024 ** 3
+    if free_gb < MIN_FREE_GB:
+        raise HTTPException(507, f"伺服器硬碟空間不夠（剩 {free_gb:.1f} GB），為了保護其他程式暫停下載")
+    busy = sum(1 for j in JOBS.values() if j["status"] in ("queued", "downloading", "processing"))
+    if busy >= 10:
+        raise HTTPException(429, "伺服器正在忙，請等一下再下載")
     jid = uuid.uuid4().hex[:12]
     job = {"id": jid, "url": req.url.strip(), "format": req.format, "quality": req.quality,
            "status": "queued", "progress": 0.0, "phase": 0, "phases": 1, "created": time.time(),
