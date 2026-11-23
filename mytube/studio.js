@@ -60,7 +60,8 @@ function closeStudio(fromPop) {
 }
 addEventListener('popstate', () => { if (!$('#studio').hidden) closeStudio(true); });
 $('#stBack').onclick = () => {
-  const saved = JSON.stringify(ST.m?.edit?.segs || []) === JSON.stringify(ST.segs.map(({ a, b }) => ({ a, b })));
+  const cur = JSON.stringify(ST.segs.map(({ a, b }) => ({ a, b })));
+  const saved = JSON.stringify(ST.m?.edit?.segs || []) === cur || (ST.cutFor === ST.m?.id && ST.cutSegs === cur);
   if (saved || !ST.segs.length) return closeStudio();
   openSheet(`<h4>還沒存檔，要離開嗎？</h4>
     <button class="sheet-item" data-a="save">💾 先存檔</button>
@@ -181,12 +182,83 @@ function saveSheet() {
   openSheet(`<h4>剪輯好了，要怎麼存？</h4>
     <button class="sheet-item" data-a="rec">📝 只記錄剪輯（不改原檔，播放時可以選剪輯版或原始檔）</button>
     ${big ? `<p class="hint" style="padding:0 20px">檔案超過 ${MAX_CUT_MB}MB，手機上沒辦法實際剪成新檔，只能記錄剪輯。</p>` : `
-    <button class="sheet-item" data-a="new">💾 另存成新檔（原始檔保留）</button>
-    <button class="sheet-item danger" data-a="over">⚠️ 覆蓋原始檔案（不能復原）</button>`}
+    <button class="sheet-item" data-a="new">💾 另存新檔…（自己取名、選存放位置）</button>
+    <button class="sheet-item danger" data-a="over">⚠️ 覆蓋…（myTube 裡的檔案／「檔案」App 的原始檔）</button>`}
     <p class="hint" style="padding:0 20px">${m.type === 'video' ? '影片剪成新檔時，每段的開頭會對齊到最近的關鍵畫面，可能比你設的起點早幾秒（為了快速、不降畫質；用「只記錄剪輯」播放則完全精準）。' : '音樂剪成新檔會很精準。'}第一次剪成檔案需要下載剪輯工具（約 30MB）。</p>`, a => {
     if (a === 'rec') saveRecord();
-    if (a === 'new') renderCut(false);
-    if (a === 'over') openSheet(`<h4>確定要覆蓋「${esc(m.title)}」？</h4><p class="hint" style="padding:0 20px">原始檔案會被剪輯後的版本取代，不能復原。</p><button class="sheet-item danger" data-a="y">覆蓋</button><button class="sheet-item" data-a="n">取消</button>`, x => { if (x === 'y') renderCut(true); });
+    if (a === 'new') newFileSheet();
+    if (a === 'over') overwriteSheet();
+  });
+}
+const kindName = m => m.type === 'video' ? '影片' : '音樂';
+const origName = m => m.filename || fileName(m);
+// 另存新檔：取名字 + 選存放位置（myTube／「檔案」App，可以兩個都選）
+function newFileSheet() {
+  const m = ST.m;
+  const pls = S.playlists.filter(p => p.type === m.type);
+  openSheet(`<h4>💾 另存新檔</h4>
+    <p class="hint" style="padding:0 20px;margin:0">檔名</p>
+    <div class="sheet-input"><input id="stNewName" value="${esc(m.title + '（剪輯）')}" placeholder="新檔名"></div>
+    <p class="hint" style="padding:4px 20px 0;margin:0">要存在哪裡？（可以兩個都選）</p>
+    <label class="sheet-item"><input type="checkbox" id="stToApp" checked> 📱 存在 myTube 的「${kindName(m)}」</label>
+    ${pls.length ? `<div class="sheet-input" id="stPlRow"><select id="stPl" class="st-select"><option value="">不加入播放清單</option>${pls.map(p => `<option value="${p.id}">加入播放清單：${esc(p.name)}</option>`).join('')}</select></div>` : ''}
+    <label class="sheet-item"><input type="checkbox" id="stToFiles"> 📁 存到手機「檔案」App（剪好後由你選資料夾）</label>
+    <button class="sheet-item" data-a="go" data-keep>✂️ 開始剪輯並儲存</button>
+    <button class="sheet-item" data-a="no">取消</button>`, a => {
+    if (a !== 'go') return;
+    const name = $('#stNewName').value.trim();
+    const toApp = $('#stToApp').checked, toFiles = $('#stToFiles').checked;
+    if (!name) return toast('請先輸入檔名');
+    if (!toApp && !toFiles) return toast('請至少選一個存放位置');
+    const pl = toApp ? S.playlists.find(p => p.id === $('#stPl')?.value) : null;
+    $('#sheet').hidden = true; $('#sheetBackdrop').hidden = true;
+    renderCut({ mode: 'new', name, toApp, toFiles, pl });
+  });
+  const app = $('#stToApp'), row = $('#stPlRow');
+  if (row) app.onchange = () => { row.style.opacity = app.checked ? 1 : .4; $('#stPl').disabled = !app.checked; };
+}
+// 覆蓋：myTube 裡的檔案／「檔案」App 的原始檔／兩個都覆蓋
+function overwriteSheet() {
+  const m = ST.m, fn = origName(m);
+  openSheet(`<h4>⚠️ 要覆蓋哪一個？</h4>
+    <button class="sheet-item danger" data-a="app">📱 覆蓋 myTube 裡的「${esc(m.title)}」</button>
+    <button class="sheet-item danger" data-a="files">📁 覆蓋「檔案」App 裡的原始檔「${esc(fn)}」</button>
+    <button class="sheet-item danger" data-a="both">📱＋📁 兩個都覆蓋</button>
+    <p class="hint" style="padding:0 20px">「檔案」App 的原始檔：剪好後會用一模一樣的檔名「${esc(fn)}」叫出「儲存到檔案」，你選原本那個資料夾，iPhone 問「取代」時選「取代」就覆蓋了。</p>
+    <button class="sheet-item" data-a="no">取消</button>`, a => {
+    if (a === 'no') return;
+    const app = a === 'app' || a === 'both', files = a === 'files' || a === 'both';
+    const what = [app && `myTube 裡的「${esc(m.title)}」`, files && `「檔案」App 裡的「${esc(fn)}」`].filter(Boolean).join(' 和 ');
+    openSheet(`<h4>確定要覆蓋？</h4><p class="hint" style="padding:0 20px">${what}會被剪輯後的版本取代，不能復原。</p><button class="sheet-item danger" data-a="y">覆蓋</button><button class="sheet-item" data-a="n">取消</button>`,
+      x => { if (x === 'y') renderCut({ mode: 'over', app, files }); });
+  });
+}
+// 存到「檔案」App：電腦用「另存」視窗；手機用分享選單（iPhone 選「儲存到檔案」→ 選資料夾）
+async function saveToFiles(file) {
+  if (window.showSaveFilePicker && !isMobile()) {
+    try {
+      const ext = file.name.split('.').pop();
+      const h = await showSaveFilePicker({ suggestedName: file.name, types: [{ description: file.type || ext, accept: { [file.type || 'application/octet-stream']: ['.' + ext] } }] });
+      const w = await h.createWritable(); await w.write(file); await w.close();
+      toast('✅ 已儲存「' + h.name + '」', 3000); return 'saved';
+    } catch (e) { if (e.name === 'AbortError') return 'cancel'; console.warn(e); }
+  }
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: file.name }); return 'shared'; }
+    catch (e) { if (e.name === 'AbortError') return 'cancel'; console.warn(e); }
+  }
+  anchorDownload(file); return 'download';
+}
+function filesSheet(file, over) {
+  const how = isIOS()
+    ? (over ? `按下面按鈕 → 選「儲存到檔案」→ 找到原始檔<b>原本的資料夾</b> → 按「儲存」→ 跳出「已經有同名檔案」時選<b>「取代」</b>，原始檔就被覆蓋了。`
+            : `按下面按鈕 → 選「儲存到檔案」→ 選你要放的資料夾（例如「我的 iPhone › myTube › ${kindName(ST.m)}」）→ 按「儲存」。`)
+    : (over ? '按下面按鈕，選原始檔所在的資料夾，同檔名儲存並選「取代」。' : '按下面按鈕，選擇要存放的資料夾。');
+  openSheet(`<h4>📁 存到「檔案」App</h4>
+    <p class="hint" style="padding:0 20px">檔名：<b>${esc(file.name)}</b>（${(file.size / 1048576).toFixed(1)}MB）<br><br>${how}</p>
+    <button class="sheet-item" data-a="go" data-keep>📁 ${over ? '存到「檔案」App（覆蓋原始檔）' : '存到「檔案」App'}</button>
+    <button class="sheet-item" data-a="done">完成</button>`, a => {
+    if (a === 'go') saveToFiles(file).then(r => { if (r === 'cancel') toast('已取消，可以再按一次'); else if (r === 'shared') toast('✅ 已交給「檔案」App', 3000); });
   });
 }
 async function saveRecord(clear) {
@@ -264,7 +336,7 @@ async function cutBlob(m, segs, prog) {
     for (const f of [inName, 'list.txt', 'out.' + ext, ...parts]) { try { await ff.deleteFile(f); } catch {} }
   }
 }
-async function renderCut(overwrite) {
+async function renderCut(opts) {
   const m = ST.m, segs = ST.segs.map(({ a, b }) => ({ a, b }));
   ST.el.pause();
   const sh = openSheet(`<h4>✂️ 剪輯中，請不要離開</h4><p class="hint" style="padding:0 20px" id="cutProg">準備中…</p>`);
@@ -272,26 +344,39 @@ async function renderCut(overwrite) {
   try {
     const out = await cutBlob(m, segs, prog);
     if (!out.size) throw new Error('剪出來的檔案是空的');
-    if (overwrite) {
-      prog('覆蓋原始檔案…');
-      if (P.item?.id === m.id) Player.close();
-      await DB.put('blobs', out, m.id);
-      if (urlCache.has(m.id)) { URL.revokeObjectURL(urlCache.get(m.id)); urlCache.delete(m.id); }
-      fileCache.delete(m.id);
-      m.size = out.size; m.mime = out.type;
-      if (m.type === 'video') { const pv = await probeVideo(out); m.duration = pv.duration || m.duration; if (pv.thumb) { m.thumb = pv.thumb; thumbCache.delete(m.id); } }
-      else m.duration = (await probeAudio(out)) || m.duration;
-      delete m.edit; delete P.editPref[m.id];
-      await DB.put('media', m);
-      renderLibrary(m.type);
-      sh.close(); toast('✅ 已覆蓋原始檔案', 3000);
-      openStudio(m.id);
+    const ext = extOf(m, out), type = out.type || (m.type === 'audio' ? 'audio/mpeg' : 'video/mp4');
+    let file = null, msg = '';
+    if (opts.mode === 'over') {
+      if (opts.app) {
+        prog('覆蓋 myTube 裡的檔案…');
+        if (P.item?.id === m.id) Player.close();
+        await DB.put('blobs', out, m.id);
+        if (urlCache.has(m.id)) { URL.revokeObjectURL(urlCache.get(m.id)); urlCache.delete(m.id); }
+        fileCache.delete(m.id);
+        m.size = out.size; m.mime = out.type;
+        if (m.type === 'video') { const pv = await probeVideo(out); m.duration = pv.duration || m.duration; if (pv.thumb) { m.thumb = pv.thumb; thumbCache.delete(m.id); } }
+        else m.duration = (await probeAudio(out)) || m.duration;
+        delete m.edit; delete P.editPref[m.id];
+        await DB.put('media', m);
+        renderLibrary(m.type);
+        msg = '✅ 已覆蓋 myTube 裡的檔案';
+      }
+      if (opts.files) file = new File([out], origName(m), { type });
     } else {
-      prog('存成新檔…');
-      const ext = extOf(m, out);
-      const nm = await addMedia(out, { type: m.type, title: m.title + '（剪輯）', source: 'edit', filename: `${safeName(m.title)}（剪輯）.${ext}` });
-      sh.close(); toast(`✅ 已另存新檔「${nm.title}」，在${m.type === 'video' ? '影片' : '音樂'}裡`, 3500);
+      const fname = `${safeName(opts.name)}.${ext}`;
+      if (opts.toApp) {
+        prog('存到 myTube…');
+        const nm = await addMedia(out, { type: m.type, title: opts.name, source: 'edit', filename: fname });
+        if (opts.pl) await togglePlaylistItem(opts.pl, nm.id);
+        msg = `✅ 已存成「${nm.title}」，在${kindName(m)}${opts.pl ? `的「${opts.pl.name}」` : ''}裡`;
+      }
+      if (opts.toFiles) file = new File([out], fname, { type });
     }
+    sh.close();
+    ST.cutFor = m.id; ST.cutSegs = JSON.stringify(segs);   // 剪好存檔了，離開時不用再問
+    if (opts.mode === 'over' && opts.app) await openStudio(m.id);
+    if (msg) toast(msg, 3500);
+    if (file) filesSheet(file, opts.mode === 'over');
   } catch (e) {
     console.error(e);
     sh.close();
