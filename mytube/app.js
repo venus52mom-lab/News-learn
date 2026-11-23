@@ -704,6 +704,7 @@ const Player = {
     if (P.item && !this.active().paused) P.guardUntil = Date.now() + ms;
   },
   minimize() {
+    if (FS.on) FS.exit(true);
     this.keepPlaying();
     P.view = 'mini';
     playerBox.classList.remove('hidden', 'full'); playerBox.classList.add('mini');
@@ -714,6 +715,7 @@ const Player = {
     requestAnimationFrame(() => Preview.check());
   },
   close() {
+    if (FS.on) FS.exit(true);
     videoEl.pause(); audioEl.pause();
     videoEl.removeAttribute('src'); videoEl.load(); audioEl.removeAttribute('src'); audioEl.load();
     P.item = null; P.view = 'hidden'; P.queue = []; P.bgVideo = false;
@@ -725,6 +727,8 @@ const Player = {
 
   updateUI() {
     const m = P.item; if (!m) return;
+    if (m.type !== 'video' && FS.on) FS.exit();
+    FS.update();
     const audioMode = m.type === 'audio' || P.bgVideo;
     playerBox.classList.toggle('audio-mode', audioMode);
     playerBox.classList.toggle('video-mode', !audioMode);
@@ -832,27 +836,77 @@ $('#miniInfo').onclick = () => Player.openFull();
 $('#minimizeBtn').onclick = () => Player.minimize();
 $('#bgBtn').onclick = () => { P.autoBg = false; Player.setBgVideo(false); };
 $('#pipBtn').onclick = () => Player.pip();
-$('#fsBtn').onclick = () => {
-  Sync.align(true);
-  if (videoEl.paused && !audioEl.paused) videoEl.play().catch(() => {});
-  try {
-    if (videoEl.webkitEnterFullscreen) videoEl.webkitEnterFullscreen();
-    else videoEl.requestFullscreen?.();
-  } catch { toast('影片還在準備，請再按一次'); }
+/* ---------- myTube 自己的全螢幕：不靠 iPhone，按了一定會開，聲音不中斷 ---------- */
+const FS = {
+  on: false, hideTimer: null,
+  portrait() { return innerHeight > innerWidth; },
+  enter() {
+    if (!P.item || P.item.type !== 'video') return;
+    this.on = true;
+    // 直拿手機 → 自動轉成橫向；已經橫拿就不轉
+    playerBox.classList.add('fs');
+    playerBox.classList.toggle('rot', this.portrait() && LS.get('fsRotate') !== '0');
+    Sync.playVideo();
+    this.show();
+    if (!history.state?.fs) history.pushState({ player: 1, fs: 1 }, '');
+  },
+  exit(fromPop) {
+    if (!this.on) return;
+    this.on = false;
+    playerBox.classList.remove('fs', 'rot');
+    clearTimeout(this.hideTimer);
+    if (!fromPop && history.state?.fs) { this.ignorePop = true; history.back(); }
+  },
+  show() {
+    const c = $('#fsCtl'); c.classList.remove('hide');
+    clearTimeout(this.hideTimer);
+    this.hideTimer = setTimeout(() => { if (!audioEl.paused) c.classList.add('hide'); }, 3000);
+  },
+  update() {
+    if (!this.on) return;
+    $('#fsPlay').innerHTML = audioEl.paused ? ICON.play : ICON.pause;
+    const d = audioEl.duration || P.item?.duration || 0;
+    $('#fsCur').textContent = fmtTime(audioEl.currentTime);
+    $('#fsDur').textContent = fmtTime(d);
+    if (!FS.seeking && d) $('#fsSeek').value = Math.round(audioEl.currentTime / d * 1000);
+  },
 };
+$('#fsBtn').onclick = () => FS.enter();
+$('#fsExit').onclick = e => { e.stopPropagation(); FS.exit(); };
+$('#fsPlay').onclick = e => { e.stopPropagation(); Player.toggle(); FS.show(); };
+$('#fsBack').onclick = e => { e.stopPropagation(); audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); FS.show(); };
+$('#fsFwd').onclick = e => { e.stopPropagation(); audioEl.currentTime = Math.min((audioEl.duration || 0) - 0.5, audioEl.currentTime + 10); FS.show(); };
+$('#fsRot').onclick = e => {
+  e.stopPropagation();
+  const r = !playerBox.classList.contains('rot');
+  playerBox.classList.toggle('rot', r); LS.set('fsRotate', r ? '1' : '0'); FS.show();
+};
+$('#fsSeek').oninput = () => { FS.seeking = true; FS.show(); $('#fsCur').textContent = fmtTime($('#fsSeek').value / 1000 * (audioEl.duration || 0)); };
+$('#fsSeek').onchange = () => { if (audioEl.duration) audioEl.currentTime = $('#fsSeek').value / 1000 * audioEl.duration; FS.seeking = false; };
+$('#fsCtl').addEventListener('click', e => {
+  if (e.target !== $('#fsCtl')) return;
+  const c = $('#fsCtl');
+  if (c.classList.contains('hide')) FS.show(); else c.classList.add('hide');
+});
+for (const ev of ['timeupdate', 'play', 'pause', 'loadedmetadata']) audioEl.addEventListener(ev, () => FS.update());
+addEventListener('resize', () => { if (FS.on) playerBox.classList.toggle('rot', FS.portrait() && LS.get('fsRotate') !== '0'); });
 $('#miniPip').onclick = e => { e.stopPropagation(); Player.pip(); };
 $('#shuffleBtn').onclick = () => { P.shuffle = !P.shuffle; Player.updateUI(); toast(P.shuffle ? '隨機播放：開' : '隨機播放：關'); };
 $('#repeatBtn').onclick = () => { P.repeat = (P.repeat + 1) % 3; Player.updateUI(); toast(['循環：關', '循環：全部', '循環：單首'][P.repeat]); };
 $('#addToPlBtn').onclick = () => P.item && playlistSheet(P.item);
 $('#saveDevBtn').onclick = () => P.item && saveFlow(P.item);
-addEventListener('popstate', () => { if (P.view === 'full') Player.minimize(); });
+addEventListener('popstate', () => {
+  if (FS.ignorePop) { FS.ignorePop = false; return; }   // 只是離開全螢幕，不要連播放器也縮小
+  if (FS.on) { FS.exit(true); return; }
+  if (P.view === 'full') Player.minimize();
+});
 
 // 往下滑關閉 → 縮小（像 YouTube）
 (() => {
   let y0 = null;
   const stage = $('#playerStage');
   let wasPlaying = false;
-  stage.addEventListener('touchstart', e => { if (P.view === 'full') { y0 = e.touches[0].clientY; wasPlaying = P.item && !Player.active().paused; } }, { passive: true });
+  stage.addEventListener('touchstart', e => { if (P.view === 'full' && !FS.on) { y0 = e.touches[0].clientY; wasPlaying = P.item && !Player.active().paused; } }, { passive: true });
   stage.addEventListener('touchend', e => {
     if (y0 != null && e.changedTouches[0].clientY - y0 > 90) {
       Player.minimize();
@@ -909,7 +963,7 @@ videoEl.addEventListener('seeked', () => {
   if (Sync.isVideo() && !Sync.mine() && Math.abs(videoEl.currentTime - audioEl.currentTime) > 0.5) audioEl.currentTime = videoEl.currentTime;
 });
 videoEl.addEventListener('volumechange', () => { if (!videoEl.muted) videoEl.muted = true; });   // 畫面永遠靜音，聲音只從一個地方出來
-videoEl.addEventListener('click', () => { if (P.view === 'full' && Sync.isVideo()) Player.toggle(); });
+videoEl.addEventListener('click', () => { if (P.view === 'full' && !FS.on && Sync.isVideo()) Player.toggle(); });
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { Preview.stop(true); return; }
