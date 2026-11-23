@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" data-ver="20261124c">
+<html lang="zh-Hant" data-ver="20261124e">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=20261124c">
+<link rel="stylesheet" href="styles.css?v=20261124e">
 </head>
 <body>
 <div id="app">
@@ -51,6 +51,7 @@
     <button class="tab active" data-page="video">影片</button>
     <button class="tab" data-page="audio">音樂</button>
     <button class="tab" data-page="book">電子書</button>
+    <button class="tab" data-page="studio">工作室</button>
     <span class="tab-spacer"></span>
     <button class="tab tab-download" data-page="download">
       <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>下載
@@ -71,6 +72,7 @@
           <input type="file" accept="video/*,audio/*,.mp3,.m4a,.aac,.wav,.flac,.mp4,.mov" multiple hidden id="importVideo">
         </label>
         <button class="pill-btn ghost" id="videoPlayAll"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>全部播放</button>
+        <button class="pill-btn ghost pm-btn" id="videoMode" data-type="video"></button>
       </div>
       <p class="hint" style="padding:0 14px">一次選很多個：點選檔案後，按右上角「打開」。</p>
       <div class="playlist-head" id="videoPlHead" hidden></div>
@@ -86,7 +88,7 @@
           <input type="file" accept="video/*,audio/*,.mp3,.m4a,.aac,.wav,.flac,.mp4,.mov" multiple hidden id="importAudio">
         </label>
         <button class="pill-btn ghost" id="audioPlayAll"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>全部播放</button>
-        <button class="pill-btn ghost" id="audioShuffle"><svg viewBox="0 0 24 24"><path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>隨機</button>
+        <button class="pill-btn ghost pm-btn" id="audioMode" data-type="audio"></button>
       </div>
       <div class="playlist-head" id="audioPlHead" hidden></div>
       <div class="music-list" id="audioList"></div>
@@ -104,6 +106,18 @@
       </div>
       <p class="hint" style="padding:0 14px">支援 PDF、Word（.docx）、EPUB、TXT。也可以貼電子書網址，或直接把整本內容貼上。</p>
       <div class="book-list" id="bookList"></div>
+    </section>
+
+    <!-- 工作室頁 -->
+    <section class="page" id="page-studio">
+      <div class="chips" id="studioChips">
+        <button class="chip active" data-f="all">全部</button>
+        <button class="chip" data-f="video">影片</button>
+        <button class="chip" data-f="audio">音樂</button>
+        <button class="chip" data-f="edit">✂️ 剪輯過的</button>
+      </div>
+      <p class="hint" style="padding:4px 14px 0">選一個影片或音樂，標出想要的片段（A→B、C→D、E→F…），可以排順序、合在一起。</p>
+      <div class="music-list" id="studioList"></div>
     </section>
 
     <!-- 下載頁 -->
@@ -322,6 +336,40 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
 </div>
 <audio id="ttsEl" preload="auto"></audio>
 
+<!-- 工作室：剪輯畫面 -->
+<div class="studio" id="studio" hidden>
+  <div class="rd-top">
+    <button class="icon-btn" id="stBack" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="rd-title" id="stTitle"></div>
+    <button class="pill-btn" id="stSave">完成</button>
+  </div>
+  <div class="st-stage">
+    <video id="stMedia" playsinline webkit-playsinline preload="auto"></video>
+    <img id="stArt" alt="" hidden>
+  </div>
+  <div class="st-scroll">
+    <div class="st-time"><b id="stNow">0:00.0</b><span id="stDur">/ 0:00</span></div>
+    <div class="st-tl" id="stTl"><div class="st-segs" id="stSegs"></div><div class="st-mark" id="stMarkA"></div><div class="st-head" id="stHead"></div></div>
+    <div class="st-ctl">
+      <button class="st-b" data-d="-1">−1秒</button>
+      <button class="st-b" data-d="-0.1">−0.1</button>
+      <button class="icon-btn big" id="stPlay" aria-label="播放/暫停"></button>
+      <button class="st-b" data-d="0.1">+0.1</button>
+      <button class="st-b" data-d="1">+1秒</button>
+    </div>
+    <div class="st-ctl">
+      <button class="pill-btn st-in" id="stIn">⟦ 設起點</button>
+      <button class="pill-btn st-out" id="stOut">設終點 ⟧</button>
+    </div>
+    <p class="hint st-pending" id="stPending">播到想要的地方，按「設起點」，再播到結尾按「設終點」，就會加入一段。</p>
+    <div class="st-list" id="stList"></div>
+    <div class="st-foot">
+      <span id="stTotal">還沒有片段</span>
+      <button class="pill-btn ghost" id="stPreview">▶ 預覽剪輯</button>
+    </div>
+  </div>
+</div>
+
 <!-- 底部選單（bottom sheet） -->
 <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
@@ -346,7 +394,8 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   </div>
 </div>
 
-<script src="app.js?v=20261124c"></script>
-<script src="books.js?v=20261124c"></script>
+<script src="app.js?v=20261124e"></script>
+<script src="books.js?v=20261124e"></script>
+<script src="studio.js?v=20261124e"></script>
 </body>
 </html>

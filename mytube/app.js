@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261124c';
+const APP_VER = '20261124e';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -353,6 +353,47 @@ async function togglePlaylistItem(pl, id) {
 }
 
 /* ---------------- 繪製：分類 chips ---------------- */
+/* ---------- 播放方式：播一次／一直循環／隨機／單曲循環（每個播放清單、「全部」各自記住） ---------- */
+const PMODES = {
+  once: ['➡️', '播一次', '照順序播完就停'],
+  loop: ['🔁', '一直循環', '播完從頭再播'],
+  shuffle: ['🔀', '隨機播放', '隨機挑下一首，一直播'],
+  one: ['🔂', '單曲循環', '同一首重複播'],
+};
+const modeKey = type => S.filter[type] === 'all' ? 'all-' + type : S.filter[type];
+const modeOf = type => LS.get('pm_' + modeKey(type)) || 'loop';
+function applyPlayMode(type) {
+  const m = modeOf(type);
+  P.shuffle = m === 'shuffle';
+  P.repeat = m === 'loop' || m === 'shuffle' ? 1 : m === 'one' ? 2 : 0;
+}
+// 從清單播放：套用這個清單的播放方式
+function playFrom(type, list, idx) {
+  if (!list.length) return toast(type === 'video' ? '還沒有影片' : '還沒有音樂');
+  applyPlayMode(type);
+  if (idx == null) idx = P.shuffle ? Math.floor(Math.random() * list.length) : 0;
+  Player.playList(list, idx);
+}
+function modeSheet(type) {
+  const cur = modeOf(type);
+  const name = S.filter[type] === 'all' ? '全部' + (type === 'video' ? '影片' : '音樂') : (S.playlists.find(p => p.id === S.filter[type])?.name || '');
+  openSheet(`<h4>「${esc(name)}」的播放方式</h4>` + Object.entries(PMODES).map(([k, [ic, t, d]]) =>
+    `<button class="sheet-item" data-a="${k}">${ic} ${t}<span class="hint" style="margin:0 0 0 auto">${k === cur ? '✓ 目前' : d}</span></button>`).join(''), a => {
+    LS.set('pm_' + modeKey(type), a);
+    if (P.item && P.queue.length) { const playingThis = currentList(type).some(m => m.id === P.item.id); if (playingThis) applyPlayMode(type), Player.updateUI(); }
+    renderChips(type); updModeBtns();
+    toast(`${PMODES[a][0]} ${PMODES[a][1]}`);
+  });
+}
+function updModeBtns() {
+  for (const type of ['video', 'audio']) {
+    const b = $(type === 'video' ? '#videoMode' : '#audioMode'); if (!b) continue;
+    const [ic, t] = PMODES[modeOf(type)]; b.textContent = `${ic} ${t}`;
+  }
+}
+$('#videoMode').onclick = () => modeSheet('video');
+$('#audioMode').onclick = () => modeSheet('audio');
+
 function renderChips(type) {
   const box = $(type === 'video' ? '#videoChips' : '#audioChips');
   const pls = S.playlists.filter(p => p.type === type);
@@ -368,21 +409,25 @@ function renderChips(type) {
     });
     S.filter[type] = c.dataset.f; renderLibrary(type);
   };
+  updModeBtns();
   const head = $(type === 'video' ? '#videoPlHead' : '#audioPlHead');
   const pl = pls.find(p => p.id === f);
   head.hidden = !pl;
   if (pl) {
+    const [mi, mt] = PMODES[modeOf(type)];
     head.innerHTML = `<span class="pl-name">${esc(pl.name)}</span>
+      <button class="pill-btn ghost" data-a="mode">${mi} ${mt}</button>
       <button class="pill-btn" data-a="play">${ICON.play}播放</button>
       <button class="more-btn" data-a="more">${ICON.more}</button>`;
     head.onclick = e => {
       const a = e.target.closest('[data-a]')?.dataset.a;
-      if (a === 'play') { const l = currentList(type); if (l.length) Player.playList(l, 0); else toast('清單是空的'); }
+      if (a === 'play') { const l = currentList(type); if (l.length) playFrom(type, l); else toast('清單是空的'); }
+      if (a === 'mode') modeSheet(type);
       if (a === 'more') openSheet(`<h4>${esc(pl.name)}</h4>
-        <button class="sheet-item" data-a="shuffle">🔀 隨機播放</button>
+        <button class="sheet-item" data-a="mode">${PMODES[modeOf(type)][0]} 播放方式：${PMODES[modeOf(type)][1]}</button>
         <button class="sheet-item" data-a="rename">✏️ 重新命名</button>
         <button class="sheet-item danger" data-a="del">🗑️ 刪除播放清單</button>`, async a => {
-        if (a === 'shuffle') { const l = currentList(type); if (l.length) { P.shuffle = true; Player.playList(l, Math.floor(Math.random() * l.length)); } }
+        if (a === 'mode') modeSheet(type);
         if (a === 'rename') promptSheet('重新命名', pl.name, async n => { pl.name = n.trim() || pl.name; await DB.put('playlists', pl); renderLibrary(type); });
         if (a === 'del') {
           S.playlists = S.playlists.filter(p => p.id !== pl.id); await DB.del('playlists', pl.id);
@@ -417,7 +462,7 @@ function renderVideos() {
         <div class="avatar">${esc((m.title || '?').trim()[0] || '?')}</div>
         <div class="vtext" data-a="play">
           <div class="vtitle">${hl(m.title)}</div>
-          <div class="vsub">${m.source === 'download' ? 'YouTube 下載' : '手機匯入'} · ${fmtSize(m.size)} · ${fmtAgo(m.created)}</div>
+          <div class="vsub">${m.edit?.segs?.length ? '<span class="badge-edit">✂️ 已剪輯</span> ' : ''}${m.source === 'download' ? 'YouTube 下載' : m.source === 'edit' ? '剪輯新檔' : '手機匯入'} · ${fmtSize(m.size)} · ${fmtAgo(m.created)}</div>
         </div>
         <button class="more-btn" data-a="more">${ICON.more}</button>
       </div>
@@ -425,7 +470,7 @@ function renderVideos() {
   feed.onclick = e => {
     const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return;
     const id = e.target.closest('.vcard').dataset.id;
-    if (a === 'play') Player.playList(currentList('video'), currentList('video').findIndex(m => m.id === id));
+    if (a === 'play') { const l = currentList('video'); playFrom('video', l, l.findIndex(m => m.id === id)); }
     if (a === 'more') itemMenu(id);
   };
   requestAnimationFrame(() => Preview.check());
@@ -437,7 +482,7 @@ function musicRow(m, playing) {
     <img class="mart" src="${thumbURL(m)}" alt="" loading="lazy">
     <div class="mtext" data-a="play">
       <div class="mtitle">${playing ? '<span class="eq"><i></i><i></i><i></i></span>' : ''}${hl(m.title)}</div>
-      <div class="msub">${m.type === 'video' ? '影片 · ' : ''}${fmtTime(m.duration)} · ${fmtSize(m.size)}</div>
+      <div class="msub">${m.edit?.segs?.length ? '<span class="badge-edit">✂️ 已剪輯</span> ' : ''}${m.type === 'video' ? '影片 · ' : ''}${fmtTime(m.duration)} · ${fmtSize(m.size)}</div>
     </div>
     <button class="more-btn" data-a="more">${ICON.more}</button>
   </div>`;
@@ -458,16 +503,16 @@ function renderAudio() {
     const id = row.dataset.id;
     if (e.target.closest('[data-a="more"]')) return itemMenu(id);
     const l = currentList('audio');
-    Player.playList(l, l.findIndex(m => m.id === id));
+    playFrom('audio', l, l.findIndex(m => m.id === id));
   };
 }
 function renderLibrary(type) {
   if (!type || type === 'video') renderVideos();
   if (!type || type === 'audio') renderAudio();
+  window.renderStudio?.();
 }
-$('#videoPlayAll').onclick = () => { const l = currentList('video'); if (l.length) { P.shuffle = false; Player.playList(l, 0); } else toast('還沒有影片'); };
-$('#audioPlayAll').onclick = () => { const l = currentList('audio'); if (l.length) { P.shuffle = false; Player.playList(l, 0); } else toast('還沒有音樂'); };
-$('#audioShuffle').onclick = () => { const l = currentList('audio'); if (l.length) { P.shuffle = true; Player.playList(l, Math.floor(Math.random() * l.length)); } else toast('還沒有音樂'); };
+$('#videoPlayAll').onclick = () => playFrom('video', currentList('video'));
+$('#audioPlayAll').onclick = () => playFrom('audio', currentList('audio'));
 
 /* ---------------- 底部選單 ---------------- */
 function openSheet(html, onAction) {
@@ -496,6 +541,7 @@ function itemMenu(id) {
     <button class="sheet-item" data-a="play">▶️ 播放</button>
     <button class="sheet-item" data-a="bg">🎧 背景播放（只聽聲音）</button>
     <button class="sheet-item" data-a="pl">➕ 加入播放清單</button>
+    <button class="sheet-item" data-a="studio">✂️ 到工作室剪輯</button>
     ${f !== 'all' ? '<button class="sheet-item" data-a="unpl">➖ 從這個清單移除</button>' : ''}
     <button class="sheet-item" data-a="save">📁 存到裝置（檔案 App）</button>
     <button class="sheet-item" data-a="rename">✏️ 重新命名</button>
@@ -504,6 +550,7 @@ function itemMenu(id) {
     if (a === 'play') Player.playList(list, i);
     if (a === 'bg') Player.playList(list, i, { mini: true });
     if (a === 'pl') playlistSheet(m);
+    if (a === 'studio') { showPage('studio'); openStudio(m.id); }
     if (a === 'unpl') { const pl = S.playlists.find(p => p.id === f); if (pl) togglePlaylistItem(pl, id); }
     if (a === 'save') saveFlow(m);
     if (a === 'rename') promptSheet('重新命名', m.title, async n => {
@@ -524,14 +571,23 @@ function playlistSheet(m) {
       <button class="sheet-item" data-a="done">完成</button>`;
   };
   const s = openSheet(draw(), async (a, el) => {
+    if (a === 'done') {
+      const inPl = S.playlists.filter(p => p.type === m.type && p.items.includes(m.id)).map(p => `「${p.name}」`);
+      toast(inPl.length ? `✅ 已在 ${inPl.join('、')}` : '沒有加入任何播放清單');
+      return;
+    }
     if (a.startsWith('t:')) {
       const pl = S.playlists.find(p => p.id === a.slice(2));
-      setTimeout(async () => { const want = el.querySelector('input').checked; if (want !== pl.items.includes(m.id)) await togglePlaylistItem(pl, m.id); }, 0);
+      setTimeout(async () => {
+        const want = el.querySelector('input').checked;
+        if (want !== pl.items.includes(m.id)) await togglePlaylistItem(pl, m.id);
+        toast(want ? `✅ 已加入「${pl.name}」` : `已從「${pl.name}」移除`);
+      }, 0);
     }
     if (a === 'new') {
-      const name = $('#newPlName').value.trim(); if (!name) return toast('請輸入名稱');
+      const name = $('#newPlName').value.trim(); if (!name) return toast('要建立新清單，請先輸入名稱；加入現有清單直接勾選就好', 3500);
       const pl = await createPlaylist(m.type, name); await togglePlaylistItem(pl, m.id);
-      s.el.innerHTML = draw(); toast(`已加入「${name}」`);
+      s.el.innerHTML = draw(); toast(`✅ 已建立並加入「${name}」`);
     }
   });
 }
@@ -593,7 +649,7 @@ addEventListener('resize', () => Preview.check());
    ========================================================= */
 const videoEl = $('#videoEl'), audioEl = $('#audioEl'), playerBox = $('#player');
 videoEl.setAttribute('autopictureinpicture', '');
-const P = { queue: [], idx: -1, item: null, bgVideo: false, shuffle: false, repeat: 0, view: 'hidden', history: [] };
+const P = { editPref: {}, segs: null, queue: [], idx: -1, item: null, bgVideo: false, shuffle: false, repeat: 0, view: 'hidden', history: [] };
 
 const Player = {
   // 聲音永遠由 <audio> 播放（iPhone 背景不會停）；影片畫面是靜音的，跟著 <audio> 同步
@@ -601,6 +657,19 @@ const Player = {
 
   playList(items, idx = 0, opts = {}) {
     if (!items.length || idx < 0) return;
+    // 有剪輯紀錄：先問要播剪輯版還是原始檔
+    const it = items[idx];
+    if (!opts.asked && it?.edit?.segs?.length) {
+      const dur = it.edit.segs.reduce((a, g) => a + (g.b - g.a), 0);
+      openSheet(`<h4>✂️ 這個${it.type === 'video' ? '影片' : '音樂'}有剪輯過</h4>
+        <p class="hint" style="padding:0 20px">剪輯版：${it.edit.segs.length} 段，共 ${fmtTime(dur)}；原始檔：${fmtTime(it.duration)}</p>
+        <button class="sheet-item" data-a="edit">✂️ 播放剪輯版</button>
+        <button class="sheet-item" data-a="orig">▶️ 播放原始檔案</button>`, a => {
+        P.editPref[it.id] = a === 'edit' ? 'edit' : 'orig';
+        this.playList(items, idx, { ...opts, asked: true });
+      });
+      return;
+    }
     P.queue = items.map(m => m.id); P.idx = idx; P.history = [];
     if (!opts.mini) P.bgVideo = false;
     this.load(true);
@@ -610,6 +679,10 @@ const Player = {
   load(autoplay, startAt = 0) {
     const m = S.media.find(x => x.id === P.queue[P.idx]); if (!m) return;
     P.item = m;
+    // 剪輯版：只播選好的幾段（清單自動播到下一首時，預設播剪輯版）
+    P.segs = m.edit?.segs?.length && P.editPref[m.id] !== 'orig' ? m.edit.segs : null;
+    P.segIdx = 0;
+    if (P.segs && !startAt) startAt = P.segs[0].a;
     const go = url => {
       Sync.busy = Date.now();
       audioEl.src = url;
@@ -819,6 +892,33 @@ const Player = {
 };
 
 let seeking = false;
+/* 剪輯版播放：照你排好的段落順序播，播到一段結尾就跳到下一段，最後一段結束就換下一首（背景也有效） */
+let segBusy = 0;
+function segDone() {
+  if (P.repeat === 2) { P.segIdx = 0; audioEl.currentTime = P.segs[0].a; return; }
+  audioEl.pause(); Player.next(true);
+}
+audioEl.addEventListener('timeupdate', () => {
+  const g = P.segs; if (!g || audioEl.paused || Date.now() - segBusy < 400) return;
+  const t = audioEl.currentTime;
+  let k = P.segIdx || 0, seg = g[k];
+  if (!seg) return segDone();
+  if (t < seg.a - 1 || t > seg.b + 1) {
+    // 你自己拖了進度條：找你拖到的那一段；拖到段落外面就跳到後面最近的一段
+    const inside = g.findIndex(x => t >= x.a - 0.3 && t < x.b);
+    if (inside >= 0) { P.segIdx = inside; return; }
+    const later = g.map((x, n) => [x, n]).filter(([x]) => x.a > t).sort((u, v) => u[0].a - v[0].a)[0];
+    segBusy = Date.now();
+    if (later) { P.segIdx = later[1]; audioEl.currentTime = later[0].a; } else segDone();
+    return;
+  }
+  if (t >= seg.b - 0.15) {
+    segBusy = Date.now();
+    P.segIdx = k + 1;
+    if (g[k + 1]) audioEl.currentTime = g[k + 1].a; else segDone();
+  }
+});
+
 for (const el of [videoEl, audioEl]) {
   el.addEventListener('play', () => { if (el === Player.active()) Player.updatePlayIcons(); });
   el.addEventListener('pause', () => {
@@ -835,7 +935,7 @@ for (const el of [videoEl, audioEl]) {
   el.addEventListener('timeupdate', () => { if (el === Player.active()) Player.updateTime(); });
   el.addEventListener('ended', () => {
     if (el !== Player.active()) return;
-    if (P.repeat === 2) { el.currentTime = 0; el.play(); } else Player.next(true);
+    if (P.repeat === 2) { el.currentTime = P.segs ? P.segs[0].a : 0; el.play(); } else Player.next(true);
   });
   el.addEventListener('error', () => { if (el === Player.active() && el.getAttribute('src')) toast('這個檔案格式可能不被此裝置支援'); });
 }
