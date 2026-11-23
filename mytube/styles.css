@@ -348,3 +348,8 @@ html:not([data-theme="dark"]) .rd-body .bt{color:#065fd4}
 .rd-ctl .icon-btn.big{width:58px;height:58px}
 .rd-rate{min-width:56px;padding:8px 10px;border-radius:16px;background:var(--chip);font-weight:700;font-size:14px}
 .tabs .tab{padding-left:8px;padding-right:8px}
+
+/* 進度條：比較好按 */
+input[type=range]#rdSeek,input[type=range]#seekBar{height:30px;touch-action:none}
+input[type=range].ol-seek{touch-action:none}
+#rdSeek::-webkit-slider-thumb,#seekBar::-webkit-slider-thumb{width:22px;height:22px}

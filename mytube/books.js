@@ -972,6 +972,27 @@ function soundTest() {
   })();
 }
 
+/* ---------------- 進度條：點任何位置就跳、從任何位置都能拖（iPhone 原本只能拖那顆小圓點） ---------------- */
+function tapSeek(input) {
+  if (!input || input._tapSeek) return;
+  input._tapSeek = true;
+  let active = false;
+  const set = (t, commit) => {
+    const r = input.getBoundingClientRect();
+    // 全螢幕轉橫時，進度條在畫面上是直的 → 用上下位置算
+    let f = r.height > r.width ? (t.clientY - r.top) / r.height : (t.clientX - r.left) / r.width;
+    f = Math.max(0, Math.min(1, f));
+    input.value = Math.round(f * (+input.max || 1000));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    if (commit) input.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  input.addEventListener('touchstart', e => { active = true; set(e.touches[0], false); e.preventDefault(); e.stopPropagation(); }, { passive: false });
+  input.addEventListener('touchmove', e => { if (active) { set(e.touches[0], false); e.preventDefault(); e.stopPropagation(); } }, { passive: false });
+  input.addEventListener('touchend', e => { if (active) { active = false; set(e.changedTouches[0], true); e.preventDefault(); e.stopPropagation(); } }, { passive: false });
+  input.addEventListener('touchcancel', () => { if (active) { active = false; input.dispatchEvent(new Event('change', { bubbles: true })); } });
+}
+['#rdSeek', '#olSeek', '#seekBar'].forEach(sel => tapSeek($(sel)));
+
 /* ---------------- 啟動 ---------------- */
 (async () => {
   try { B.books = (await DB.all('books') || []).sort((a, b) => b.created - a.created); } catch (e) { console.warn(e); }
