@@ -484,7 +484,7 @@ function itemMenu(id) {
     <button class="sheet-item danger" data-a="del">🗑️ 從 myTube 刪除</button>`, async a => {
     const list = currentList(m.type), i = list.findIndex(x => x.id === id);
     if (a === 'play') Player.playList(list, i);
-    if (a === 'bg') { P.bgVideo = m.type === 'video'; Player.playList(list, i, { mini: true }); }
+    if (a === 'bg') Player.playList(list, i, { mini: true });
     if (a === 'pl') playlistSheet(m);
     if (a === 'unpl') { const pl = S.playlists.find(p => p.id === f); if (pl) togglePlaylistItem(pl, id); }
     if (a === 'save') saveFlow(m);
@@ -578,7 +578,8 @@ videoEl.setAttribute('autopictureinpicture', '');
 const P = { queue: [], idx: -1, item: null, bgVideo: false, shuffle: false, repeat: 0, view: 'hidden', history: [] };
 
 const Player = {
-  active() { return (P.item?.type === 'audio' || P.bgVideo) ? audioEl : videoEl; },
+  // 聲音永遠由 <audio> 播放（iPhone 背景不會停）；影片畫面是靜音的，跟著 <audio> 同步
+  active() { return audioEl; },
 
   playList(items, idx = 0, opts = {}) {
     if (!items.length || idx < 0) return;
@@ -592,11 +593,17 @@ const Player = {
     const m = S.media.find(x => x.id === P.queue[P.idx]); if (!m) return;
     P.item = m;
     const go = url => {
-      const target = this.active(), other = target === audioEl ? videoEl : audioEl;
-      other.pause(); if (other.getAttribute('src')) { other.removeAttribute('src'); other.load(); }
-      target.src = url;
-      if (startAt) target.addEventListener('loadedmetadata', () => { try { target.currentTime = startAt; } catch {} }, { once: true });
-      if (autoplay) target.play().catch(err => { if (err.name !== 'AbortError') console.warn(err); });
+      Sync.busy = Date.now();
+      audioEl.src = url;
+      if (m.type === 'video') {
+        videoEl.muted = true; videoEl.defaultMuted = true; videoEl.setAttribute('muted', '');
+        videoEl.src = url;
+      } else {
+        videoEl.pause(); if (videoEl.getAttribute('src')) { videoEl.removeAttribute('src'); videoEl.load(); }
+      }
+      if (startAt) audioEl.addEventListener('loadedmetadata', () => { try { audioEl.currentTime = startAt; } catch {} }, { once: true });
+      if (autoplay) audioEl.play().catch(err => { if (err.name !== 'AbortError') console.warn(err); });
+      if (autoplay && m.type === 'video') videoEl.play().catch(() => {});
       this.updateUI(); this.setSession();
     };
     const u = mediaURLSync(m.id);
@@ -606,6 +613,7 @@ const Player = {
   toggle() {
     const el = this.active();
     if (!el.getAttribute('src')) return;
+    P.guardUntil = 0;   // 你自己按的，一定照做
     el.paused ? el.play().catch(() => {}) : el.pause();
   },
 
@@ -669,7 +677,7 @@ const Player = {
   pip() {
     if (!P.item || P.item.type !== 'video') return toast('子母畫面只適用於影片');
     // 一定要在按下的當下開啟（iPhone 規定），所以不能等待
-    if (P.bgVideo) this.setBgVideo(false);
+    Sync.align(true);
     if (videoEl.paused) videoEl.play().catch(() => {});
     try {
       if (document.pictureInPictureElement) return document.exitPictureInPicture();
@@ -685,7 +693,7 @@ const Player = {
     this.keepPlaying();
     P.view = 'full';
     playerBox.classList.remove('hidden', 'mini'); playerBox.classList.add('full');
-    videoEl.controls = true;
+    videoEl.controls = false;   // 用 myTube 自己的控制列（聲音和畫面才會一起動）
     document.body.style.overflow = 'hidden';
     Preview.stop(true);
     if (!history.state?.player) history.pushState({ player: 1 }, '');
@@ -734,7 +742,7 @@ const Player = {
     $('#miniPip').hidden = m.type !== 'video';
     $('#fsBtn').hidden = m.type !== 'video';
     $('#bgHint').innerHTML = m.type === 'video'
-      ? (P.bgVideo ? '正在背景播放聲音。按「回到影片畫面」繼續看。' : '想滑回桌面變<b>小視窗</b>：先按「全螢幕」，再從底部往上滑回桌面，就會自動變小圖繼續播（也可以直接按「子母畫面」）。不是全螢幕時滑走，會改成只播聲音。')
+      ? '直接滑回桌面、切到別的 App 或鎖螢幕，<b>聲音都會繼續播</b>；回到 myTube 畫面會自動接上。想看小視窗，按「子母畫面」。'
       : '音樂可以直接背景播放，也能用鎖定畫面控制。';
     $('#shuffleBtn').classList.toggle('on', P.shuffle);
     const rb = $('#repeatBtn'); rb.classList.toggle('on', P.repeat > 0); rb.classList.toggle('one', P.repeat === 2);
@@ -779,7 +787,7 @@ const Player = {
     } catch {}
     const ms = navigator.mediaSession, set = (a, f) => { try { ms.setActionHandler(a, f); } catch {} };
     set('play', () => this.active().play());
-    set('pause', () => this.active().pause());
+    set('pause', () => { P.guardUntil = 0; this.active().pause(); });
     set('previoustrack', () => this.prev());
     set('nexttrack', () => this.next());
     set('seekbackward', d => { this.active().currentTime -= d?.seekOffset || 10; });
@@ -825,7 +833,8 @@ $('#minimizeBtn').onclick = () => Player.minimize();
 $('#bgBtn').onclick = () => { P.autoBg = false; Player.setBgVideo(false); };
 $('#pipBtn').onclick = () => Player.pip();
 $('#fsBtn').onclick = () => {
-  if (P.bgVideo) Player.setBgVideo(false);
+  Sync.align(true);
+  if (videoEl.paused && !audioEl.paused) videoEl.play().catch(() => {});
   try {
     if (videoEl.webkitEnterFullscreen) videoEl.webkitEnterFullscreen();
     else videoEl.requestFullscreen?.();
@@ -854,21 +863,62 @@ addEventListener('popstate', () => { if (P.view === 'full') Player.minimize(); }
   }, { passive: true });
 })();
 
-// 離開 App 時：影片自動改成背景音訊繼續播放（除非正在子母畫面）
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    Preview.stop(true);
-    const inPip = document.pictureInPictureElement || videoEl.webkitPresentationMode === 'picture-in-picture';
-    // 全螢幕播放時滑回桌面，iPhone 會自動變成子母畫面小視窗 → 不要改成背景音訊，交給 iPhone
-    const fullscreen = videoEl.webkitDisplayingFullscreen || videoEl.webkitPresentationMode === 'fullscreen' || document.fullscreenElement === videoEl;
-    if (P.item?.type === 'video' && !P.bgVideo && !videoEl.paused && !inPip && !fullscreen && LS.get('autoBg') !== '0') {
-      Player.setBgVideo(true); P.autoBg = true;
-    }
-  } else {
-    if (P.bgVideo && P.autoBg) Player.resumeVideo();
-    requestAnimationFrame(() => Preview.check());
-  }
+/* ---------- 影片畫面跟著聲音同步 ----------
+   聲音（<audio>）是主角：進背景時 iPhone 只會停掉畫面，聲音照樣播；
+   回到 App 時畫面自動對準聲音的秒數接著播，不用按任何按鈕。 */
+const Sync = {
+  busy: 0, pendingPause: 0,
+  isVideo() { return P.item?.type === 'video' && !!videoEl.getAttribute('src'); },
+  inPip() { return !!document.pictureInPictureElement || videoEl.webkitPresentationMode === 'picture-in-picture'; },
+  mine() { return Date.now() - this.busy < 500; },   // 這次動作是 myTube 自己做的
+  align(force) {
+    if (!this.isVideo()) return;
+    const d = Math.abs((videoEl.currentTime || 0) - (audioEl.currentTime || 0));
+    if (d > (force ? 0.15 : 0.4)) { this.busy = Date.now(); try { videoEl.currentTime = audioEl.currentTime; } catch {} }
+  },
+  playVideo() {
+    if (!this.isVideo() || audioEl.paused) return;
+    if (document.hidden && !this.inPip()) return;
+    this.align(true);
+    videoEl.muted = true;
+    if (videoEl.paused) { this.busy = Date.now(); videoEl.play().catch(() => {}); }
+  },
+};
+// 聲音 → 畫面
+audioEl.addEventListener('play', () => Sync.playVideo());
+audioEl.addEventListener('playing', () => Sync.playVideo());
+audioEl.addEventListener('pause', () => { if (Sync.isVideo() && !videoEl.paused) { Sync.busy = Date.now(); videoEl.pause(); } });
+audioEl.addEventListener('seeked', () => Sync.align(true));
+audioEl.addEventListener('timeupdate', () => {
+  if (!Sync.isVideo() || audioEl.paused) return;
+  if (Date.now() - Sync.pendingPause < 700) return;   // 你剛在影片上按了暫停，等它生效
+  if (videoEl.paused) Sync.playVideo(); else Sync.align(false);
 });
+// 畫面 → 聲音（在全螢幕或子母畫面裡按播放/暫停/拉進度）
+videoEl.addEventListener('play', () => { if (Sync.isVideo() && audioEl.paused && !Sync.mine()) audioEl.play().catch(() => {}); });
+videoEl.addEventListener('pause', () => {
+  if (!Sync.isVideo() || Sync.mine() || videoEl.ended) return;
+  if (document.hidden && Sync.inPip()) { audioEl.pause(); return; }       // 子母畫面裡按暫停
+  // 等一下再判斷：進背景時 iPhone 會自動停掉畫面，那種暫停不能讓聲音也停
+  Sync.pendingPause = Date.now();
+  setTimeout(() => {
+    if (!document.hidden && document.visibilityState === 'visible' && videoEl.paused && !audioEl.paused && !Sync.mine()) audioEl.pause();
+  }, 350);
+});
+videoEl.addEventListener('seeked', () => {
+  if (Sync.isVideo() && !Sync.mine() && Math.abs(videoEl.currentTime - audioEl.currentTime) > 0.5) audioEl.currentTime = videoEl.currentTime;
+});
+videoEl.addEventListener('volumechange', () => { if (!videoEl.muted) videoEl.muted = true; });   // 畫面永遠靜音，聲音只從一個地方出來
+videoEl.addEventListener('click', () => { if (P.view === 'full' && Sync.isVideo()) Player.toggle(); });
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { Preview.stop(true); return; }
+  // 回到 App：畫面自動接上聲音
+  Sync.playVideo();
+  setTimeout(() => Sync.playVideo(), 400);
+  requestAnimationFrame(() => Preview.check());
+});
+addEventListener('pageshow', () => Sync.playVideo());
 
 /* =========================================================
    搜尋

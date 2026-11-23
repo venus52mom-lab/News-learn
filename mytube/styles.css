@@ -169,7 +169,6 @@ textarea:focus,input:focus,select:focus{border-color:#3ea6ff}
 .chip-btn.on{background:var(--chip-active-bg);color:var(--chip-active-fg)}
 .bg-hint{min-height:0}
 .custom-audio{padding-top:8px}
-.player.video-mode:not(.bg-video) #seekBar,.player.video-mode:not(.bg-video) .time-row{display:none}
 #seekBar{width:100%;accent-color:var(--red);height:20px}
 .time-row{display:flex;justify-content:space-between;color:var(--text2);font-size:12px}
 .big-controls{display:flex;justify-content:space-between;align-items:center;padding:4px 6px}
