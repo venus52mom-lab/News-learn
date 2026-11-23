@@ -1131,15 +1131,20 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   const t = +(LS.get('ashellPending') || 0);
-  if (!t || Date.now() - t > 3 * 3600 * 1000 || Lock.isOpen()) return;
-  const pend = S.history.filter(h => h.mode === 'ashell' && h.status === 'external');
-  if (!pend.length) { LS.del('ashellPending'); return; }
+  if (!t) return;
+  if (Date.now() - t > 30 * 60 * 1000) { LS.del('ashellPending'); return; }   // 超過 30 分鐘就不問了
+  if (Lock.isOpen()) return;
+  // 正在看影片／聽音樂時絕對不跳出來打擾
+  if (P.item && (!audioEl.paused || P.view === 'full')) return;
+  LS.del('ashellPending');   // 只問這一次
+  // 只算「剛剛那次」送去 a-Shell 的，不把以前的舊紀錄算進來
+  const pend = S.history.filter(h => h.mode === 'ashell' && h.status === 'external' && h.created >= t - 10000);
+  if (!pend.length) return;
   setTimeout(() => openSheet(`<h4>a-Shell 下載好了嗎？</h4>
-    <p class="hint" style="padding:0 20px">按下面按鈕 → 打開「a-Shell › myTube › 影片／音樂」→ <b>點檔案</b>就會匯入。（還有 ${pend.length} 個等待匯入）</p>
+    <p class="hint" style="padding:0 20px">按下面按鈕 → 打開「a-Shell › myTube › 影片／音樂」→ <b>點檔案</b>就會匯入。<br>之後也可以在「下載」頁的紀錄按「📥 匯入 myTube」。</p>
     <button class="sheet-item" data-a="imp">📥 匯入下載好的檔案</button>
-    <button class="sheet-item" data-a="later">還沒，等一下</button>`, a => {
-    if (a === 'imp') importFor(pend[pend.length - 1]);
-    if (a === 'later') LS.set('ashellPending', String(Date.now()));
+    <button class="sheet-item" data-a="later">不用了</button>`, a => {
+    if (a === 'imp') importFor(pend[0]);
   }), 400);
 });
 // 忘記密碼：只能清除「這支手機」的 myTube 資料重新開始（別人的手機不受影響）
@@ -1352,7 +1357,7 @@ function ashellCommand(items) {
   return parts.join(' ');
 }
 function runAShell(items) {
-  LS.set('ashellPending', String(Date.now()));
+  LS.set('ashellPending', String(Date.now() - 2000));
   copyText(ashellCommand(items));
   toast('指令已複製！到 a-Shell 長按貼上 → 按 Enter', 4000);
   openAShell();
