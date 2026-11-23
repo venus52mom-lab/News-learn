@@ -341,14 +341,50 @@ function bookMenu(b) {
 }
 
 /* ---------------- 翻譯 ---------------- */
+/* 翻譯穩定性：同時最多 2 個請求（避免被 Google 限流）、失敗自動重試、多個管道輪流 */
+const TQ = { active: 0, max: 2, waiters: [] };
+async function tLimit(fn) {
+  while (TQ.active >= TQ.max) await new Promise(r => TQ.waiters.push(r));
+  TQ.active++;
+  try { return await fn(); } finally { TQ.active--; const w = TQ.waiters.shift(); if (w) w(); }
+}
+async function withRetry(fn, tries = 3) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try { return await fn(); } catch (e) { last = e; if (i < tries - 1) await sleep([1200, 3500, 7000][i] || 7000); }
+  }
+  throw last;
+}
 async function gtx(lines, tl) {
-  const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t`, {
+  const r = await fetchTimeout(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(tl)}&dt=t`, {
     method: 'POST', body: new URLSearchParams({ q: lines.join('\n') }),
-  });
+  }, 15000);
   if (!r.ok) throw new Error('翻譯服務回應 ' + r.status);
   const j = await r.json();
   const text = (j[0] || []).map(x => x && x[0] || '').join('');
-  return { lines: text.split('\n'), src: j[2] };
+  const out = text.split('\n');
+  if (out.length !== lines.length) throw Object.assign(new Error('行數不符'), { mismatch: true, src: j[2] });
+  return { lines: out, src: j[2] };
+}
+// Google 第二個管道：一次送多句（每句分開），不會有行數對不上的問題
+async function gtx2(lines, tl) {
+  const out = []; let src;
+  for (let i = 0; i < lines.length;) {
+    const group = []; let len = 0;
+    while (i < lines.length && (group.length === 0 || len + lines[i].length < 350)) { group.push(lines[i]); len += lines[i].length; i++; }
+    const qs = group.map(l => 'q=' + encodeURIComponent(l || ' ')).join('&');
+    const r = await fetchTimeout(`https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=${encodeURIComponent(tl)}&${qs}`, {}, 15000);
+    if (!r.ok) throw new Error('翻譯服務回應 ' + r.status);
+    const j = await r.json();
+    const arr = Array.isArray(j) ? j : [j];
+    if (arr.length !== group.length) throw new Error('翻譯結果不完整');
+    for (const x of arr) {
+      if (Array.isArray(x)) { out.push(String(x[0] || '')); src = src || x[1]; }
+      else if (typeof x === 'string') out.push(x);
+      else out.push(String(x?.trans || x?.sentences?.map(y => y.trans).join('') || ''));
+    }
+  }
+  return { lines: out, src };
 }
 async function myMemory(lines, tl, sl) {
   const out = [];
@@ -361,21 +397,26 @@ async function myMemory(lines, tl, sl) {
   return { lines: out };
 }
 async function translateLines(lines, tl, sl) {
-  if (serverReady()) {
+  return tLimit(async () => {
+    if (serverReady()) {
+      try {
+        return await withRetry(async () => {
+          const r = await sFetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ q: lines, tl }) });
+          if (!r.ok) throw new Error(await errText(r));
+          const j = await r.json(); if (j.lines?.length !== lines.length) throw new Error('翻譯結果不完整');
+          return j;
+        }, 2);
+      } catch (e) { console.warn('server translate', e); }
+    }
     try {
-      const r = await sFetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ q: lines, tl }) });
-      if (r.ok) { const j = await r.json(); if (j.lines?.length === lines.length) return j; }
-    } catch {}
-  }
-  try {
-    const j = await gtx(lines, tl);
-    if (j.lines.length === lines.length) return j;
-    // 行數對不上：一行一行翻
-    const out = [];
-    for (const l of lines) out.push(l.trim() ? (await gtx([l], tl)).lines.join(' ') : '');
-    return { lines: out, src: j.src };
-  } catch (e) { console.warn('gtx', e); }
-  return myMemory(lines, tl, sl);
+      return await withRetry(async () => {
+        try { return await gtx(lines, tl); }
+        catch (e) { if (e.mismatch) return gtx2(lines, tl); throw e; }   // 行數對不上 → 改用一句一句的管道
+      }, 3);
+    } catch (e) { console.warn('gtx', e); }
+    try { return await withRetry(() => gtx2(lines, tl), 2); } catch (e) { console.warn('gtx2', e); }
+    return myMemory(lines, tl, sl);
+  });
 }
 const tKey = (b, lang, p) => `${b.id}|${lang}|${p}`;
 const inflight = new Map();
@@ -397,7 +438,11 @@ async function ensureTrans(b, lang, from, to) {
     const lines = group.flatMap(p => sents[p]);
     try {
       const j = await translateLines(lines, lang, b.srcLang);
-      if (j.src && j.src !== 'auto' && !b.srcLangSure) { b.srcLang = normLang(j.src); b.srcLangSure = true; if (b.saved) DB.put('books', b).catch(() => {}); }
+      if (j.src && j.src !== 'auto' && !b.srcLangSure) {
+        const n = normLang(j.src), g = guessLang(lines.join(' '));
+        // 只在跟文字看起來一致時才採用（避免把中文書誤判成英文，用英文語音唸中文）
+        if (family(n) === family(g)) { b.srcLang = family(n) === 'zh' ? g : n; b.srcLangSure = true; if (b.saved) DB.put('books', b).catch(() => {}); }
+      }
       let i = 0;
       for (const p of group) {
         const v = sents[p].map(() => (j.lines[i++] || '').trim());
@@ -420,6 +465,16 @@ async function ensureTrans(b, lang, from, to) {
   if (batch.length) jobs.push(batch);
   const promises = jobs.map(g => { const pr = run(g); g.forEach(p => inflight.set(tKey(b, lang, p), pr.catch(() => {}))); return pr; });
   await Promise.allSettled([...promises, ...waits]);
+}
+const family = c => (c || '').startsWith('zh') ? 'zh' : ['ja', 'ko', 'th', 'ru'].includes(c) ? c : 'latin';
+// 每一句自己判斷語言：中文句子一定用中文語音、日文用日文……（混合語言的書也不會唸錯）
+function sentLang(text, fallback) {
+  if (/[\u3040-\u30ff]/.test(text)) return 'ja';
+  if (/[\uac00-\ud7af]/.test(text)) return 'ko';
+  if (/[\u0e00-\u0e7f]/.test(text)) return 'th';
+  if (/[\u0400-\u04ff]/.test(text)) return 'ru';
+  if (/[\u4e00-\u9fff]/.test(text)) return (fallback || '').startsWith('zh') ? fallback : (/[们这个说为时来对国还没发经过动进]/.test(text) ? 'zh-CN' : 'zh-TW');
+  return family(fallback) === 'latin' ? (fallback || 'en') : 'en';
 }
 function normLang(c) {
   c = (c || '').toLowerCase();
@@ -639,12 +694,12 @@ const TTS = {
       for (let i = this.phase; i < parts.length; i++) {
         if (!this.on || tok !== this.token) return;
         this.phase = i;
-        let text = ss[p][s], lang = b.srcLang;
+        let text = ss[p][s], lang = sentLang(text, b.srcLang);
         if (parts[i] === 't') {
           let tr = B.trans.get(tKey(b, B.lang, p));
           if (!tr) { try { await ensureTrans(b, B.lang, p, p + 4); } catch {} tr = B.trans.get(tKey(b, B.lang, p)); }
           if (!this.on || tok !== this.token) return;
-          if (tr && tr[s]) { text = tr[s]; lang = B.lang; }
+          if (tr && tr[s]) { text = tr[s]; lang = sentLang(text, B.lang); }
           else if (parts.includes('o')) continue;     // 翻譯拿不到：已經讀過原文就跳過
         }
         await this.speak(text, lang, tok);
@@ -676,24 +731,36 @@ const TTS = {
     if (!text || !text.trim()) return;
     const parts = this.chunks(text, serverReady() ? 900 : 180);
     for (const c of parts) {
-      if (!this.on || tok !== this.token) return;
-      let ok = false;
-      if (serverReady() || !this.googleDown) {
-        ok = await this.playChunk(c, lang, tok);
-        if (!serverReady()) {
-          if (ok) this.googleFails = 0;
-          else if (++this.googleFails >= 2) { this.googleDown = true; }   // Google 連不上：這次不再等它
+      let tries = 0;
+      while (this.on && tok === this.token) {
+        let ok = false;
+        // 背景（鎖螢幕、開車）時一定用線上語音：手機內建語音在背景不會出聲
+        if (serverReady() || !this.googleDown || document.hidden) ok = await this.playChunk(c, lang, tok);
+        if (!this.on || tok !== this.token) return;
+        if (ok) { this.googleFails = 0; break; }
+        if (!serverReady() && ++this.googleFails >= 2 && !document.hidden) this.googleDown = true;
+        if (document.hidden) {
+          // 在背景失敗：等一下再試，試 3 次還不行就跳過這一小段，繼續往下讀（不會停下來）
+          if (++tries >= 3) { console.warn('skip chunk', c); break; }
+          await sleep(1500 * tries);
+          continue;
         }
+        await this.synth(c, lang, tok);
+        break;
       }
-      if (!ok && this.on && tok === this.token) await this.synth(c, lang, tok);
     }
   },
   playChunk(text, lang, tok) {
     return new Promise(res => {
       const el = this.el;
       let done = false;
-      const fin = ok => { if (done) return; done = true; el.onended = el.onerror = null; clearTimeout(t); res(ok); };
+      let last = Date.now();
+      const onTU = () => { last = Date.now(); };
+      const fin = ok => { if (done) return; done = true; el.onended = el.onerror = null; clearTimeout(t); clearInterval(wd); el.removeEventListener('timeupdate', onTU); res(ok); };
       const t = setTimeout(() => fin(false), 8000);    // 8 秒還沒開始播就換方法
+      // 播到一半卡住（網路不穩）超過 12 秒 → 重新來，不會整個停住
+      const wd = setInterval(() => { if (!this.playing) { last = Date.now(); return; } if (Date.now() - last > 12000) fin(false); }, 2000);
+      el.addEventListener('timeupdate', onTU);
       el.onended = () => fin(true);
       el.onerror = () => fin(false);
       this.synthMode = false;
@@ -711,7 +778,9 @@ const TTS = {
       this.synthMode = true;
       const u = new SpeechSynthesisUtterance(text);
       u.lang = lang === 'zh-TW' ? 'zh-TW' : lang === 'zh-CN' ? 'zh-CN' : lang;
-      const v = speechSynthesis.getVoices().find(x => x.lang.replace('_', '-').toLowerCase().startsWith(u.lang.toLowerCase()));
+      const vs = speechSynthesis.getVoices(), want = u.lang.toLowerCase(), base = want.split('-')[0];
+      const norm = x => x.lang.replace('_', '-').toLowerCase();
+      const v = vs.find(x => norm(x) === want) || (want === 'zh-tw' && vs.find(x => /zh-(hk|hant)/.test(norm(x)))) || vs.find(x => norm(x).startsWith(base));
       if (v) u.voice = v;
       u.rate = Math.min(2, B.rate);
       let started = false, finished = false;
