@@ -41,30 +41,36 @@ function loadScript(src) {
   }));
 }
 const CJK = /[぀-ヿ㐀-鿿가-힯豈-﫿]/;
+// PDF 常把中文字存成長得一樣的「部首符號」（例如 ⽅→方、⼈→人），翻譯和朗讀會出錯，這裡換回正常的字
+// 中日韓文字＋全形標點（「」、。等）：換行接起來時不要多加空格
+const CJKP = /[\u3000-\u303f\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]/;
+function fixCJK(t) { return (t || '').replace(/[\u2F00-\u2FDF\u2E80-\u2EFF\uF900-\uFAFF]/g, c => c.normalize('NFKC')); }
 function joinLines(lines) {
   let out = '';
   for (const l0 of lines) {
     const l = l0.trim(); if (!l) continue;
     if (!out) { out = l; continue; }
     if (out.endsWith('-') && /[a-z]$/i.test(out.slice(-2, -1))) { out = out.slice(0, -1) + l; continue; }   // 斷字連回去
-    out += (CJK.test(out.slice(-1)) && CJK.test(l[0])) ? l : ' ' + l;
+    out += (CJKP.test(out.slice(-1)) && CJKP.test(l[0])) ? l : ' ' + l;
   }
   return out;
 }
 // 把一大段文字切成段落
 function toParas(text) {
-  text = (text || '').replace(/\r\n?/g, '\n').replace(/ /g, ' ').replace(/[ \t]+\n/g, '\n');
+  text = fixCJK(text || '').replace(/\r\n?/g, '\n').replace(/ /g, ' ').replace(/[ \t]+\n/g, '\n');
   let blocks = text.split(/\n\s*\n+/);
   const out = [];
   for (const b of blocks) {
     const lines = b.split('\n').filter(l => l.trim());
     if (lines.length <= 1) { out.push(joinLines(lines)); continue; }
     // 沒有空行分段（PDF 常見）：標題自成一段；一行以句號結尾、而且比一般行短，就是段落結尾
-    const maxLen = Math.max(...lines.map(l => l.trim().length));
+    const lens = lines.map(l => l.trim().length);
+    const maxLen = Math.max(...lens);
+    const typical = [...lens].sort((a, b) => a - b)[Math.floor(lens.length * 0.75)] || maxLen;
     let cur = [];
     for (let i = 0; i < lines.length; i++) {
       const l = lines[i].trim();
-      const isHeading = l.length < 40 && !/[.!?。！？,，;；:：]$/.test(l) && (i + 1 < lines.length) && !/^[a-z]/.test(lines[i + 1].trim());
+      const isHeading = l.length < 40 && l.length < typical * 0.6 && !/[.!?。！？,，;；:：、]$/.test(l) && (i + 1 < lines.length) && !/^[a-z]/.test(lines[i + 1].trim()) && !cur.length;
       if (isHeading) { if (cur.length) out.push(joinLines(cur)); out.push(l); cur = []; continue; }
       cur.push(l);
       const endsSentence = /[.!?。！？」』”"]\s*$/.test(l);
@@ -72,7 +78,7 @@ function toParas(text) {
     }
     if (cur.length) out.push(joinLines(cur));
   }
-  return out.map(p => p.replace(/\s+/g, ' ').trim()).filter(p => p && !/^[\s\d\-–—_*#=.·•|]+$/.test(p));
+  return out.map(p => p.replace(/\s+/g, ' ').trim()).filter(p => p && !/^[\s\d\-–—_*#=.·•|/]+$/.test(p));
 }
 const segs = {};
 function splitSentences(p, lang) {
@@ -100,7 +106,7 @@ function splitSentences(p, lang) {
 }
 function guessLang(t) {
   t = (t || '').slice(0, 2000);
-  if (/[぀-ヿ]/.test(t)) return 'ja';
+  if ((t.match(/[\u3041-\u3096\u30a1-\u30fa]/g) || []).length >= 3) return 'ja';   // 至少 3 個假名才算日文（「・」「ー」不算）
   if (/[가-힯]/.test(t)) return 'ko';
   if (/[฀-๿]/.test(t)) return 'th';
   if (/[Ѐ-ӿ]/.test(t)) return 'ru';
@@ -119,23 +125,46 @@ const langName = c => (LANGS.find(l => l[0] === c) || [c, c])[1];
 async function readPDF(buf) {
   await loadScript(CDN.pdf);
   pdfjsLib.GlobalWorkerOptions.workerSrc = CDN.pdfWorker;
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-  const lines = [];
+  const base = CDN.pdf.slice(0, CDN.pdf.lastIndexOf('/') + 1);
+  // cMap：很多中文／日文 PDF 需要它才讀得出字
+  const pdf = await pdfjsLib.getDocument({ data: buf, cMapUrl: base + 'cmaps/', cMapPacked: true, standardFontDataUrl: base + 'standard_fonts/' }).promise;
+  // 一行一行讀出來，記下每行的字體大小和位置（用來判斷標題和段落）
+  const rows = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     if (i % 5 === 0) toast(`讀取 PDF ${i}/${pdf.numPages} 頁…`, 60000);
     const page = await pdf.getPage(i);
     const tc = await page.getTextContent();
-    let line = '', lastY = null;
+    let row = null;
+    const push = () => { if (row && row.text.trim()) rows.push(row); row = null; };
     for (const it of tc.items) {
-      const y = it.transform ? Math.round(it.transform[5]) : lastY;
-      if (lastY !== null && y !== lastY && Math.abs(y - lastY) > 2 && line) { lines.push(line); line = ''; }
-      line += it.str; lastY = y;
-      if (it.hasEOL) { lines.push(line); line = ''; }
+      const t = it.transform || [0, 0, 0, 0, 0, row ? row.y : 0];
+      const y = Math.round(t[5]), size = Math.abs(t[3]) || Math.abs(t[0]) || (row ? row.size : 0);
+      if (row && Math.abs(y - row.y) > 2 && it.str.trim()) push();
+      if (!row) row = { text: '', y, size: 0, page: i };
+      row.text += it.str;
+      if (it.str.trim()) row.size = Math.max(row.size, size);
+      if (it.hasEOL) push();
     }
-    if (line) lines.push(line);
-    lines.push('');   // 換頁
+    push();
   }
-  const text = lines.join('\n');
+  // 拿掉頁碼（例如「12」「12 / 77」「- 12 -」「第 12 頁」）
+  const isPageNo = l => /^\s*[-–—]?\s*(第\s*)?\d{1,4}\s*(頁|\/\s*\d{1,4})?\s*[-–—]?\s*$/.test(l);
+  const body = rows.filter(r => !isPageNo(r.text));
+  const median = a => { const b = a.filter(x => x > 0).sort((x, y) => x - y); return b.length ? b[Math.floor(b.length / 2)] : 0; };
+  const medSize = median(body.map(r => r.size));
+  const gaps = []; for (let k = 1; k < body.length; k++) if (body[k].page === body[k - 1].page) gaps.push(body[k - 1].y - body[k].y);
+  const medGap = median(gaps.filter(g => g > 0));
+  // 字比較大 → 標題（自成一段）；行距比較大 → 新的段落；換頁不切段（跨頁的段落會接起來）
+  let text = '', prevHead = false;
+  body.forEach((r, k) => {
+    const head = medSize && r.size > medSize * 1.15;
+    const prev = body[k - 1];
+    const bigGap = prev && prev.page === r.page && medGap && (prev.y - r.y) > medGap * 1.45;
+    if (head) text += (prevHead ? ' ' : '\n\n') + r.text.trim();
+    else text += (prevHead || bigGap ? '\n\n' : '\n') + r.text;
+    prevHead = head;
+  });
+  text = fixCJK(text);
   if (text.replace(/\s/g, '').length < 20) throw new Error('這個 PDF 是掃描的圖片，裡面沒有文字，沒辦法讀取');
   return { title: (await pdf.getMetadata().catch(() => ({})))?.info?.Title || '', paras: toParas(text) };
 }
@@ -469,7 +498,7 @@ async function ensureTrans(b, lang, from, to) {
 const family = c => (c || '').startsWith('zh') ? 'zh' : ['ja', 'ko', 'th', 'ru'].includes(c) ? c : 'latin';
 // 每一句自己判斷語言：中文句子一定用中文語音、日文用日文……（混合語言的書也不會唸錯）
 function sentLang(text, fallback) {
-  if (/[\u3040-\u30ff]/.test(text)) return 'ja';
+  if (/[\u3041-\u3096\u30a1-\u30fa]/.test(text)) return 'ja';
   if (/[\uac00-\ud7af]/.test(text)) return 'ko';
   if (/[\u0e00-\u0e7f]/.test(text)) return 'th';
   if (/[\u0400-\u04ff]/.test(text)) return 'ru';
