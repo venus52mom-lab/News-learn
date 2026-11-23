@@ -268,28 +268,45 @@ code{background:var(--chip);padding:1px 5px;border-radius:4px;font-size:12.5px}
 .yt-frame{width:100%;max-width:520px;margin:0 auto;aspect-ratio:16/9;background:#000}
 .yt-frame iframe{width:100%;height:100%;border:0;display:block}
 
-/* ---------- myTube 全螢幕（不靠 iPhone，自動橫向） ---------- */
-.fs-ctl{display:none}
+/* ---------- YouTube 風格影片控制層 ---------- */
+.v-ol,.ol-bar{display:none}
+.player.full.video-mode .v-ol,.player.fs .v-ol{display:block;position:absolute;inset:0;z-index:3;-webkit-user-select:none;user-select:none}
+.player.full.video-mode .ol-bar{display:block;position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.25);z-index:2}
+.ol-bar div{height:100%;width:0;background:#ff0033}
+.ol-shade{position:absolute;inset:0;background:rgba(0,0,0,.38);transition:opacity .2s}
+.v-ol>*:not(.ol-skip){transition:opacity .2s}
+.v-ol.hide>*:not(.ol-skip){opacity:0;pointer-events:none}
+.ol-btn{position:absolute;width:44px;height:44px;border-radius:50%;color:#fff;display:inline-flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}
+.ol-btn svg{width:24px;height:24px}
+.ol-down{top:calc(8px + var(--safe-t));left:10px;background:none}
+.ol-down svg{width:30px;height:30px}
+.ol-rot{display:none;top:12px;right:12px}
+.player.fs .ol-rot{display:inline-flex}
+.player.fs .ol-down{top:12px}
+.ol-mid{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:36px}
+.ol-mid .ol-btn{position:static;width:52px;height:52px;background:rgba(0,0,0,.45)}
+.ol-mid .ol-play{width:68px;height:68px}
+.ol-mid .ol-play svg{width:32px;height:32px}
+.ol-time{position:absolute;left:10px;bottom:16px;color:#fff;font-size:13px;font-weight:600;padding:4px 10px;border-radius:14px;background:rgba(0,0,0,.55)}
+.ol-fs{right:8px;bottom:8px;background:rgba(0,0,0,.45)}
+.ol-seek{position:absolute;left:-2px;right:-2px;bottom:-8px;width:calc(100% + 4px);margin:0;height:20px;accent-color:#ff0033;background:transparent}
+.player.fs .ol-seek{left:60px;right:60px;width:auto;bottom:14px}
+.player.fs .ol-time{bottom:40px}
+.player.fs .ol-fs{bottom:30px}
+.ol-skip{position:absolute;top:50%;transform:translateY(-50%);color:#fff;font-weight:700;font-size:14px;padding:8px 14px;border-radius:20px;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s}
+.ol-skip-l{left:12%}.ol-skip-r{right:12%}
+.ol-skip.show{opacity:1}
+/* 影片模式：不用另外的「正在播放」頂列和大按鈕，控制都在影片上（像 YouTube） */
+.player.full.video-mode .player-top,.player.full.video-mode .custom-audio{display:none}
+.player.full.video-mode .np-title{margin-top:14px}
+
+/* ---------- 全螢幕（myTube 自己的，直拿自動轉橫） ---------- */
 .player.fs .player-stage{position:fixed;z-index:95;background:#000;max-width:none;margin:0;padding:0;aspect-ratio:auto;
   top:50%;left:50%;width:100vw;height:100vh;transform:translate(-50%,-50%)}
-/* 直拿手機時把整個畫面轉 90 度，像橫著看 */
 .player.fs.rot .player-stage{width:100vh;height:100vw;transform:translate(-50%,-50%) rotate(90deg)}
 @supports (height:100dvh){
   .player.fs .player-stage{height:100dvh}
   .player.fs.rot .player-stage{width:100dvh}
 }
 .player.fs #videoEl{width:100%;height:100%;object-fit:contain}
-.player.fs .fs-ctl{display:block;position:absolute;inset:0;z-index:4;transition:opacity .25s}
-.player.fs .fs-ctl.hide{opacity:0}
-.player.fs .fs-ctl.hide *{pointer-events:none}
-.fs-btn{width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:inline-flex;align-items:center;justify-content:center}
-.fs-btn svg{width:26px;height:26px}
-.fs-exit{position:absolute;top:14px;left:14px}
-.fs-mid{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;gap:44px;align-items:center}
-.fs-play{width:72px;height:72px}
-.fs-play svg{width:34px;height:34px}
-.fs-bottom{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;padding:14px 18px 18px;
-  background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:13px}
-.fs-bottom input{flex:1;accent-color:#ff0033}
-.fs-rot{width:40px;height:40px}
-.fs-rot svg{width:20px;height:20px}
+.player.fs .ol-bar{display:none}

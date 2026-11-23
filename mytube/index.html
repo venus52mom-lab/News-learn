@@ -188,21 +188,23 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
     <video id="videoEl" playsinline webkit-playsinline preload="auto" controls></video>
     <div class="audio-art" id="audioArt"><img id="artImg" alt=""><div class="art-badge" id="artBadge">背景音訊模式</div></div>
     <div class="mini-tap" id="miniTap"></div>
-    <!-- myTube 自己的全螢幕控制列 -->
-    <div class="fs-ctl" id="fsCtl">
-      <button class="fs-btn fs-exit" id="fsExit" aria-label="離開全螢幕"><svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
-      <div class="fs-mid">
-        <button class="fs-btn" id="fsBack" aria-label="倒退 10 秒"><svg viewBox="0 0 24 24"><path d="M11 5L4 12l7 7M20 5l-7 7 7 7"/></svg></button>
-        <button class="fs-btn fs-play" id="fsPlay" aria-label="播放/暫停"></button>
-        <button class="fs-btn" id="fsFwd" aria-label="快轉 10 秒"><svg viewBox="0 0 24 24"><path d="M13 5l7 7-7 7M4 5l7 7-7 7"/></svg></button>
+    <!-- YouTube 風格的影片控制層：點一下叫出按鈕（不會暫停） -->
+    <div class="v-ol hide" id="vOl">
+      <div class="ol-shade"></div>
+      <button class="ol-btn ol-down" id="olDown" aria-label="縮小"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="ol-btn ol-rot" id="olRot" aria-label="旋轉"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></svg></button>
+      <div class="ol-mid">
+        <button class="ol-btn" id="olPrev" aria-label="上一個"><svg viewBox="0 0 24 24"><path d="M19 5L9 12l10 7z" fill="currentColor"/><path d="M6 5v14"/></svg></button>
+        <button class="ol-btn ol-play" id="olPlay" aria-label="播放/暫停"></button>
+        <button class="ol-btn" id="olNext" aria-label="下一個"><svg viewBox="0 0 24 24"><path d="M5 5l10 7-10 7z" fill="currentColor"/><path d="M18 5v14"/></svg></button>
       </div>
-      <div class="fs-bottom">
-        <span id="fsCur">0:00</span>
-        <input type="range" id="fsSeek" min="0" max="1000" value="0">
-        <span id="fsDur">0:00</span>
-        <button class="fs-btn fs-rot" id="fsRot" aria-label="旋轉"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16M3 21v-5h5"/></svg></button>
-      </div>
+      <div class="ol-time" id="olTime">0:00 / 0:00</div>
+      <button class="ol-btn ol-fs" id="olFs" aria-label="全螢幕"></button>
+      <input type="range" class="ol-seek" id="olSeek" min="0" max="1000" value="0">
+      <div class="ol-skip ol-skip-l" id="olSkipL">« 10 秒</div>
+      <div class="ol-skip ol-skip-r" id="olSkipR">10 秒 »</div>
     </div>
+    <div class="ol-bar"><div id="olBar"></div></div>
   </div>
   <audio id="audioEl" preload="auto"></audio>
 
@@ -241,7 +243,6 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
     <div class="np-sub" id="npSub"></div>
     <div class="action-chips">
       <button class="chip-btn" id="bgBtn"><svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v6H4zM17 14h3v6h-3z"/></svg>背景播放</button>
-      <button class="chip-btn" id="fsBtn"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>全螢幕</button>
       <button class="chip-btn" id="pipBtn"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="12" width="8" height="6" rx="1" class="fill"/></svg>子母畫面</button>
       <button class="chip-btn" id="addToPlBtn"><svg viewBox="0 0 24 24"><path d="M3 6h12M3 12h12M3 18h8M18 14v8M14 18h8"/></svg>加入清單</button>
       <button class="chip-btn" id="saveDevBtn"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>存到裝置</button>

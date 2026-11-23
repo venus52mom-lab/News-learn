@@ -698,6 +698,7 @@ const Player = {
     Preview.stop(true);
     if (!history.state?.player) history.pushState({ player: 1 }, '');
     this.updateUI();
+    if (P.item?.type === 'video') OL.show();
   },
   /* 在畫面切換的這段時間內，如果被系統暫停就自動接著播 */
   keepPlaying(ms = 1500) {
@@ -728,7 +729,7 @@ const Player = {
   updateUI() {
     const m = P.item; if (!m) return;
     if (m.type !== 'video' && FS.on) FS.exit();
-    FS.update();
+    OL.update();
     const audioMode = m.type === 'audio' || P.bgVideo;
     playerBox.classList.toggle('audio-mode', audioMode);
     playerBox.classList.toggle('video-mode', !audioMode);
@@ -744,7 +745,6 @@ const Player = {
     bg.lastChild.textContent = '回到影片畫面';
     $('#pipBtn').hidden = m.type !== 'video';
     $('#miniPip').hidden = m.type !== 'video';
-    $('#fsBtn').hidden = m.type !== 'video';
     $('#bgHint').innerHTML = m.type === 'video'
       ? '直接滑回桌面、切到別的 App 或鎖螢幕，<b>聲音都會繼續播</b>；回到 myTube 畫面會自動接上。想看小視窗，按「子母畫面」。'
       : '音樂可以直接背景播放，也能用鎖定畫面控制。';
@@ -836,59 +836,93 @@ $('#miniInfo').onclick = () => Player.openFull();
 $('#minimizeBtn').onclick = () => Player.minimize();
 $('#bgBtn').onclick = () => { P.autoBg = false; Player.setBgVideo(false); };
 $('#pipBtn').onclick = () => Player.pip();
-/* ---------- myTube 自己的全螢幕：不靠 iPhone，按了一定會開，聲音不中斷 ---------- */
+/* ---------- YouTube 風格控制層 + myTube 全螢幕 ---------- */
+const ICON_FS_IN = '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_FS_OUT = '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const OL = {
+  hideTimer: null, seeking: false, lastTap: 0, tapTimer: null,
+  el: $('#vOl'),
+  show(stay) {
+    this.el.classList.remove('hide');
+    clearTimeout(this.hideTimer);
+    if (!stay && !audioEl.paused) this.hideTimer = setTimeout(() => this.hide(), 3000);
+  },
+  hide() { if (!this.seeking) this.el.classList.add('hide'); },
+  update() {
+    $('#olPlay').innerHTML = audioEl.paused ? ICON.play : ICON.pause;
+    const d = audioEl.duration || P.item?.duration || 0, t = audioEl.currentTime || 0;
+    $('#olTime').textContent = `${fmtTime(t)} / ${fmtTime(d)}`;
+    if (!this.seeking && d) $('#olSeek').value = Math.round(t / d * 1000);
+    $('#olBar').style.width = d ? (t / d * 100) + '%' : '0';
+    $('#olFs').innerHTML = FS.on ? ICON_FS_OUT : ICON_FS_IN;
+  },
+  skip(sec) {
+    const d = audioEl.duration || 0;
+    audioEl.currentTime = Math.max(0, Math.min(d ? d - 0.3 : 1e9, audioEl.currentTime + sec));
+    const tag = $(sec < 0 ? '#olSkipL' : '#olSkipR');
+    tag.classList.add('show'); clearTimeout(tag._t); tag._t = setTimeout(() => tag.classList.remove('show'), 600);
+  },
+};
 const FS = {
-  on: false, hideTimer: null,
+  on: false,
   portrait() { return innerHeight > innerWidth; },
   enter() {
     if (!P.item || P.item.type !== 'video') return;
     this.on = true;
-    // 直拿手機 → 自動轉成橫向；已經橫拿就不轉
     playerBox.classList.add('fs');
     playerBox.classList.toggle('rot', this.portrait() && LS.get('fsRotate') !== '0');
     Sync.playVideo();
-    this.show();
     if (!history.state?.fs) history.pushState({ player: 1, fs: 1 }, '');
+    OL.update(); OL.show();
   },
   exit(fromPop) {
     if (!this.on) return;
     this.on = false;
     playerBox.classList.remove('fs', 'rot');
-    clearTimeout(this.hideTimer);
     if (!fromPop && history.state?.fs) { this.ignorePop = true; history.back(); }
+    OL.update(); OL.show();
   },
-  show() {
-    const c = $('#fsCtl'); c.classList.remove('hide');
-    clearTimeout(this.hideTimer);
-    this.hideTimer = setTimeout(() => { if (!audioEl.paused) c.classList.add('hide'); }, 3000);
-  },
-  update() {
-    if (!this.on) return;
-    $('#fsPlay').innerHTML = audioEl.paused ? ICON.play : ICON.pause;
-    const d = audioEl.duration || P.item?.duration || 0;
-    $('#fsCur').textContent = fmtTime(audioEl.currentTime);
-    $('#fsDur').textContent = fmtTime(d);
-    if (!FS.seeking && d) $('#fsSeek').value = Math.round(audioEl.currentTime / d * 1000);
-  },
+  update() { OL.update(); },
 };
-$('#fsBtn').onclick = () => FS.enter();
-$('#fsExit').onclick = e => { e.stopPropagation(); FS.exit(); };
-$('#fsPlay').onclick = e => { e.stopPropagation(); Player.toggle(); FS.show(); };
-$('#fsBack').onclick = e => { e.stopPropagation(); audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); FS.show(); };
-$('#fsFwd').onclick = e => { e.stopPropagation(); audioEl.currentTime = Math.min((audioEl.duration || 0) - 0.5, audioEl.currentTime + 10); FS.show(); };
-$('#fsRot').onclick = e => {
-  e.stopPropagation();
-  const r = !playerBox.classList.contains('rot');
-  playerBox.classList.toggle('rot', r); LS.set('fsRotate', r ? '1' : '0'); FS.show();
-};
-$('#fsSeek').oninput = () => { FS.seeking = true; FS.show(); $('#fsCur').textContent = fmtTime($('#fsSeek').value / 1000 * (audioEl.duration || 0)); };
-$('#fsSeek').onchange = () => { if (audioEl.duration) audioEl.currentTime = $('#fsSeek').value / 1000 * audioEl.duration; FS.seeking = false; };
-$('#fsCtl').addEventListener('click', e => {
-  if (e.target !== $('#fsCtl')) return;
-  const c = $('#fsCtl');
-  if (c.classList.contains('hide')) FS.show(); else c.classList.add('hide');
+// 點影片：叫出／收起按鈕（不會暫停）；連點兩下左邊／右邊：倒退／快轉 10 秒（跟 YouTube 一樣）
+OL.el.addEventListener('click', e => {
+  if (e.target.closest('button,input')) return;
+  const now = Date.now();
+  const r = OL.el.getBoundingClientRect();
+  const rotated = playerBox.classList.contains('rot');
+  const pos = rotated ? (e.clientY - r.top) / r.height : (e.clientX - r.left) / r.width;
+  if (now - OL.lastTap < 300) {
+    clearTimeout(OL.tapTimer); OL.lastTap = 0;
+    if (pos < 0.4) OL.skip(-10); else if (pos > 0.6) OL.skip(10);
+    return;
+  }
+  OL.lastTap = now;
+  clearTimeout(OL.tapTimer);
+  OL.tapTimer = setTimeout(() => {
+    if (OL.el.classList.contains('hide')) OL.show(); else OL.hide();
+  }, 260);
 });
-for (const ev of ['timeupdate', 'play', 'pause', 'loadedmetadata']) audioEl.addEventListener(ev, () => FS.update());
+$('#olPlay').onclick = () => { Player.toggle(); OL.show(); };
+$('#olPrev').onclick = () => { Player.prev(); OL.show(); };
+$('#olNext').onclick = () => { Player.next(); OL.show(); };
+$('#olDown').onclick = () => (FS.on ? FS.exit() : Player.minimize());
+$('#olFs').onclick = () => (FS.on ? FS.exit() : FS.enter());
+$('#olRot').onclick = () => {
+  const r = !playerBox.classList.contains('rot');
+  playerBox.classList.toggle('rot', r); LS.set('fsRotate', r ? '1' : '0'); OL.show();
+};
+$('#olSeek').addEventListener('input', () => {
+  OL.seeking = true; OL.show(true);
+  const d = audioEl.duration || 0;
+  $('#olTime').textContent = `${fmtTime($('#olSeek').value / 1000 * d)} / ${fmtTime(d)}`;
+});
+$('#olSeek').addEventListener('change', () => {
+  if (audioEl.duration) audioEl.currentTime = $('#olSeek').value / 1000 * audioEl.duration;
+  OL.seeking = false; OL.show();
+});
+for (const ev of ['timeupdate', 'play', 'pause', 'loadedmetadata', 'durationchange']) audioEl.addEventListener(ev, () => OL.update());
+audioEl.addEventListener('pause', () => OL.show(true));
+audioEl.addEventListener('play', () => OL.show());
 addEventListener('resize', () => { if (FS.on) playerBox.classList.toggle('rot', FS.portrait() && LS.get('fsRotate') !== '0'); });
 $('#miniPip').onclick = e => { e.stopPropagation(); Player.pip(); };
 $('#shuffleBtn').onclick = () => { P.shuffle = !P.shuffle; Player.updateUI(); toast(P.shuffle ? '隨機播放：開' : '隨機播放：關'); };
@@ -903,12 +937,19 @@ addEventListener('popstate', () => {
 
 // 往下滑關閉 → 縮小（像 YouTube）
 (() => {
-  let y0 = null;
+  let y0 = null, x0 = 0, t0 = 0;
   const stage = $('#playerStage');
   let wasPlaying = false;
-  stage.addEventListener('touchstart', e => { if (P.view === 'full' && !FS.on) { y0 = e.touches[0].clientY; wasPlaying = P.item && !Player.active().paused; } }, { passive: true });
+  stage.addEventListener('touchstart', e => {
+    // 拉進度條、按按鈕、全螢幕時都不算「往下滑」
+    if (P.view !== 'full' || FS.on || e.touches.length > 1 || e.target.closest('input,button')) { y0 = null; return; }
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; t0 = Date.now();
+    wasPlaying = P.item && !Player.active().paused;
+  }, { passive: true });
   stage.addEventListener('touchend', e => {
-    if (y0 != null && e.changedTouches[0].clientY - y0 > 90) {
+    const dy = y0 == null ? 0 : e.changedTouches[0].clientY - y0, dx = Math.abs(e.changedTouches[0].clientX - x0);
+    // 要明確、快速地往下滑（超過 140、幾乎垂直、0.6 秒內）才縮小，避免不小心觸發
+    if (y0 != null && dy > 140 && dx < dy * 0.4 && Date.now() - t0 < 600) {
       Player.minimize();
       // 往下滑時手指可能碰到影片的暫停鍵，原本在播就接著播
       setTimeout(() => { const el = Player.active(); if (wasPlaying && el.paused) el.play().catch(() => {}); }, 60);
@@ -949,21 +990,18 @@ audioEl.addEventListener('timeupdate', () => {
   if (videoEl.paused) Sync.playVideo(); else Sync.align(false);
 });
 // 畫面 → 聲音（在全螢幕或子母畫面裡按播放/暫停/拉進度）
-videoEl.addEventListener('play', () => { if (Sync.isVideo() && audioEl.paused && !Sync.mine()) audioEl.play().catch(() => {}); });
+// 畫面 → 聲音：只有在「子母畫面」小視窗裡按的播放／暫停／拖進度才會影響聲音。
+// 其他時候畫面怎麼停（緩衝、進背景、拖進度）都不會讓聲音停掉或跳走。
+videoEl.addEventListener('play', () => { if (Sync.isVideo() && Sync.inPip() && audioEl.paused && !Sync.mine()) audioEl.play().catch(() => {}); });
 videoEl.addEventListener('pause', () => {
-  if (!Sync.isVideo() || Sync.mine() || videoEl.ended) return;
-  if (document.hidden && Sync.inPip()) { audioEl.pause(); return; }       // 子母畫面裡按暫停
-  // 等一下再判斷：進背景時 iPhone 會自動停掉畫面，那種暫停不能讓聲音也停
+  if (!Sync.isVideo() || Sync.mine() || videoEl.ended || !Sync.inPip()) return;
   Sync.pendingPause = Date.now();
-  setTimeout(() => {
-    if (!document.hidden && document.visibilityState === 'visible' && videoEl.paused && !audioEl.paused && !Sync.mine()) audioEl.pause();
-  }, 350);
+  audioEl.pause();
 });
 videoEl.addEventListener('seeked', () => {
-  if (Sync.isVideo() && !Sync.mine() && Math.abs(videoEl.currentTime - audioEl.currentTime) > 0.5) audioEl.currentTime = videoEl.currentTime;
+  if (Sync.isVideo() && Sync.inPip() && !Sync.mine() && Math.abs(videoEl.currentTime - audioEl.currentTime) > 1) audioEl.currentTime = videoEl.currentTime;
 });
 videoEl.addEventListener('volumechange', () => { if (!videoEl.muted) videoEl.muted = true; });   // 畫面永遠靜音，聲音只從一個地方出來
-videoEl.addEventListener('click', () => { if (P.view === 'full' && !FS.on && Sync.isVideo()) Player.toggle(); });
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { Preview.stop(true); return; }
