@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" data-ver="20261123b">
+<html lang="zh-Hant" data-ver="20261123c">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=20261123b">
+<link rel="stylesheet" href="styles.css?v=20261123c">
 </head>
 <body>
 <div id="app">
@@ -112,9 +112,17 @@
           <button class="active" data-mode="ashell">📲 a-Shell 下載</button>
           <button data-mode="api">📱 App 內</button>
           <button data-mode="external">🌐 網站</button>
-          <button data-mode="server">💻 電腦</button>
+          <button data-mode="server">☁️ 伺服器</button>
         </div>
         <p class="hint" id="modeHint"></p>
+        <div id="serverBox" hidden>
+          <input id="serverInput" type="url" placeholder="伺服器網址，例如 https://mytube.你的網域.com" autocapitalize="off" autocorrect="off">
+          <div class="row">
+            <input id="serverKey" type="text" placeholder="下載密碼" autocapitalize="off" autocorrect="off" autocomplete="off">
+            <button class="pill-btn ghost" id="testServerBtn">連線測試</button>
+          </div>
+          <p class="hint" id="serverStatus"></p>
+        </div>
         <div class="seg" id="formatSeg">
           <button class="active" data-fmt="mp4">MP4 影片</button>
           <button data-fmt="mp3">MP3 音樂</button>
@@ -157,12 +165,6 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
         <label class="label" for="extSiteInput">「下載網站」模式要打開的網站</label>
         <input id="extSiteInput" type="url" placeholder="https://cobalt.meowing.de/">
         <p class="hint">預設是 cobalt.meowing.de。如果這個網站下載 YouTube 失敗，可以換成其他下載網站的網址。</p>
-        <label class="label" for="serverInput">下載伺服器網址</label>
-        <div class="row">
-          <input id="serverInput" type="url" placeholder="https://xxxx.trycloudflare.com">
-          <button class="pill-btn ghost" id="testServerBtn">測試</button>
-        </div>
-        <p class="hint" id="serverStatus">YouTube 不允許網頁直接下載，需要搭配資料夾裡的 server（放在你的電腦執行）。說明在 README。</p>
 
         <label class="switch-row"><input type="checkbox" id="autoSaveChk" checked><span>下載完自動存到裝置</span></label>
         <div id="folderBox" hidden>
@@ -291,6 +293,6 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   </div>
 </div>
 
-<script src="app.js?v=20261123b"></script>
+<script src="app.js?v=20261123c"></script>
 </body>
 </html>

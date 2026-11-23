@@ -19,7 +19,7 @@ from pathlib import Path
 import yt_dlp
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -27,6 +27,9 @@ ROOT = Path(__file__).resolve().parent.parent          # myTube 網頁檔案所�
 WORK = Path(tempfile.gettempdir()) / "mytube-dl"       # 暫存下載檔
 WORK.mkdir(parents=True, exist_ok=True)
 MAX_PARALLEL = int(os.environ.get("MYTUBE_PARALLEL", "3"))
+TOKEN = os.environ.get("MYTUBE_TOKEN", "").strip()            # 下載密碼（雲端伺服器一定要設）
+API_ONLY = os.environ.get("MYTUBE_API_ONLY", "") == "1"       # 只提供下載 API，不提供網頁檔案
+COOKIES = Path(os.environ.get("MYTUBE_COOKIES", str(Path(__file__).resolve().parent / "cookies.txt")))
 KEEP_SECONDS = 2 * 3600
 
 app = FastAPI(title="myTube Server")
@@ -34,6 +37,17 @@ app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
     expose_headers=["Content-Length", "Content-Disposition"],
 )
+
+
+@app.middleware("http")
+async def check_token(request: Request, call_next):
+    # 有設密碼時，除了 /api/health 以外的 API 都要帶正確密碼
+    p = request.url.path
+    if TOKEN and p.startswith("/api/") and p != "/api/health" and request.method != "OPTIONS":
+        key = request.headers.get("x-mytube-key") or request.query_params.get("key", "")
+        if key != TOKEN:
+            return JSONResponse({"detail": "下載密碼不正確"}, status_code=401)
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -89,7 +103,10 @@ def run_job(job: dict):
         "progress_hooks": [hook],
         "postprocessor_hooks": [pp_hook],
         "concurrent_fragment_downloads": 4,
+        "remote_components": ["ejs:github"],   # YouTube 驗證需要的解題腳本
     }
+    if COOKIES.exists():
+        opts["cookiefile"] = str(COOKIES)       # 雲端主機常被 YouTube 擋，用登入的 cookies 比較不會
     if job["format"] == "mp3":
         opts["format"] = "bestaudio/best"
         opts["postprocessors"] = [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "192"}]
@@ -138,9 +155,11 @@ threading.Thread(target=cleanup_loop, daemon=True).start()
 
 
 @app.get("/api/health")
-def health():
+def health(request: Request):
+    key = request.headers.get("x-mytube-key", "")
     return {"ok": True, "ytdlp": yt_dlp.version.__version__,
-            "ffmpeg": bool(shutil.which("ffmpeg")), "deno": bool(shutil.which("deno"))}
+            "ffmpeg": bool(shutil.which("ffmpeg")), "deno": bool(shutil.which("deno")),
+            "cookies": COOKIES.exists(), "auth": (not TOKEN) or key == TOKEN, "needToken": bool(TOKEN)}
 
 
 @app.post("/api/jobs")
@@ -202,8 +221,9 @@ def job_delete(jid: str):
     return {"ok": True}
 
 
-# 同時提供 myTube 網頁（index.html 等）
-app.mount("/", StaticFiles(directory=ROOT, html=True), name="web")
+# 同時提供 myTube 網頁（只有在 myTube 資料夾裡執行時；雲端只開 API）
+if not API_ONLY and (ROOT / "index.html").exists():
+    app.mount("/", StaticFiles(directory=ROOT, html=True), name="web")
 
 
 def lan_ip() -> str:
@@ -223,9 +243,12 @@ if __name__ == "__main__":
     print("\n=== myTube 下載伺服器已啟動 ===")
     print(f"電腦上開：  http://localhost:{port}")
     print(f"手機（同一個 Wi-Fi）開：  http://{lan_ip()}:{port}")
+    print("下載密碼：", TOKEN or "（沒有設定）")
+    print("YouTube cookies：", "有" if COOKIES.exists() else "沒有（雲端主機建議放 cookies.txt）")
     if not shutil.which("ffmpeg"):
         print("⚠️  找不到 ffmpeg：MP3 和高畫質影片會失敗，請先安裝 ffmpeg")
     if not shutil.which("deno"):
         print("⚠️  找不到 Deno：YouTube 下載可能失敗，請先安裝 Deno（見 README）")
     print()
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
+    host = os.environ.get("MYTUBE_HOST", "0.0.0.0")
+    uvicorn.run(app, host=host, port=port, log_level="warning")

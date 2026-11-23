@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261123b';
+const APP_VER = '20261123c';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -1185,26 +1185,42 @@ Lock.updateBtn();
    下載
    ========================================================= */
 const DL = { active: 0, max: 3, queue: [] };
-const serverInput = $('#serverInput');
-const getServer = () => (serverInput.value || '').trim().replace(/\/+$/, '');
+const serverInput = $('#serverInput'), serverKey = $('#serverKey');
+const getServer = () => {
+  let v = (serverInput.value || '').trim().replace(/\/+$/, '');
+  if (v && !/^https?:\/\//i.test(v)) v = 'https://' + v;   // 只打網域也可以
+  return v;
+};
 serverInput.value = LS.get('server') || '';
-serverInput.onchange = () => { LS.set('server', getServer()); testServer(); };
+serverKey.value = LS.get('serverKey') || '';
+// 所有對伺服器的請求都帶上下載密碼
+const sHeaders = (extra = {}) => ({ ...extra, 'X-MyTube-Key': (serverKey.value || '').trim() });
+const sFetch = (path, opts = {}) => fetch(getServer() + path, { ...opts, headers: sHeaders(opts.headers || {}) });
+const saveServer = () => { LS.set('server', getServer()); LS.set('serverKey', (serverKey.value || '').trim()); };
+serverInput.onchange = () => { saveServer(); testServer(); };
+serverKey.onchange = () => { saveServer(); testServer(); };
 
 async function testServer(silent) {
   const s = getServer(), st = $('#serverStatus');
-  if (!s) { st.textContent = '尚未設定下載伺服器。'; return false; }
+  if (!s) { st.innerHTML = '填入伺服器網址和下載密碼（裝好伺服器時畫面會顯示）。'; return false; }
   try {
-    const r = await fetch(s + '/api/health', { cache: 'no-store' });
+    const r = await sFetch('/api/health', { cache: 'no-store' });
     const j = await r.json();
-    st.innerHTML = `<span class="st-done">✅ 已連線</span>（yt-dlp ${esc(j.ytdlp || '')}${j.ffmpeg ? '，ffmpeg OK' : '，⚠️ 找不到 ffmpeg，MP3 與高畫質合併會失敗'}）`;
+    if (j.needToken && !j.auth) {
+      st.innerHTML = '<span class="st-err">❌ 下載密碼不對</span>：請確認密碼（在伺服器執行 <code>cat /opt/mytube/token</code> 可以看到）。';
+      if (!silent) toast('下載密碼不對');
+      return false;
+    }
+    st.innerHTML = `<span class="st-done">✅ 已連線，可以下載</span>（yt-dlp ${esc(j.ytdlp || '')}${j.ffmpeg ? '' : '，⚠️ 伺服器缺 ffmpeg'}${j.deno === false ? '，⚠️ 伺服器缺 Deno' : ''}${j.cookies ? '，已使用 YouTube 登入' : ''}）`;
+    LS.set('serverOk', '1');
     return true;
   } catch (e) {
-    st.innerHTML = `<span class="st-err">❌ 連不到伺服器</span>：請確認電腦上的 server 有在執行，網址正確${location.protocol === 'https:' && s.startsWith('http:') ? '。注意：https 網頁不能連 http 伺服器，請用 Cloudflare Tunnel 的 https 網址' : ''}。`;
+    st.innerHTML = `<span class="st-err">❌ 連不到伺服器</span>：請確認網址正確、伺服器有在執行${s.startsWith('http:') ? '。注意：要用 https 開頭的網址' : ''}。`;
     if (!silent) toast('連不到下載伺服器');
     return false;
   }
 }
-$('#testServerBtn').onclick = () => { LS.set('server', getServer()); testServer(); };
+$('#testServerBtn').onclick = () => { saveServer(); testServer(); };
 
 $('#formatSeg').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1376,18 +1392,19 @@ function runAShell(items) {
   toast('指令已複製！到 a-Shell 長按貼上 → 按 Enter', 4000);
   openAShell();
 }
-S.mode = LS.get('dlmode') || 'ashell';
+S.mode = LS.get('dlmode') || (LS.get('serverOk') === '1' ? 'server' : 'ashell');
 if (S.mode === 'api' && !LS.get('apiList')) S.mode = 'ashell';
 function applyMode() {
   $$('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
   $('#qualityRow').hidden = S.mode === 'external' || S.mode === 'ashell' || S.fmt !== 'mp4';
+  $('#serverBox').hidden = S.mode !== 'server';
   $('#modeHint').innerHTML = S.mode === 'ashell'
     ? '按「開始下載」→ <b>自動複製好指令並跳到 a-Shell</b> → 在 a-Shell <b>長按、貼上、按 Enter</b> 就開始下載。<br>下載完回到這裡，按紀錄上的「<b>📥 匯入 myTube</b>」選檔案（在 a-Shell › myTube 資料夾，會自動分到影片／音樂）。可以一次貼很多個網址。'
     : S.mode === 'api'
     ? '直接在 myTube 裡下載，<b>不用電腦、不用設定</b>。可以一次貼很多個網址，下載完會自動出現在影片／音樂裡，馬上就能播。內建 ' + DEFAULT_APIS.length + ' 個下載服務，一個失敗會自動換下一個。'
     : S.mode === 'external'
     ? '按「開始下載」會<b>自動複製網址</b>並打開下載網站：把網址貼上 → 下載' + (S.fmt === 'mp3' ? '（請在網站選<b>音訊 audio</b>）' : '') + ' → 存到「檔案」App。<br>下載好後回到這裡，按紀錄上的「<b>匯入 myTube</b>」選那個檔案就能看。'
-    : '用你電腦上的 server 下載，可以一次下載很多個，下載完會<b>自動</b>出現在影片/音樂裡。需要電腦開著（設定方式見 README）。';
+    : '用你的雲端伺服器下載：<b>不用跳到別的 App</b>，貼網址按下載，完成後<b>自動出現在影片／音樂</b>，可以一次下載很多個。';
   $('#startDlBtn').lastChild.textContent = S.mode === 'external' ? '開始下載（打開下載網站）' : S.mode === 'ashell' ? '開始下載（打開 a-Shell）' : '開始下載';
   const redo = $('#redoSetup'); if (redo) redo.onclick = e => { e.preventDefault(); ashellSetup(); };
 }
@@ -1462,8 +1479,8 @@ function setH(h, patch) {
 }
 async function errText(r) { try { const j = await r.json(); return j.detail || j.error || r.statusText; } catch { return r.status + ' ' + r.statusText; } }
 
-async function fetchWithProgress(url, onProg) {
-  const r = await fetch(url);
+async function fetchWithProgress(url, onProg, opts) {
+  const r = await fetch(url, opts);
   if (!r.ok) throw new Error(await errText(r));
   const total = +r.headers.get('Content-Length') || +r.headers.get('Estimated-Content-Length') || 0;
   if (!r.body || !total) return r.blob();
@@ -1567,7 +1584,7 @@ async function runJob(hid) {
   const server = getServer();
   try {
     setH(h, { status: 'starting', progress: 0, error: null });
-    const r = await fetch(server + '/api/jobs', {
+    const r = await sFetch('/api/jobs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: h.url, format: h.format, quality: h.quality }),
     });
@@ -1577,7 +1594,7 @@ async function runJob(hid) {
     let s;
     for (;;) {
       await sleep(1000);
-      const pr = await fetch(`${server}/api/jobs/${jobId}`, { cache: 'no-store' });
+      const pr = await sFetch(`/api/jobs/${jobId}`, { cache: 'no-store' });
       if (!pr.ok) throw new Error(await errText(pr));
       s = await pr.json();
       if (s.title && h.title !== s.title) h.title = s.title;
@@ -1588,15 +1605,15 @@ async function runJob(hid) {
     setH(h, { status: 'transfer', progress: 0 });
     const blob = await fetchWithProgress(`${server}/api/jobs/${jobId}/file`, p => {
       if (!h._t || Date.now() - h._t > 300) { h._t = Date.now(); setH(h, { progress: p }); }
-    });
+    }, { headers: sHeaders() });
     let thumb = null;
-    try { const tr = await fetch(`${server}/api/jobs/${jobId}/thumb`); if (tr.ok) thumb = await tr.blob(); } catch {}
+    try { const tr = await sFetch(`/api/jobs/${jobId}/thumb`); if (tr.ok) thumb = await tr.blob(); } catch {}
     const type = h.format === 'mp3' ? 'audio' : 'video';
     const typed = blob.type ? blob : new Blob([blob], { type: type === 'video' ? 'video/mp4' : 'audio/mpeg' });
     const m = await addMedia(typed, { type, title: s.title || h.title, source: 'download', thumb, filename: s.filename, duration: s.duration });
     if (thumb) h.thumbMedia = m.id;
     setH(h, { status: 'done', progress: 1, mediaId: m.id, size: blob.size, saved: false });
-    fetch(`${server}/api/jobs/${jobId}`, { method: 'DELETE' }).catch(() => {});
+    sFetch(`/api/jobs/${jobId}`, { method: 'DELETE' }).catch(() => {});
     if ($('#autoSaveChk').checked) {
       const ok = await saveToDevice(m, false);
       if (ok) setH(h, { saved: true });

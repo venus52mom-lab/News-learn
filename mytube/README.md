@@ -30,6 +30,15 @@ YouTube 風格的個人影音庫，有這些功能：
 
 ---
 
+## ☁️ 用自己的雲端伺服器下載（不用跳到別的 App）
+1. 在伺服器（Ubuntu / Debian）用 root 執行一行：
+   - 有網域（先把網域的 A 記錄指到伺服器 IP）：`curl -fsSL https://raw.githubusercontent.com/venus52mom-lab/News-learn/main/mytube/server/install.sh | bash -s -- 你的網域`
+   - 沒有網域：`curl -fsSL https://raw.githubusercontent.com/venus52mom-lab/News-learn/main/mytube/server/install.sh | bash`
+2. 裝好會顯示「伺服器網址」和「下載密碼」
+3. myTube →「下載」→ 選「☁️ 伺服器」→ 填入網址和密碼 →「連線測試」
+4. 之後貼網址按下載，完成會自動出現在影片／音樂
+- 伺服器每天自動更新 yt-dlp；被 YouTube 要求登入時，把 cookies.txt 放到 `/opt/mytube/cookies.txt` 再 `systemctl restart mytube`
+
 ## 下載方式
 0. **📱 App 內下載（預設，不用電腦、不用設定）**：在 myTube 裡貼網址就直接下載，完成後自動出現在影片／音樂，可以一次下載很多個。程式內建 4 個 cobalt 下載服務，依序嘗試，一個失敗就自動換下一個（內建清單寫在 `app.js` 的 `DEFAULT_APIS`）。公開服務隨時可能被 YouTube 擋或關閉，不能用時可以在「⚙️ 下載設定」加入自己找到的 API 網址（會優先使用），清單可到 https://instances.cobalt.best/service/youtube 查看
 1. **🌐 下載網站**：按「開始下載」會自動複製網址並打開下載網站（預設 cobalt.tools）→ 貼上網址下載 → 存到「檔案」App → 回 myTube 按紀錄上的「匯入 myTube」選那個檔案。外部網站有時會被 YouTube 擋，失敗時可以在「下載設定」換別的下載網站
