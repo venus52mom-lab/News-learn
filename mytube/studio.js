@@ -10,22 +10,87 @@ const segLabel = i => LETTERS[(i * 2) % 26] + LETTERS[(i * 2 + 1) % 26];
 const fmtT = s => { s = Math.max(0, s || 0); const m = Math.floor(s / 60), x = s - m * 60; return `${m}:${x.toFixed(1).padStart(4, '0')}`; };
 
 /* ---------------- 選檔清單 ---------------- */
+// 剪輯過的：有剪輯紀錄、剪輯另存的新檔、或被剪輯覆蓋過的
+const isEdited = m => !!(m.edit?.segs?.length || m.source === 'edit' || m.cutAt);
+function editBadge(m) {
+  const b = [];
+  if (m.edit?.segs?.length) b.push(`✂️ 記錄 ${m.edit.segs.length} 段`);
+  if (m.source === 'edit') b.push('✂️ 剪輯檔');
+  else if (m.cutAt) b.push('✂️ 已剪輯覆蓋');
+  return b.map(t => ` · <span class="badge-edit">${t}</span>`).join('');
+}
 function renderStudio() {
   const box = $('#studioList'); if (!box) return;
   let list = S.media.slice().sort((a, b) => b.created - a.created);
   if (ST.filter === 'video' || ST.filter === 'audio') list = list.filter(m => m.type === ST.filter);
-  if (ST.filter === 'edit') list = list.filter(m => m.edit?.segs?.length);
+  if (ST.filter === 'edit') list = list.filter(isEdited);
   if (!list.length) {
-    box.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg><div>${ST.filter === 'edit' ? '還沒有剪輯過的檔案' : '還沒有影片或音樂<br>先到「影片」「音樂」匯入或下載'}</div></div>`;
+    box.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg><div>${ST.filter === 'edit' ? '還沒有剪輯過的檔案<br><small>（只存到「檔案」App 的剪輯檔不會出現在這裡）</small>' : '還沒有影片或音樂<br>先到「影片」「音樂」匯入或下載'}</div></div>`;
     return;
   }
-  box.innerHTML = list.map(m => `<div class="mrow" data-id="${m.id}">
+  box.innerHTML = list.map(m => `<div class="swipe" data-id="${m.id}">
+    <button class="swipe-del" data-a="del">🗑<span>刪除</span></button>
+    <div class="mrow">
     <img class="mart" src="${thumbURL(m)}" alt="">
     <div class="mtext"><div class="mtitle">${esc(m.title)}</div>
-      <div class="msub">${m.type === 'video' ? '🎬 影片' : '🎵 音樂'} · ${fmtTime(m.duration)}${m.edit?.segs?.length ? ` · <span class="badge-edit">✂️ ${m.edit.segs.length} 段</span>` : ''}</div></div>
+      <div class="msub">${m.type === 'video' ? '🎬 影片' : '🎵 音樂'} · ${fmtTime(m.duration)}${editBadge(m)}</div></div>
     <button class="more-btn" data-a="cut" aria-label="剪輯"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg></button>
-  </div>`).join('');
-  box.onclick = e => { const r = e.target.closest('.mrow'); if (r) openStudio(r.dataset.id); };
+  </div></div>`).join('');
+  box.onclick = e => {
+    const w = e.target.closest('.swipe'); if (!w) return;
+    if (e.target.closest('.swipe-del')) return askDelete(w.dataset.id);
+    if (Swipe.justMoved) return;
+    if (Swipe.open) { Swipe.close(); return; }       // 有打開刪除鈕時，點一下先收起來
+    openStudio(w.dataset.id);
+  };
+}
+/* 往左滑出現「刪除」 */
+const kindName = m => m.type === 'video' ? '影片' : '音樂';
+const SW_W = 88;
+const Swipe = {
+  open: null, justMoved: false,
+  set(row, x, anim) { row.style.transition = anim ? 'transform .2s' : 'none'; row.style.transform = x ? `translateX(${x}px)` : ''; },
+  close() { if (this.open) { this.set(this.open, 0, true); this.open = null; } },
+};
+(() => {
+  const box = $('#studioList'); if (!box) return;
+  let row = null, sx = 0, sy = 0, base = 0, dx = 0, mode = null;
+  box.addEventListener('pointerdown', e => {
+    const r = e.target.closest('.swipe .mrow'); if (!r || e.target.closest('.swipe-del')) return;
+    row = r; sx = e.clientX; sy = e.clientY; base = Swipe.open === r ? -SW_W : 0; dx = 0; mode = null;
+  });
+  box.addEventListener('pointermove', e => {
+    if (!row) return;
+    const mx = e.clientX - sx, my = e.clientY - sy;
+    if (!mode) { if (Math.abs(mx) < 8 && Math.abs(my) < 8) return; mode = Math.abs(mx) > Math.abs(my) ? 'h' : 'v'; if (mode === 'h' && Swipe.open && Swipe.open !== row) Swipe.close(); }
+    if (mode !== 'h') return;
+    dx = Math.max(-SW_W - 30, Math.min(0, base + mx));
+    Swipe.set(row, dx, false);
+  });
+  const end = () => {
+    if (!row) return;
+    if (mode === 'h') {
+      const openIt = dx < -SW_W / 2;
+      Swipe.set(row, openIt ? -SW_W : 0, true);
+      Swipe.open = openIt ? row : (Swipe.open === row ? null : Swipe.open);
+      Swipe.justMoved = true; setTimeout(() => { Swipe.justMoved = false; }, 350);
+    }
+    row = null; mode = null;
+  };
+  box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
+})();
+function askDelete(id) {
+  const m = S.media.find(x => x.id === id); if (!m) return;
+  openSheet(`<h4>🗑 刪除「${esc(m.title)}」？</h4>
+    <p class="hint" style="padding:0 20px">會從 myTube 刪除這個${kindName(m)}（播放清單裡也會移除），不能復原。<br>你 iPhone「檔案」App 裡的檔案<b>不會</b>被刪除。</p>
+    <button class="sheet-item danger" data-a="del">🗑 從 myTube 刪除</button>
+    ${m.edit?.segs?.length ? '<button class="sheet-item" data-a="clr">✂️ 只清除剪輯紀錄（保留檔案）</button>' : ''}
+    <button class="sheet-item" data-a="no">取消</button>`, async a => {
+    Swipe.close();
+    if (a === 'del') { await deleteMedia(id); renderStudio(); }
+    if (a === 'clr') { delete m.edit; delete P.editPref[m.id]; await DB.put('media', m); renderLibrary(m.type); renderStudio(); toast('已清除剪輯紀錄'); }
+  });
+  $('#sheetBackdrop').addEventListener('click', () => Swipe.close(), { once: true });
 }
 window.renderStudio = renderStudio;
 $('#studioChips').onclick = e => {
@@ -190,7 +255,6 @@ function saveSheet() {
     if (a === 'over') overwriteSheet();
   });
 }
-const kindName = m => m.type === 'video' ? '影片' : '音樂';
 // 另存新檔：① 取檔名 ② 選存到哪裡（預設：手機「檔案」App，由 iPhone 畫面選資料夾）
 function newFileSheet() {
   const m = ST.m;
@@ -266,6 +330,16 @@ function filesSheet(file) {
     saveToFiles(f).then(r => { if (r === 'cancel') toast('已取消，可以再按一次'); else if (r === 'shared') toast('✅ 已存「' + nm + '」', 3000); });
   });
   const inp = $('#stFileName'); inp.onfocus = () => inp.select();
+}
+
+async function saveRecord(clear) {
+  const m = ST.m;
+  if (clear) { delete m.edit; delete P.editPref[m.id]; }
+  else m.edit = { segs: ST.segs.map(({ a, b }) => ({ a, b })), at: Date.now() };
+  await DB.put('media', m);
+  renderLibrary(m.type);
+  toast(clear ? '已清除剪輯紀錄' : '✅ 已記錄剪輯。之後在影片／音樂播放時，可以選剪輯版或原始檔', 3500);
+  if (clear) closeStudio();
 }
 
 /* ---------------- 實際剪成檔案（ffmpeg，在手機上執行） ---------------- */
@@ -353,7 +427,7 @@ async function renderCut(opts) {
         m.size = out.size; m.mime = out.type;
         if (m.type === 'video') { const pv = await probeVideo(out); m.duration = pv.duration || m.duration; if (pv.thumb) { m.thumb = pv.thumb; thumbCache.delete(m.id); } }
         else m.duration = (await probeAudio(out)) || m.duration;
-        delete m.edit; delete P.editPref[m.id];
+        delete m.edit; delete P.editPref[m.id]; m.cutAt = Date.now();
         await DB.put('media', m);
         renderLibrary(m.type);
         msg = '✅ 已覆蓋 myTube 裡的檔案（「檔案」App 的原始檔沒有改變）';

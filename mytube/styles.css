@@ -386,3 +386,8 @@ input[type=range].ol-seek{touch-action:none}
 .st-select{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:15px}
 label.sheet-item{cursor:pointer}
 .st-ext{align-self:center;color:var(--text2);font-size:15px}
+/* 工作室：往左滑刪除 */
+#studioList .swipe{position:relative;overflow:hidden}
+#studioList .swipe .mrow{position:relative;background:var(--bg);touch-action:pan-y;z-index:1}
+.swipe-del{position:absolute;top:0;right:0;bottom:0;width:88px;background:#e53935;color:#fff;font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.swipe-del span{font-size:13px;font-weight:600}
