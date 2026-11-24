@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261124i';
+const APP_VER = '20261124j';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -1421,9 +1421,9 @@ function closeWatch() {
   if (P.view !== 'full') document.body.style.overflow = '';
 }
 $('#watchHereBtn').onclick = () => { const v = firstYt(); if (v) watchHere(v.id); };
-$('#watchSafariBtn').onclick = () => { const v = firstYt(); if (v) openInSafari(v.id); };
+if ($('#watchSafariBtn')) $('#watchSafariBtn').onclick = () => { const v = firstYt(); if (v) openInSafari(v.id); };
 $('#ytClose').onclick = closeWatch;
-$('#ytToSafari').onclick = () => { const id = $('#ytWatch').dataset.id; closeWatch(); openInSafari(id); };
+if ($('#ytToSafari')) $('#ytToSafari').onclick = () => { const id = $('#ytWatch').dataset.id; closeWatch(); openInSafari(id); };
 
 /* ---------- 下載方式：手機直接下載（外部網站）/ 電腦伺服器 ---------- */
 const DEFAULT_SITE = 'https://cobalt.meowing.de/';
@@ -1501,7 +1501,7 @@ function runAShell(items) {
   openAShell();
 }
 S.mode = LS.get('dlmode') || (LS.get('serverOk') === '1' ? 'server' : 'ashell');
-if (S.mode === 'api' && !LS.get('apiList')) S.mode = 'ashell';
+if (S.mode !== 'ashell' && S.mode !== 'server') S.mode = 'ashell';   // 「App 內」「網站」已拿掉
 function applyMode() {
   $$('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
   $('#qualityRow').hidden = S.mode === 'external' || S.mode === 'ashell' || S.fmt !== 'mp4';

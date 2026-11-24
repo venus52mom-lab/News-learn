@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" data-ver="20261124i">
+<html lang="zh-Hant" data-ver="20261124j">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=20261124i">
+<link rel="stylesheet" href="styles.css?v=20261124j">
 </head>
 <body>
 <div id="app">
@@ -132,15 +132,12 @@
         </div>
         <div class="row watch-row">
           <button class="pill-btn" id="watchHereBtn"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>在 myTube 看</button>
-          <button class="pill-btn" id="watchSafariBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor"/></svg>在 Safari 看（無廣告）</button>
         </div>
-        <p class="hint">不想下載只想看：「在 myTube 看」可能會有廣告；「在 Safari 看」搭配 Vinegar 擴充功能就沒有廣告，還能子母畫面。</p>
+        <p class="hint">不想下載只想看：按「在 myTube 看」（可能會有廣告）。</p>
 
         <div class="label" style="margin-top:12px">下載方式</div>
         <div class="seg" id="modeSeg">
           <button class="active" data-mode="ashell">📲 a-Shell 下載</button>
-          <button data-mode="api">📱 App 內</button>
-          <button data-mode="external">🌐 網站</button>
           <button data-mode="server">☁️ 伺服器</button>
         </div>
         <p class="hint" id="modeHint"></p>
@@ -187,6 +184,7 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
 
       <details class="card settings" id="settingsBox">
         <summary>下載設定</summary>
+        <div hidden>
         <label class="label" for="apiList">App 內下載：額外加入的 API 網址（選填，一行一個）</label>
         <textarea id="apiList" rows="3" placeholder="https://cobalt-api.example.com/"></textarea>
         <input id="apiKey" type="url" placeholder="API 金鑰（選填，有的 API 才需要）" style="margin-top:8px">
@@ -195,6 +193,7 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
         <input id="extSiteInput" type="url" placeholder="https://cobalt.meowing.de/">
         <p class="hint">預設是 cobalt.meowing.de。如果這個網站下載 YouTube 失敗，可以換成其他下載網站的網址。</p>
 
+        </div>
         <label class="switch-row"><input type="checkbox" id="autoSaveChk" checked><span>下載完自動存到裝置</span></label>
         <div id="folderBox" hidden>
           <button class="pill-btn ghost" id="pickFolderBtn"><svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></svg>選擇儲存位置（自動建立 myTube/影片、myTube/音樂）</button>
@@ -289,10 +288,9 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   <div class="yt-watch-top">
     <button class="icon-btn" id="ytClose" aria-label="關閉"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <span class="player-top-title">YouTube</span>
-    <button class="pill-btn ghost" id="ytToSafari">在 Safari 看</button>
   </div>
   <div class="yt-frame" id="ytFrame"></div>
-  <p class="hint" style="padding:8px 14px"><b>背景播放：</b>離開 myTube 時會自動嘗試繼續播。如果還是停了，打開<b>控制中心或鎖定畫面</b>按 ▶ 播放，通常就能繼續聽。<br>廣告是 YouTube 決定的，這裡擋不掉；想沒有廣告，按右上角「在 Safari 看」並安裝 Vinegar。</p>
+  <p class="hint" style="padding:8px 14px"><b>背景播放：</b>離開 myTube 時會自動嘗試繼續播。如果還是停了，打開<b>控制中心或鎖定畫面</b>按 ▶ 播放，通常就能繼續聽。<br>廣告是 YouTube 決定的，這裡擋不掉。</p>
 </div>
 
 <!-- 匯入單一檔案：點一下就匯入，不用再按「打開」 -->
@@ -394,8 +392,8 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   </div>
 </div>
 
-<script src="app.js?v=20261124i"></script>
-<script src="books.js?v=20261124i"></script>
-<script src="studio.js?v=20261124i"></script>
+<script src="app.js?v=20261124j"></script>
+<script src="books.js?v=20261124j"></script>
+<script src="studio.js?v=20261124j"></script>
 </body>
 </html>
