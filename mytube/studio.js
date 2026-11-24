@@ -21,15 +21,15 @@ function editBadge(m) {
 }
 function renderStudio() {
   const box = $('#studioList'); if (!box) return;
-  let list = S.media.slice().sort((a, b) => b.created - a.created);
+  let list = S.media.filter(m => !m.stHidden).sort((a, b) => b.created - a.created);
   if (ST.filter === 'video' || ST.filter === 'audio') list = list.filter(m => m.type === ST.filter);
   if (ST.filter === 'edit') list = list.filter(isEdited);
   if (!list.length) {
-    box.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg><div>${ST.filter === 'edit' ? '還沒有剪輯過的檔案<br><small>（只存到「檔案」App 的剪輯檔不會出現在這裡）</small>' : '還沒有影片或音樂<br>先到「影片」「音樂」匯入或下載'}</div></div>`;
+    box.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.1 15.9M14.5 14.5L20 20M8.1 8.1L12 12"/></svg><div>${ST.filter === 'edit' ? '還沒有剪輯過的檔案<br><small>（只存到「檔案」App 的剪輯檔不會出現在這裡）</small>' : (S.media.length ? '工作室清單是空的<br><small>到「影片」或「音樂」，按檔案旁的「⋮」→「➕ 加回工作室清單」</small>' : '還沒有影片或音樂<br>先到「影片」「音樂」匯入或下載')}</div></div>`;
     return;
   }
   box.innerHTML = list.map(m => `<div class="swipe" data-id="${m.id}">
-    <button class="swipe-del" data-a="del">🗑<span>刪除</span></button>
+    <button class="swipe-del" data-a="del" aria-label="移除"><i><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg></i><span>移除</span></button>
     <div class="mrow">
     <img class="mart" src="${thumbURL(m)}" alt="">
     <div class="mtext"><div class="mtitle">${esc(m.title)}</div>
@@ -79,18 +79,15 @@ const Swipe = {
   };
   box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
 })();
-function askDelete(id) {
+// 往左滑 → 垃圾桶：只從工作室清單移除，影片／音樂本身還在（可以在「⋮」選單加回來）
+async function askDelete(id) {
   const m = S.media.find(x => x.id === id); if (!m) return;
-  openSheet(`<h4>🗑 刪除「${esc(m.title)}」？</h4>
-    <p class="hint" style="padding:0 20px">會從 myTube 刪除這個${kindName(m)}（播放清單裡也會移除），不能復原。<br>你 iPhone「檔案」App 裡的檔案<b>不會</b>被刪除。</p>
-    <button class="sheet-item danger" data-a="del">🗑 從 myTube 刪除</button>
-    ${m.edit?.segs?.length ? '<button class="sheet-item" data-a="clr">✂️ 只清除剪輯紀錄（保留檔案）</button>' : ''}
-    <button class="sheet-item" data-a="no">取消</button>`, async a => {
-    Swipe.close();
-    if (a === 'del') { await deleteMedia(id); renderStudio(); }
-    if (a === 'clr') { delete m.edit; delete P.editPref[m.id]; await DB.put('media', m); renderLibrary(m.type); renderStudio(); toast('已清除剪輯紀錄'); }
-  });
-  $('#sheetBackdrop').addEventListener('click', () => Swipe.close(), { once: true });
+  const w = $(`#studioList .swipe[data-id="${id}"]`);
+  if (w) { w.style.transition = 'opacity .2s, max-height .25s'; w.style.maxHeight = w.offsetHeight + 'px'; requestAnimationFrame(() => { w.style.opacity = 0; w.style.maxHeight = '0px'; }); }
+  Swipe.open = null;
+  m.stHidden = true; await DB.put('media', m);
+  setTimeout(renderStudio, 260);
+  toast(`已從工作室移除「${m.title}」。${kindName(m)}還在，要加回來：到「${kindName(m)}」按「⋮」→「➕ 加回工作室清單」`, 4500);
 }
 window.renderStudio = renderStudio;
 $('#studioChips').onclick = e => {

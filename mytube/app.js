@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261124h';
+const APP_VER = '20261124i';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -542,6 +542,7 @@ function itemMenu(id) {
     <button class="sheet-item" data-a="bg">🎧 背景播放（只聽聲音）</button>
     <button class="sheet-item" data-a="pl">➕ 加入播放清單</button>
     <button class="sheet-item" data-a="studio">✂️ 到工作室剪輯</button>
+    ${m.stHidden ? '<button class="sheet-item" data-a="stadd">➕ 加回工作室清單</button>' : ''}
     ${f !== 'all' ? '<button class="sheet-item" data-a="unpl">➖ 從這個清單移除</button>' : ''}
     <button class="sheet-item" data-a="save">📁 存到裝置（檔案 App）</button>
     <button class="sheet-item" data-a="rename">✏️ 重新命名</button>
@@ -550,7 +551,9 @@ function itemMenu(id) {
     if (a === 'play') Player.playList(list, i);
     if (a === 'bg') Player.playList(list, i, { mini: true });
     if (a === 'pl') playlistSheet(m);
+    if (a === 'studio' || a === 'stadd') { if (m.stHidden) { delete m.stHidden; await DB.put('media', m); window.renderStudio?.(); } }
     if (a === 'studio') { showPage('studio'); openStudio(m.id); }
+    if (a === 'stadd') toast('✅ 已加回工作室', 2500);
     if (a === 'unpl') { const pl = S.playlists.find(p => p.id === f); if (pl) togglePlaylistItem(pl, id); }
     if (a === 'save') saveFlow(m);
     if (a === 'rename') promptSheet('重新命名', m.title, async n => {

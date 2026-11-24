@@ -389,5 +389,7 @@ label.sheet-item{cursor:pointer}
 /* 工作室：往左滑刪除 */
 #studioList .swipe{position:relative;overflow:hidden}
 #studioList .swipe .mrow{position:relative;background:var(--bg);touch-action:pan-y;z-index:1}
-.swipe-del{position:absolute;top:0;right:0;bottom:0;width:88px;background:#e53935;color:#fff;font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.swipe-del span{font-size:13px;font-weight:600}
+.swipe-del{position:absolute;top:0;right:0;bottom:0;width:88px;background:none;color:var(--text2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.swipe-del i{width:64px;height:40px;border-radius:20px;background:#eb4d3d;display:flex;align-items:center;justify-content:center}
+.swipe-del svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.swipe-del span{font-size:12px}
