@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant" data-ver="20261124j">
+<html lang="zh-Hant" data-ver="20261124k">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="stylesheet" href="styles.css?v=20261124j">
+<link rel="stylesheet" href="styles.css?v=20261124k">
 </head>
 <body>
 <div id="app">
@@ -51,7 +51,7 @@
     <button class="tab active" data-page="video">影片</button>
     <button class="tab" data-page="audio">音樂</button>
     <button class="tab" data-page="book">電子書</button>
-    <button class="tab" data-page="studio">工作室</button>
+    <button class="tab" data-page="studio" id="studioTab">工作室<span class="tab-caret">▾</span></button>
     <span class="tab-spacer"></span>
     <button class="tab tab-download" data-page="download">
       <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>下載
@@ -110,6 +110,8 @@
 
     <!-- 工作室頁 -->
     <section class="page" id="page-studio">
+      <button class="st-mode-btn" id="stModeBtn"><span id="stModeLbl">🎬 影片／音樂工作室</span><span class="tab-caret">▾</span></button>
+      <div id="stVM">
       <div class="chips" id="studioChips">
         <button class="chip active" data-f="all">全部</button>
         <button class="chip" data-f="video">影片</button>
@@ -118,6 +120,12 @@
       </div>
       <p class="hint" style="padding:4px 14px 0">選一個影片或音樂，標出想要的片段（A→B、C→D、E→F…），可以排順序、合在一起。</p>
       <div class="music-list" id="studioList"></div>
+    </div>
+      <div id="phHome" hidden>
+        <p class="hint" style="padding:4px 14px 0">從手機照片匯入，一張一張接起來，加轉場、文字、背景音樂，做成<b>短影片</b>或 <b>PPT 簡報</b>。</p>
+        <div style="padding:10px 14px"><button class="pill-btn" id="phNew">＋ 新增作品</button></div>
+        <div class="music-list" id="phList"></div>
+      </div>
     </section>
 
     <!-- 下載頁 -->
@@ -335,6 +343,42 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
 <audio id="ttsEl" preload="auto"></audio>
 
 <!-- 工作室：剪輯畫面 -->
+<div class="dd-menu" id="stMenu" hidden>
+  <button data-m="vm">🎬 影片／音樂工作室<small>剪輯影片、音樂片段</small></button>
+  <button data-m="ph">🖼️ 照片工作室<small>照片做成短影片或 PPT</small></button>
+</div>
+<div class="studio ph-editor" id="phEditor" hidden>
+  <div class="rd-top">
+    <button class="icon-btn" id="phBack" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="rd-title" id="phTitle"></div>
+    <button class="pill-btn" id="phExport">匯出</button>
+  </div>
+  <div class="ph-stage" id="phStage"><canvas id="phCanvas"></canvas></div>
+  <div class="st-scroll">
+    <div class="ph-play">
+      <button class="icon-btn big" id="phPlay" aria-label="播放/暫停"></button>
+      <input type="range" id="phSeek" min="0" max="1000" value="0">
+      <span id="phTime">0:00 / 0:00</span>
+    </div>
+    <div class="ph-sec">
+      <div class="ph-row"><span>做成</span><div class="seg small" id="phTarget"><button data-v="video">🎬 短影片</button><button data-v="ppt">📊 PPT</button></div></div>
+      <div class="ph-row"><span>畫面比例</span><div class="seg small" id="phRatio"><button data-v="9:16">直 9:16</button><button data-v="16:9">橫 16:9</button><button data-v="1:1">方 1:1</button></div></div>
+      <div class="ph-row"><span>照片顯示</span><div class="seg small" id="phFit"><button data-v="contain">完整＋模糊背景</button><button data-v="cover">填滿畫面</button></div></div>
+      <div class="ph-row"><span>每張幾秒</span><div class="ph-step" data-k="dur"><button data-d="-0.5">−</button><b id="phDur"></b><button data-d="0.5">＋</button></div><button class="mini-btn" id="phDurAll">套用到全部</button></div>
+      <div class="ph-row"><span>轉場樣式</span><select id="phTrans" class="st-select"></select></div>
+      <div class="ph-row"><span>轉場幾秒</span><div class="ph-step" data-k="tdur"><button data-d="-0.1">−</button><b id="phTDur"></b><button data-d="0.1">＋</button></div></div>
+      <label class="ph-row"><span>動態縮放</span><input type="checkbox" id="phKB"><small class="hint" style="margin:0">照片慢慢放大，比較有動感</small></label>
+      <div class="ph-row ph-music" id="phMusicRow"><span>背景音樂</span><div style="flex:1;min-width:0"><div id="phMusicName" class="ph-mname">沒有</div>
+        <div class="row" style="gap:6px;margin-top:6px"><button class="mini-btn" id="phMusicFile">🎵 從手機選</button><button class="mini-btn" id="phMusicLib">📚 從 myTube 音樂選</button><button class="mini-btn" id="phMusicDel" hidden>移除</button></div></div></div>
+      <p class="hint" id="phPptNote" hidden style="padding:0 4px">PPT 會保留照片、文字、轉場和每張秒數（播放時自動換頁）；背景音樂只有影片才有。</p>
+    </div>
+    <div class="ph-head"><b id="phCount">照片</b><button class="pill-btn" id="phAdd">＋ 從照片加入</button></div>
+    <div class="ph-list" id="phSlides"></div>
+    <div style="height:40px"></div>
+  </div>
+  <input type="file" id="phFile" accept="image/*" multiple hidden>
+  <input type="file" id="phMusicInput" accept="audio/*,.mp3,.m4a,.aac,.wav" hidden>
+</div>
 <div class="studio" id="studio" hidden>
   <div class="rd-top">
     <button class="icon-btn" id="stBack" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
@@ -392,8 +436,9 @@ curl -sLo mt.py https://raw.githubusercontent.com/venus52mom-lab/News-learn/main
   </div>
 </div>
 
-<script src="app.js?v=20261124j"></script>
-<script src="books.js?v=20261124j"></script>
-<script src="studio.js?v=20261124j"></script>
+<script src="app.js?v=20261124k"></script>
+<script src="books.js?v=20261124k"></script>
+<script src="studio.js?v=20261124k"></script>
+<script src="photo.js?v=20261124k"></script>
 </body>
 </html>

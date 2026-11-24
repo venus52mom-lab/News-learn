@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261124j';
+const APP_VER = '20261124k';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -552,7 +552,7 @@ function itemMenu(id) {
     if (a === 'bg') Player.playList(list, i, { mini: true });
     if (a === 'pl') playlistSheet(m);
     if (a === 'studio' || a === 'stadd') { if (m.stHidden) { delete m.stHidden; await DB.put('media', m); window.renderStudio?.(); } }
-    if (a === 'studio') { showPage('studio'); openStudio(m.id); }
+    if (a === 'studio') { LS.set('stmode', 'vm'); window.applyStudioMode?.(); showPage('studio'); openStudio(m.id); }
     if (a === 'stadd') toast('✅ 已加回工作室', 2500);
     if (a === 'unpl') { const pl = S.playlists.find(p => p.id === f); if (pl) togglePlaylistItem(pl, id); }
     if (a === 'save') saveFlow(m);
