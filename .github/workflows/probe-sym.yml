@@ -1,0 +1,22 @@
+name: probe-sym
+on: {push: {paths: [".github/workflows/probe-sym.yml"]}}
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash {0}
+        run: |
+          A="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"
+          t(){ echo "== $1"; curl -s -m 20 -A "$A" -o b -w "%{http_code} %{size_download}\n" "$1"; head -c 350 b; echo; }
+          for s in 000300.SS EU500.AS ^N100 ^STOXX; do for r in "range=1y&interval=1d" "range=max&interval=1mo"; do t "https://query2.finance.yahoo.com/v8/finance/chart/$s?$r"; done; done
+          for s in CNS:000300:INDEX CNS:SHSZ300:INDEX GI:CSI300:INDEX CNS:399300:INDEX SZS:399300:INDEX SHS:000300:INDEX; do t "https://ws.api.cnyes.com/ws/api/v1/quote/quotes/$s"; done
+          t "https://ws.api.cnyes.com/ws/api/v1/charting/history?resolution=D&symbol=CNS:000300:INDEX&from=1764000000&to=1700000000"
+          t "https://stooq.com/q/d/l/?s=^shc&i=d"
+          t "https://stooq.com/q/d/l/?s=000300.cn&i=d"
+          t "https://query1.finance.yahoo.com/v8/finance/chart/399300.SZ?range=1y&interval=1d"
+          t "https://live.euronext.com/en/intraday_chart/getChartData/NL0011008577-XAMS/max"
+          t "https://live.euronext.com/en/ajax/getDetailedQuote/NL0011008577-XAMS"
+          t "https://live.euronext.com/en/search_instruments/euronext%20europe%20500"
+          t "https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice"
+          t "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.000300&fields1=f1&fields2=f51,f53&klt=101&fqt=0&beg=20200101&end=20500101"
+          t "https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=000300&startDate=20250101&endDate=20261125"
