@@ -693,9 +693,24 @@ $('#rdBack').onclick = () => closeReader();
 $('#rdFont').onclick = () => { B.font = B.font >= 26 ? 15 : B.font + 2; LS.set('bookFont', B.font); applyReaderUI(); };
 $('#rdMore').onclick = () => B.book && bookMenu(B.book);
 $('#rdLang').onchange = () => { B.lang = $('#rdLang').value; LS.set('bookLang', B.lang); renderReader(true); if (TTS.on) TTS.restart(); };
+function setReaderMode(mode, lang) {
+  B.mode = mode; LS.set('bookMode', mode);
+  if (lang) { B.lang = lang; LS.set('bookLang', lang); $('#rdLang').value = lang; }
+  applyReaderUI(); renderReader(true); if (TTS.on) TTS.restart();
+}
 $('#rdMode').onclick = e => {
   const x = e.target.closest('button'); if (!x) return;
-  B.mode = x.dataset.m; LS.set('bookMode', B.mode); applyReaderUI(); renderReader(true); if (TTS.on) TTS.restart();
+  const mode = x.dataset.m;
+  if (mode === 'orig') return setReaderMode('orig');
+  // 逐句／全部翻譯：先問要翻成哪種語言，選好才開始翻（不會先用上次的語言翻一遍）
+  const b = B.book;
+  const done = code => b && [...B.trans.keys()].some(k => k.startsWith(`${b.id}|${code}|`));
+  openSheet(`<h4>${mode === 'sent' ? '逐句翻譯' : '全部翻譯'}：要翻成哪種語言？</h4>
+    ${LANGS.map(([c, n]) => `<button class="sheet-item${c === B.lang ? ' on' : ''}" data-a="${c}">${c === B.lang ? '✓ ' : ''}${esc(n)}${done(c) ? ' <small style="color:#34c759">已翻好，馬上顯示</small>' : ''}</button>`).join('')}
+    <button class="sheet-item" data-a="no">取消</button>`, a => {
+    if (a === 'no' || !LANGS.some(([c]) => c === a)) return;
+    setReaderMode(mode, a);
+  });
 };
 $('#rdRead').onchange = () => { B.read = $('#rdRead').value; LS.set('bookRead', B.read); if (TTS.on) TTS.restart(); };
 $('#rdRate').onclick = () => {

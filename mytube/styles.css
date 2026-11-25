@@ -444,3 +444,4 @@ label.sheet-item{cursor:pointer}
 .cmd-box{margin:6px 16px 4px;padding:10px 12px;border-radius:10px;background:#000;color:#7CFC9A;font:12px/1.4 ui-monospace,Menlo,monospace;word-break:break-all;border:1px solid var(--line)}
 .sheet-item.btnlike{border:1px solid var(--line);border-radius:12px;margin:6px 16px;width:auto;justify-content:center;font-weight:600}
 .upd-bar{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:95;padding:12px;border-radius:14px;background:#2f80ff;color:#fff;font-weight:700;font-size:15px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.sheet-item.on{color:#ff0033;font-weight:700}
