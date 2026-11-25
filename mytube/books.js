@@ -1044,7 +1044,7 @@ async function offlineSheet(b) {
     ${direct ? `<button class="sheet-item ph-big" data-a="go">⬇️ 開始下載（自動複製指令、跳到 a-Shell）</button>
       <p class="hint" style="padding:0 20px">到了 a-Shell：<b>長按畫面 → 貼上 → 按「換行」</b>就開始下載。完成後回到 myTube，會自動跳出「匯入」。</p>`
       : `<button class="sheet-item ph-big" data-a="dl">⬇️ ${n ? '補齊／更新' : '開始下載'}朗讀聲音</button>`}
-    <button class="sheet-item btnlike" data-a="imp">📥 匯入 a-Shell 下載好的朗讀聲音（.zip）</button>
+    <button class="sheet-item btnlike" data-a="imp">📥 匯入 a-Shell 下載好的朗讀聲音（…-朗讀.mp3）</button>
     ${n ? '<button class="sheet-item danger" data-a="del">🗑 刪除下載的朗讀聲音（釋放空間）</button>' : ''}
     <button class="sheet-item" data-a="no">關閉</button>`, async a => {
     if (a === 'go') { copyText(direct.cmd); armReturn(b, direct.zipPath); openAShell(); toast('✅ 已複製指令，在 a-Shell 長按 → 貼上 → 換行', 4000); }
@@ -1120,7 +1120,7 @@ async function ashellJob(b, items, have) {
   return {
     todo: todo.length, one, cmd: one ? `${base} ${b64}` : base,
     job: 'MYTUBE-TTS1\n' + JSON.stringify(obj),
-    zipPath: `我的 iPhone › a-Shell › myTube › 朗讀 › 「${esc(b.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60))}.zip」`,
+    zipPath: `我的 iPhone › a-Shell › myTube › 朗讀 › 「${esc(b.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60))}-朗讀.mp3」`,
   };
 }
 function armReturn(b, zipPath) {      // 從 a-Shell 回來時，自動跳出「匯入」
@@ -1160,32 +1160,57 @@ function importPrompt(b, zipPath) {
 function pickPackZip(b) {
   const inp = document.createElement('input');
   inp.type = 'file';
-  inp.onchange = () => { const f = inp.files[0]; if (f) importPackZip(b, f); };
+  inp.accept = 'audio/*,.mp3,.zip,application/zip';      // iPhone 只讓你選這裡列出的檔案類型
+  inp.style.display = 'none'; document.body.appendChild(inp);
+  inp.onchange = () => { const f = inp.files[0]; inp.remove(); if (f) importPackFile(f, b); };
   inp.click();
 }
-async function importPackZip(b, file) {
+// 是不是 a-Shell 做的朗讀聲音檔（.mp3 最後面有 MTTSIDX1 索引）
+async function isPackFile(f) {
+  if (!f || f.size < 20) return false;
+  try { return new TextDecoder().decode(await f.slice(f.size - 8).arrayBuffer()) === 'MTTSIDX1'; } catch { return false; }
+}
+async function readPack(f) {
+  if (await isPackFile(f)) {
+    const tail = new DataView(await f.slice(f.size - 12, f.size - 8).arrayBuffer());
+    const len = tail.getUint32(0, false);
+    const info = JSON.parse(new TextDecoder().decode(await f.slice(f.size - 12 - len, f.size - 12).arrayBuffer()));
+    const out = [];
+    for (const [h, [off, n]] of Object.entries(info.items)) out.push([h, () => Promise.resolve(f.slice(off, off + n, 'audio/mpeg'))]);
+    return { info, entries: out };
+  }
+  await loadScript('vendor/photo/jszip.min.js');          // 舊版的 .zip
+  const zip = await JSZip.loadAsync(f);
+  const info = JSON.parse(await zip.file('info.json').async('string'));
+  const out = Object.keys(zip.files).filter(n => n.endsWith('.mp3')).map(n => [n.replace(/\.mp3$/, '').split('/').pop(), () => zip.file(n).async('blob')]);
+  return { info, entries: out };
+}
+async function importPackFile(file, b) {
   toast('匯入朗讀聲音…', 60000);
   try {
-    await loadScript('vendor/photo/jszip.min.js');
-    const zip = await JSZip.loadAsync(file);
-    const info = JSON.parse(await zip.file('info.json').async('string'));
-    const target = B.books.find(x => x.id === info.book) || b;
-    if (target.id !== info.book && !confirm(`這個檔案是「${info.title}」的朗讀聲音，不是「${b.title}」的。還是要匯入嗎？`)) return toast('已取消');
+    const { info, entries } = await readPack(file);
+    let target = B.books.find(x => x.id === info.book);
+    if (!target && b) {
+      if (!confirm(`這個檔案是「${info.title}」的朗讀聲音，不是「${b.title}」的。還是要匯入到「${b.title}」嗎？`)) return toast('已取消');
+      target = b;
+    }
+    if (!target) return toast(`找不到「${info.title}」這本書，請先匯入這本書再匯入聲音`, 5000);
     await loadPack(target);
     const have = new Set(PACK.keys);
     let n = 0;
-    for (const name of Object.keys(zip.files)) {
-      if (!name.endsWith('.mp3')) continue;
-      const h = name.replace(/\.mp3$/, '').split('/').pop();
-      const data = await zip.file(name).async('blob');
+    for (const [h, get] of entries) {
+      const data = await get();
       await DB.put('blobs', new Blob([data], { type: 'audio/mpeg' }), `tts_${target.id}_${h}`);
       have.add(h); n++;
+      if (n % 50 === 0) toast(`匯入朗讀聲音… ${n} / ${entries.length}`, 60000);
     }
     await savePack(target, have);
     $('#sheet').hidden = true; $('#sheetBackdrop').hidden = true;
     toast(`✅ 匯入 ${n} 段聲音，「${target.title}」沒網路也能朗讀了`, 4500);
+    return true;
   } catch (e) { console.error(e); toast('匯入失敗：這不是 myTube 的朗讀聲音檔（' + (e.message || e) + '）', 5000); }
 }
+window.isPackFile = isPackFile; window.importPackFile = importPackFile;
 
 /* ---------------- 測試朗讀聲音：找出是哪一段不通 ---------------- */
 function soundTest() {

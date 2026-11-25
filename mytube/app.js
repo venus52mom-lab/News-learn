@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261125g';
+const APP_VER = '20261125h';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -311,11 +311,12 @@ async function detectType(file) {
 }
 async function importFiles(files) {
   const list = [...files]; if (!list.length) return;
-  let n = 0; const cnt = { video: 0, audio: 0 }; const bad = []; const partial = [];
+  let n = 0, packs = 0; const cnt = { video: 0, audio: 0 }; const bad = []; const partial = [];
   for (const f of list) {
     toast(`正在載入 ${++n}/${list.length}…`, 60000);
     try {
       if (/\.(part|ytdl)$/i.test(f.name)) { partial.push(f.name); continue; }
+      if (window.isPackFile && await isPackFile(f)) { if (await importPackFile(f)) packs++; continue; }   // 電子書的離線朗讀聲音
       if (await isMpegTS(f)) { bad.push(f.name); continue; }
       const type = await detectType(f);
       await addMedia(f, { type, title: f.name.replace(/\.[^.]+$/, ''), source: 'import', filename: f.name });
@@ -336,7 +337,7 @@ async function importFiles(files) {
       <button class="sheet-item" data-a="ok">知道了</button>`);
   }
   if (parts.length) toast('✅ 已匯入 ' + parts.join('、'), 3500);
-  else if (!bad.length && !partial.length) toast('沒有匯入任何檔案，請再試一次');
+  else if (!bad.length && !partial.length && !packs) toast('沒有匯入任何檔案，請再試一次');
   if (cnt.video && !cnt.audio && S.page === 'audio') showPage('video');
   if (cnt.audio && !cnt.video && S.page === 'video') showPage('audio');
 }

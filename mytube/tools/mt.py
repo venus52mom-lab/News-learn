@@ -301,11 +301,27 @@ def tts_job():
     have = [it[0] for it in items if os.path.exists(os.path.join(work, it[0] + ".mp3"))]
     out_dir = os.path.join(BASE, "朗讀")
     os.makedirs(out_dir, exist_ok=True)
-    out = os.path.join(out_dir, f"{title}.zip")
-    with zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as z:
-        z.writestr("info.json", json.dumps({"book": job["book"], "title": job.get("title"), "keys": have}, ensure_ascii=False))
+    out = os.path.join(out_dir, f"{title}-朗讀.mp3")
+    # 存成一個 .mp3：前面是所有聲音接在一起，最後面放「每段在哪裡」的索引（iPhone 選得到 .mp3，選不到 .zip）
+    index = {}
+    with open(out, "wb") as f:
+        pos = 0
         for h in have:
-            z.write(os.path.join(work, h + ".mp3"), h + ".mp3")
+            with open(os.path.join(work, h + ".mp3"), "rb") as src:
+                data = src.read()
+            f.write(data)
+            index[h] = [pos, len(data)]
+            pos += len(data)
+        meta = json.dumps({"book": job["book"], "title": job.get("title"), "items": index}, ensure_ascii=False).encode("utf-8")
+        f.write(meta)
+        f.write(len(meta).to_bytes(4, "big"))
+        f.write(b"MTTSIDX1")
+    for old in os.listdir(out_dir):          # 舊版的 .zip 不用了
+        if old.endswith(".zip") and old.startswith(title):
+            try:
+                os.remove(os.path.join(out_dir, old))
+            except Exception:
+                pass
     print("\n" + "=" * 34)
     if fails:
         print(f"⚠️ 有 {len(fails)} 段下載失敗（再貼一次指令可以補下載），其他 {len(have)} 段已完成。")
@@ -313,7 +329,7 @@ def tts_job():
         print(f"✅ 完成！{len(have)} 段聲音都下載好了。")
     print("👉 回到 myTube，按「③ 匯入下載好的朗讀聲音」，")
     print("   選：我的 iPhone › a-Shell › myTube › 朗讀 ›")
-    print(f"   「{title}.zip」")
+    print(f"   「{title}-朗讀.mp3」")
     print("=" * 34)
 
 
