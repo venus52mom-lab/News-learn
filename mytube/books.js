@@ -1016,7 +1016,7 @@ async function fetchTTS(lang, text) {
       if (!r.ok) continue;
       const b = await r.blob();
       if (b.size < 300 || /text|html|json/.test(b.type)) continue;
-      ttsSrcOk = i;
+      ttsSrcOk = i; LS.set('ttsDirect', 'yes');
       return b.type.startsWith('audio') ? b : new Blob([b], { type: 'audio/mpeg' });
     } catch (e) { /* 這個來源不給網頁下載（CORS）或沒網路 → 換下一個 */ }
   }
@@ -1025,17 +1025,32 @@ async function fetchTTS(lang, text) {
 async function offlineSheet(b) {
   await loadPack(b);
   const n = PACK.keys.size, m = PACK.meta;
-  openSheet(`<h4>🎧 離線朗讀：${esc(b.title)}</h4>
-    <p class="hint" style="padding:0 20px">先在有網路時把整本書的聲音<b>下載到手機</b>，之後在飛機上、沒網路也能朗讀，鎖螢幕、切到別的 App 都會繼續唸。<br><br>
+  // 這支手機之前已經知道 Google 不讓網頁下載 → 先把 a-Shell 指令準備好，按一下就複製＋跳過去
+  let direct = null;
+  if (LS.get('ttsDirect') === 'no' && !serverReady()) {
+    try {
+      const needT = TTS.parts().includes('t'), ss = sentsOf(b);
+      if (!needT || ss.every((_, p) => B.trans.has(tKey(b, B.lang, p)))) {
+        const items = await buildPackList(b, () => {});
+        const have = new Set([...PACK.keys]);
+        if (items.some(it => !have.has(it[0]))) direct = await ashellJob(b, items, have);
+      }
+    } catch (e) { console.warn(e); }
+  }
+  openSheet(`<h4>🎧 下載朗讀聲音：${esc(b.title)}</h4>
+    <p class="hint" style="padding:0 20px">先在有網路時把整本書的聲音<b>下載到手機（存在 myTube 裡）</b>，之後在飛機上、沒網路也能朗讀，鎖螢幕、切到別的 App 都會繼續唸。<br><br>
     會照<b>現在的朗讀設定</b>下載：${esc(readDesc())}。（之後改了朗讀方式或翻譯語言，要再下載一次）<br>
     ${n ? `目前已下載：<b>${n} 段</b>（${m?.lang ? esc(langName(m.lang)) + '，' : ''}${new Date(m?.at || Date.now()).toLocaleDateString()}）` : '目前還沒有下載。'}</p>
-    <button class="sheet-item" data-a="dl">⬇️ ${n ? '補齊／更新' : '開始下載'}離線朗讀聲音</button>
-    <button class="sheet-item" data-a="imp">📥 匯入 a-Shell 下載好的朗讀聲音（.zip）</button>
-    ${n ? '<button class="sheet-item danger" data-a="del">🗑 刪除離線朗讀聲音（釋放空間）</button>' : ''}
+    ${direct ? `<button class="sheet-item ph-big" data-a="go">⬇️ 開始下載（自動複製指令、跳到 a-Shell）</button>
+      <p class="hint" style="padding:0 20px">到了 a-Shell：<b>長按畫面 → 貼上 → 按「換行」</b>就開始下載。完成後回到 myTube，會自動跳出「匯入」。</p>`
+      : `<button class="sheet-item ph-big" data-a="dl">⬇️ ${n ? '補齊／更新' : '開始下載'}朗讀聲音</button>`}
+    <button class="sheet-item btnlike" data-a="imp">📥 匯入 a-Shell 下載好的朗讀聲音（.zip）</button>
+    ${n ? '<button class="sheet-item danger" data-a="del">🗑 刪除下載的朗讀聲音（釋放空間）</button>' : ''}
     <button class="sheet-item" data-a="no">關閉</button>`, async a => {
+    if (a === 'go') { copyText(direct.cmd); armReturn(b, direct.zipPath); openAShell(); toast('✅ 已複製指令，在 a-Shell 長按 → 貼上 → 換行', 4000); }
     if (a === 'dl') downloadPack(b);
     if (a === 'imp') pickPackZip(b);
-    if (a === 'del') { await DB.delPrefix('blobs', `tts_${b.id}_`); await DB.del('kv', packKey(b)); await loadPack(b); toast('已刪除離線朗讀聲音'); }
+    if (a === 'del') { await DB.delPrefix('blobs', `tts_${b.id}_`); await DB.del('kv', packKey(b)); await loadPack(b); toast('已刪除下載的朗讀聲音'); }
   });
 }
 async function downloadPack(b) {
@@ -1056,7 +1071,7 @@ async function downloadPack(b) {
     if (!todo.length) { await savePack(b, have); sh.close(); toast('✅ 已經全部下載好了，可以離線朗讀', 3500); return; }
     prog('測試下載…', 0);
     try { const first = await fetchTTS(todo[0][1], todo[0][2]); await DB.put('blobs', first, `tts_${b.id}_${todo[0][0]}`); have.add(todo[0][0]); }
-    catch { sh.close(); return ashellPackSheet(b, items, have); }      // 瀏覽器不能直接下載 → 用 a-Shell
+    catch { LS.set('ttsDirect', 'no'); sh.close(); return ashellPackSheet(b, items, have); }      // 瀏覽器不能直接下載 → 用 a-Shell
     let done = 1, fail = 0, i = 1;
     const worker = async () => {
       while (!cancel && i < todo.length) {
@@ -1096,34 +1111,40 @@ async function packJobB64(obj) {
   return 'MTJOB' + z + ':' + btoa(bin);
 }
 const ONE_PASTE_MAX = 120000;       // 太長的指令貼進 a-Shell 會很慢，超過就分兩步
-async function ashellPackSheet(b, items, have) {
+async function ashellJob(b, items, have) {
   const todo = items.filter(it => !have.has(it[0]));
   const obj = { book: b.id, title: b.title, items: todo };
   const base = `python3 -c "import urllib.request as u;exec(u.urlopen('${MT_URL}').read())" tts`;
   const b64 = await packJobB64(obj);
   const one = b64.length <= ONE_PASTE_MAX;
-  const cmd = one ? `${base} ${b64}` : base;
-  const job = 'MYTUBE-TTS1\n' + JSON.stringify(obj);
-  const zipPath = `我的 iPhone › a-Shell › myTube › 朗讀 › 「${esc(b.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60))}.zip」`;
-  const armReturn = () => {      // 從 a-Shell 回來時，自動跳出「匯入」
-    const onVis = () => {
-      if (document.hidden) return;
-      document.removeEventListener('visibilitychange', onVis);
-      setTimeout(() => importPrompt(b, zipPath), 400);
-    };
-    setTimeout(() => document.addEventListener('visibilitychange', onVis), 1500);
+  return {
+    todo: todo.length, one, cmd: one ? `${base} ${b64}` : base,
+    job: 'MYTUBE-TTS1\n' + JSON.stringify(obj),
+    zipPath: `我的 iPhone › a-Shell › myTube › 朗讀 › 「${esc(b.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60))}.zip」`,
   };
+}
+function armReturn(b, zipPath) {      // 從 a-Shell 回來時，自動跳出「匯入」
+  const onVis = () => {
+    if (document.hidden) return;
+    document.removeEventListener('visibilitychange', onVis);
+    setTimeout(() => importPrompt(b, zipPath), 400);
+  };
+  setTimeout(() => document.addEventListener('visibilitychange', onVis), 1500);
+}
+async function ashellPackSheet(b, items, have) {
+  const J = await ashellJob(b, items, have);
   openSheet(`<h4>🎧 用 a-Shell 下載朗讀聲音</h4>
-    <p class="hint" style="padding:0 20px">Google 不讓網頁直接下載聲音，改請 a-Shell 幫忙（共 ${todo.length} 段）。</p>
-    <button class="sheet-item ph-big" data-a="c1" data-keep>📋 ${one ? '複製並打開 a-Shell' : '① 複製指令並打開 a-Shell'}</button>
-    <p class="hint" style="padding:0 20px">到了 a-Shell：<b>長按畫面 → 貼上 → 按鍵盤的「換行」</b>${one ? '，就會開始下載。' : '。它會叫你回來按 ②。'}<br>
+    <p class="hint" style="padding:0 20px">Google 不讓網頁直接下載聲音，改請 a-Shell 幫忙（共 ${J.todo} 段）。<br>按下面紅色按鈕，會<b>自動複製這行指令</b>並<b>自動跳到 a-Shell</b>：</p>
+    <div class="cmd-box">${esc(J.cmd.slice(0, 90))}${J.cmd.length > 90 ? '…（很長，不用看）' : ''}</div>
+    <button class="sheet-item ph-big" data-a="c1" data-keep>📋 ${J.one ? '複製指令並跳到 a-Shell' : '① 複製指令並跳到 a-Shell'}</button>
+    <p class="hint" style="padding:0 20px">到了 a-Shell：<b>長按畫面 → 貼上 → 按鍵盤的「換行」</b>${J.one ? '，就會開始下載。' : '。它會叫你回來按 ②。'}<br>
     等它顯示「✅ 完成」，回到 myTube，會自動跳出「匯入」按鈕。</p>
-    ${one ? '' : `<button class="sheet-item" data-a="c2" data-keep>② 複製書的內容（再回 a-Shell 按換行）</button>`}
-    <button class="sheet-item" data-a="imp" data-keep>📥 匯入下載好的朗讀聲音</button>
-    <p class="hint" style="padding:0 20px;margin:0">（檔案在：${zipPath}）</p>
+    ${J.one ? '' : `<button class="sheet-item btnlike" data-a="c2" data-keep>② 複製書的內容並跳回 a-Shell（再按換行）</button>`}
+    <button class="sheet-item btnlike" data-a="imp" data-keep>📥 匯入下載好的朗讀聲音</button>
+    <p class="hint" style="padding:0 20px;margin:0">（檔案在：${J.zipPath}）</p>
     <button class="sheet-item" data-a="no">關閉</button>`, a => {
-    if (a === 'c1') { copyText(cmd); toast('✅ 已複製，到 a-Shell 長按 → 貼上 → 換行', 3500); armReturn(); openAShell(); }
-    if (a === 'c2') { copyText(job); toast('✅ 已複製書的內容，回 a-Shell 按換行'); armReturn(); openAShell(); }
+    if (a === 'c1') { copyText(J.cmd); armReturn(b, J.zipPath); openAShell(); toast('✅ 已複製指令，在 a-Shell 長按 → 貼上 → 換行', 4000); }
+    if (a === 'c2') { copyText(J.job); armReturn(b, J.zipPath); openAShell(); toast('✅ 已複製書的內容，回 a-Shell 按換行'); }
     if (a === 'imp') pickPackZip(b);
   });
 }

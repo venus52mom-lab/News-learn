@@ -4,7 +4,7 @@
 'use strict';
 
 /* ---------- 版本檢查：網頁和程式如果新舊混在一起（畫面會亂、按鈕沒反應），自動清掉舊的重新載入 ---------- */
-const APP_VER = '20261125f';
+const APP_VER = '20261125g';
 (function selfHeal() {
   const pageVer = document.documentElement.dataset.ver;
   if (pageVer === APP_VER) { try { sessionStorage.removeItem('mytube_heal'); } catch {} return; }
@@ -16,6 +16,34 @@ const APP_VER = '20261125f';
     .then(rs => Promise.all((rs || []).filter(r => r.scope.includes('/mytube')).map(r => r.update().catch(() => {}))))
     .catch(() => {}).then(go);
 })();
+
+/* ---------- 自動更新：回到 myTube 時檢查有沒有新版，沒在用的時候自動換新版 ---------- */
+let updWaiting = false;
+function appBusy() {
+  try {
+    // TTS／audioEl／PH 是其他檔案的 const，不在 window 上，要用 typeof 檢查
+    return (typeof TTS !== 'undefined' && TTS.on) || (typeof audioEl !== 'undefined' && !audioEl.paused) || (typeof PH !== 'undefined' && PH.busy) ||
+      !document.getElementById('sheet').hidden || !document.getElementById('studio').hidden || !document.getElementById('phEditor').hidden ||
+      !document.getElementById('reader').hidden || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '');
+  } catch { return false; }
+}
+async function checkUpdate() {
+  if (!navigator.onLine) return;
+  try {
+    const t = await (await fetch('index.html?u=' + Date.now(), { cache: 'no-store' })).text();
+    const v = (t.match(/data-ver="([^"]+)"/) || [])[1];
+    if (!v || v === APP_VER) return;
+    if (!appBusy()) { location.replace(location.pathname + '?r=' + Date.now()); return; }
+    if (updWaiting) return;
+    updWaiting = true;
+    const bar = document.createElement('button');
+    bar.className = 'upd-bar'; bar.textContent = '🔄 myTube 有新版本，按這裡更新';
+    bar.onclick = () => location.replace(location.pathname + '?r=' + Date.now());
+    document.body.appendChild(bar);
+  } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(checkUpdate, 1200); });
+setTimeout(checkUpdate, 5000);
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
