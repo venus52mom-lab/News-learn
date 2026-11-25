@@ -357,8 +357,8 @@ function bookMenu(b) {
   openSheet(`<h4>${esc(b.title)}</h4>
     <button class="sheet-item" data-a="open">📖 打開</button>
     <button class="sheet-item" data-a="save">${b.saved ? '📤 從手機移除（不刪這次的）' : '💾 存到手機'}</button>
-    <button class="sheet-item" data-a="all">🌐 整本翻譯成${esc(langName(B.lang))}並存起來（開車前先做）</button>
-    <button class="sheet-item" data-a="offline">🎧 離線朗讀（飛機上、沒網路也能背景聽）</button>
+    <button class="sheet-item" data-a="all">🌐 整本翻譯好存起來（沒網路也能「看」${esc(langName(B.lang))}翻譯，不含聲音）</button>
+    <button class="sheet-item" data-a="offline">🎧 下載朗讀聲音（沒網路也能「聽」，鎖螢幕繼續唸；需要翻譯會自動先翻）</button>
     <button class="sheet-item" data-a="test">🔈 測試朗讀聲音</button>
     <button class="sheet-item" data-a="rename">✏️ 重新命名</button>
     <button class="sheet-item danger" data-a="del">🗑️ 刪除</button>`, async a => {
@@ -1122,8 +1122,8 @@ async function ashellPackSheet(b, items, have) {
     <button class="sheet-item" data-a="imp" data-keep>📥 匯入下載好的朗讀聲音</button>
     <p class="hint" style="padding:0 20px;margin:0">（檔案在：${zipPath}）</p>
     <button class="sheet-item" data-a="no">關閉</button>`, a => {
-    if (a === 'c1') { copyText(cmd); toast('✅ 已複製，到 a-Shell 長按 → 貼上 → 換行', 3500); armReturn(); setTimeout(() => { location.href = 'ashell://'; }, 700); }
-    if (a === 'c2') { copyText(job); toast('✅ 已複製書的內容，回 a-Shell 按換行'); armReturn(); setTimeout(() => { location.href = 'ashell://'; }, 900); }
+    if (a === 'c1') { copyText(cmd); toast('✅ 已複製，到 a-Shell 長按 → 貼上 → 換行', 3500); armReturn(); openAShell(); }
+    if (a === 'c2') { copyText(job); toast('✅ 已複製書的內容，回 a-Shell 按換行'); armReturn(); openAShell(); }
     if (a === 'imp') pickPackZip(b);
   });
 }

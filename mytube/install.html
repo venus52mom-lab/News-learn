@@ -140,10 +140,10 @@ $('#shareBtn').onclick = async () => {
   if (navigator.share) { try { await navigator.share(data); } catch {} return; }
   toast(await copy(PAGE_URL) ? '✅ 連結已複製，貼給朋友就好' : PAGE_URL, 3500);
 };
-$('#setupBtn').onclick = async () => {
-  const ok = await copy(SETUP_CMD);
-  toast(ok ? '✅ 已複製指令，打開 a-Shell 後長按 → 貼上 → 換行' : '請先手動複製指令', 4000);
-  setTimeout(() => { location.href = 'ashell://'; }, 700);
+$('#setupBtn').onclick = () => {
+  // iPhone 只允許「按下去的當下」切換到別的 App，所以先開始複製、馬上跳過去（不要等）
+  copy(SETUP_CMD).then(ok => toast(ok ? '✅ 已複製指令，在 a-Shell 長按 → 貼上 → 換行' : '請先手動複製指令', 4000));
+  setTimeout(() => { location.href = 'ashell://'; }, 150);
 };
 </script>
 </body>
