@@ -244,8 +244,18 @@ def tts_job():
     import zipfile
     from concurrent.futures import ThreadPoolExecutor
     raw = ""
-    if len(sys.argv) > 2 and os.path.exists(sys.argv[2]):
-        raw = open(sys.argv[2], encoding="utf-8").read()
+    arg = sys.argv[2] if len(sys.argv) > 2 else ""
+    if arg.startswith("MTJOB"):
+        # 書的內容直接包在指令裡（myTube 壓縮成 base64）：一次貼上就好
+        import base64
+        import zlib
+        kind, b64 = arg.split(":", 1)
+        data = base64.b64decode(b64)
+        if kind == "MTJOBz":
+            data = zlib.decompress(data, -15)
+        raw = "MYTUBE-TTS1\n" + data.decode("utf-8")
+    elif arg and os.path.exists(arg):
+        raw = open(arg, encoding="utf-8").read()
     for _ in range(5):
         if raw.startswith("MYTUBE-TTS1"):
             break

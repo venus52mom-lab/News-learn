@@ -1015,7 +1015,7 @@ async function fetchTTS(lang, text) {
       const r = await fetch(mk(lang, text), { referrerPolicy: 'no-referrer', cache: 'no-store' });
       if (!r.ok) continue;
       const b = await r.blob();
-      if (b.size < 300) continue;
+      if (b.size < 300 || /text|html|json/.test(b.type)) continue;
       ttsSrcOk = i;
       return b.type.startsWith('audio') ? b : new Blob([b], { type: 'audio/mpeg' });
     } catch (e) { /* 這個來源不給網頁下載（CORS）或沒網路 → 換下一個 */ }
@@ -1085,21 +1085,54 @@ async function downloadPack(b) {
   }
 }
 // 瀏覽器被 Google 擋住時：請 a-Shell 幫忙下載（Python 沒有這個限制），下載好再匯入
-function ashellPackSheet(b, items, have) {
+// 書的內容直接包在指令裡（壓縮過），只要「貼上 → 換行」一次就好
+async function packJobB64(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let data = bytes, z = 'j';
+  if (typeof CompressionStream !== 'undefined') {
+    try { data = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); z = 'z'; } catch { data = bytes; z = 'j'; }
+  }
+  let bin = ''; for (let i = 0; i < data.length; i += 32768) bin += String.fromCharCode.apply(null, data.subarray(i, i + 32768));
+  return 'MTJOB' + z + ':' + btoa(bin);
+}
+const ONE_PASTE_MAX = 120000;       // 太長的指令貼進 a-Shell 會很慢，超過就分兩步
+async function ashellPackSheet(b, items, have) {
   const todo = items.filter(it => !have.has(it[0]));
-  const job = 'MYTUBE-TTS1\n' + JSON.stringify({ book: b.id, title: b.title, items: todo });
-  const cmd = `python3 -c "import urllib.request as u;exec(u.urlopen('${MT_URL}').read())" tts`;
+  const obj = { book: b.id, title: b.title, items: todo };
+  const base = `python3 -c "import urllib.request as u;exec(u.urlopen('${MT_URL}').read())" tts`;
+  const b64 = await packJobB64(obj);
+  const one = b64.length <= ONE_PASTE_MAX;
+  const cmd = one ? `${base} ${b64}` : base;
+  const job = 'MYTUBE-TTS1\n' + JSON.stringify(obj);
+  const zipPath = `我的 iPhone › a-Shell › myTube › 朗讀 › 「${esc(b.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60))}.zip」`;
+  const armReturn = () => {      // 從 a-Shell 回來時，自動跳出「匯入」
+    const onVis = () => {
+      if (document.hidden) return;
+      document.removeEventListener('visibilitychange', onVis);
+      setTimeout(() => importPrompt(b, zipPath), 400);
+    };
+    setTimeout(() => document.addEventListener('visibilitychange', onVis), 1500);
+  };
   openSheet(`<h4>🎧 用 a-Shell 下載朗讀聲音</h4>
-    <p class="hint" style="padding:0 20px">Google 不讓網頁直接下載聲音，改請 a-Shell 幫忙（共 ${todo.length} 段）。照順序按：</p>
-    <button class="sheet-item" data-a="c1" data-keep>① 複製指令並打開 a-Shell</button>
-    <p class="hint" style="padding:0 20px;margin:0">在 a-Shell 長按 → 貼上 → 按換行。它會叫你回來按 ②。</p>
-    <button class="sheet-item" data-a="c2" data-keep>② 複製書的內容（再回 a-Shell 按換行）</button>
-    <p class="hint" style="padding:0 20px;margin:0">a-Shell 開始下載，等它顯示「✅ 完成」。</p>
-    <button class="sheet-item" data-a="imp" data-keep>③ 匯入下載好的朗讀聲音</button>
-    <p class="hint" style="padding:0 20px;margin:0">選：我的 iPhone › a-Shell › myTube › 朗讀 › 「${esc(b.title.slice(0, 60))}.zip」</p>
+    <p class="hint" style="padding:0 20px">Google 不讓網頁直接下載聲音，改請 a-Shell 幫忙（共 ${todo.length} 段）。</p>
+    <button class="sheet-item ph-big" data-a="c1" data-keep>📋 ${one ? '複製並打開 a-Shell' : '① 複製指令並打開 a-Shell'}</button>
+    <p class="hint" style="padding:0 20px">到了 a-Shell：<b>長按畫面 → 貼上 → 按鍵盤的「換行」</b>${one ? '，就會開始下載。' : '。它會叫你回來按 ②。'}<br>
+    等它顯示「✅ 完成」，回到 myTube，會自動跳出「匯入」按鈕。</p>
+    ${one ? '' : `<button class="sheet-item" data-a="c2" data-keep>② 複製書的內容（再回 a-Shell 按換行）</button>`}
+    <button class="sheet-item" data-a="imp" data-keep>📥 匯入下載好的朗讀聲音</button>
+    <p class="hint" style="padding:0 20px;margin:0">（檔案在：${zipPath}）</p>
     <button class="sheet-item" data-a="no">關閉</button>`, a => {
-    if (a === 'c1') { copyText(cmd); toast('✅ 已複製指令'); setTimeout(() => { location.href = 'ashell://'; }, 600); }
-    if (a === 'c2') { copyText(job); toast('✅ 已複製書的內容，回 a-Shell 按換行'); setTimeout(() => { location.href = 'ashell://'; }, 900); }
+    if (a === 'c1') { copyText(cmd); toast('✅ 已複製，到 a-Shell 長按 → 貼上 → 換行', 3500); armReturn(); setTimeout(() => { location.href = 'ashell://'; }, 700); }
+    if (a === 'c2') { copyText(job); toast('✅ 已複製書的內容，回 a-Shell 按換行'); armReturn(); setTimeout(() => { location.href = 'ashell://'; }, 900); }
+    if (a === 'imp') pickPackZip(b);
+  });
+}
+// 從 a-Shell 回到 myTube 時跳出來（選檔案一定要手指按一下，iPhone 規定）
+function importPrompt(b, zipPath) {
+  openSheet(`<h4>📥 a-Shell 下載好了嗎？</h4>
+    <p class="hint" style="padding:0 20px">如果 a-Shell 已經顯示「✅ 完成」，按下面的按鈕，選：<br>${zipPath}</p>
+    <button class="sheet-item ph-big" data-a="imp">📥 匯入朗讀聲音</button>
+    <button class="sheet-item" data-a="later">還沒好，等一下再匯入（之後在書的「⋯ → 🎧 離線朗讀」匯入）</button>`, a => {
     if (a === 'imp') pickPackZip(b);
   });
 }
