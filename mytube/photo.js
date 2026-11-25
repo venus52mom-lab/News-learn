@@ -45,6 +45,7 @@ const FPS = 30;
 const projKey = id => 'phproj_' + id;
 const photoKey = (pid, sid) => `ph_${pid}_${sid}`;
 const musicKey = pid => 'phm_' + pid;
+const outKey = pid => 'phout_' + pid;   // 最後一次匯出的檔案（存檔失敗時可以再存一次）
 const fmtS = s => { s = Math.max(0, s); const m = Math.floor(s / 60); return `${m}:${String(Math.floor(s % 60)).padStart(2, '0')}`; };
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const ease = p => p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
@@ -93,7 +94,7 @@ function projMenu(p) {
     if (a === 'del') openSheet(`<h4>刪除「${esc(p.name)}」？</h4><p class="hint" style="padding:0 20px">作品和裡面匯入的照片副本會刪除（手機「照片」App 裡的原始照片不會被刪）。</p>
       <button class="sheet-item danger" data-a="y">刪除</button><button class="sheet-item" data-a="n">取消</button>`, async x => {
       if (x !== 'y') return;
-      await DB.delPrefix('blobs', `ph_${p.id}_`); await DB.del('blobs', musicKey(p.id)); await DB.del('kv', projKey(p.id));
+      await DB.delPrefix('blobs', `ph_${p.id}_`); await DB.del('blobs', musicKey(p.id)); await DB.del('blobs', outKey(p.id)); await DB.del('kv', projKey(p.id));
       renderPhHome(); toast('已刪除');
     });
   });
@@ -482,6 +483,7 @@ $('#phExport').onclick = () => {
   stopPreview();
   let fmt = p.target === 'ppt' ? 'pptx' : 'mp4';
   openSheet(`<h4>📤 匯出「${esc(p.name)}」</h4>
+    ${p.lastOut ? `<button class="sheet-item" data-a="last">📁 再存一次上次做好的「${esc(p.lastOut.name)}」（不用重做）</button>` : ''}
     <p class="hint" style="padding:0 20px;margin:0"><b>① 格式</b></p>
     <div style="padding:0 18px"><div class="seg small" id="phFmt"><button data-v="mp4" class="${fmt === 'mp4' ? 'active' : ''}">🎬 MP4 影片</button><button data-v="pptx" class="${fmt === 'pptx' ? 'active' : ''}">📊 PPT 簡報</button></div></div>
     <p class="hint" style="padding:6px 20px 0;margin:0"><b>② 檔名</b>（點一下就能改）</p>
@@ -491,6 +493,10 @@ $('#phExport').onclick = () => {
     <label class="sheet-item" id="phToAppRow"${fmt === 'pptx' ? ' hidden' : ''}><input type="checkbox" id="phToApp"> 📱 也存一份在 myTube 的「影片」</label>
     <button class="sheet-item" data-a="go" data-keep>📤 開始匯出</button>
     <button class="sheet-item" data-a="no">取消</button>`, a => {
+    if (a === 'last') {
+      DB.get('blobs', outKey(p.id)).then(f => f ? phFilesSheet(f instanceof File ? f : new File([f], p.lastOut.name, { type: f.type })) : toast('找不到上次的檔案，請重新匯出'));
+      return;
+    }
     if (a !== 'go') return;
     const name = $('#phOutName').value.trim().replace(/\.(mp4|pptx)$/i, '');
     const toFiles = $('#phToFiles').checked, toApp = fmt === 'mp4' && $('#phToApp').checked;
@@ -523,26 +529,36 @@ async function runExport(o) {
       await addMedia(blob, { type: 'video', title: o.name, source: 'photo', filename: fname });
       msg = `✅ 已存成「${o.name}」，在「影片」裡`;
     }
+    try { await DB.put('blobs', new File([blob], fname, { type: blob.type }), outKey(p.id)); p.lastOut = { name: fname, size: blob.size, at: Date.now() }; saveProj(true); } catch (e) { console.warn(e); }
     sh.close();
     if (msg || note) toast([msg, note].filter(Boolean).join('　'), 4500);
-    if (o.toFiles) phFilesSheet(new File([blob], fname, { type: blob.type }));
+    if (o.toFiles) phFilesSheet(new File([blob], fname, { type: blob.type }), true);
   } catch (e) {
     console.error(e); sh.close();
     openSheet(`<h4>匯出失敗</h4><p class="hint" style="padding:0 20px">${esc(e.message || String(e))}</p><button class="sheet-item" data-a="ok">關閉</button>`);
   } finally { PH.busy = false; }
 }
-function phFilesSheet(file) {
+function phFilesSheet(file, fresh) {
   const ext = file.name.split('.').pop(), base = file.name.slice(0, -(ext.length + 1));
-  openSheet(`<h4>📁 存到手機「檔案」App</h4>
+  openSheet(`<h4>${fresh ? '✅ 做好了！最後一步：存到手機' : '📁 存到手機「檔案」App'}</h4>
     <p class="hint" style="padding:0 20px;margin:0"><b>檔名</b>（存之前還可以再改）</p>
     <div class="sheet-input"><input id="phFileName" value="${esc(base)}"><span class="st-ext">.${esc(ext)}</span></div>
-    <p class="hint" style="padding:0 20px">${isIOS() ? '按下面的按鈕 → 選「<b>儲存到檔案</b>」→ 選你要放的資料夾 → 按右上角「<b>儲存</b>」。' : '按下面的按鈕，選擇要存放的資料夾。'}（${(file.size / 1048576).toFixed(1)}MB）</p>
-    <button class="sheet-item" data-a="go" data-keep>📁 選資料夾並儲存</button>
-    <button class="sheet-item" data-a="done">完成</button>`, a => {
+    <button class="sheet-item ph-big" data-a="go" data-keep>📁 按這裡選資料夾並儲存</button>
+    <p class="hint" style="padding:0 20px">${isIOS() ? '會跳出 iPhone 的分享選單 → 往下滑選「<b>儲存到檔案</b>」→ 選資料夾 → 按右上角「<b>儲存</b>」。<br>（iPhone 規定一定要你自己按一下才能存，所以多這一步。）' : '按上面的按鈕，選擇要存放的資料夾。'}<br>檔案大小：${(file.size / 1048576).toFixed(1)}MB</p>
+    <p class="hint" id="phSaveState" style="padding:0 20px;font-weight:700"></p>
+    <button class="sheet-item" data-a="done">${fresh ? '先不要存（之後可以在「匯出」再存一次）' : '關閉'}</button>`, a => {
     if (a !== 'go') return;
     const nm = safeName($('#phFileName').value.trim().replace(new RegExp('\\.' + ext + '$', 'i'), '') || base) + '.' + ext;
     const f = nm === file.name ? file : new File([file], nm, { type: file.type });
-    saveToFiles(f).then(r => { if (r === 'cancel') toast('已取消，可以再按一次'); else if (r === 'shared') toast('✅ 已存「' + nm + '」', 3000); });
+    const st = t => { const el = $('#phSaveState'); if (el) el.textContent = t; else { $('#sheet').hidden = true; $('#sheetBackdrop').hidden = true; toast(t, 4500); } };
+    const go = () => saveToFiles(f).then(r => {
+      if (r === 'cancel') st('你按了取消，還沒存。可以再按一次上面的按鈕。');
+      else if (r === 'shared') st('✅ 已交給 iPhone。如果你有選「儲存到檔案」並按「儲存」，檔案就在你選的資料夾裡。');
+      else if (r === 'saved') st('✅ 已儲存');
+      else if (r === 'download') st('已開始下載。');
+      else if (r === 'error') saveFailSheet(f, go);
+    });
+    go();
   });
   const inp = $('#phFileName'); inp.onfocus = () => inp.select();
 }

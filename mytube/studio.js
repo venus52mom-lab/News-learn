@@ -304,11 +304,27 @@ async function saveToFiles(file) {
       toast('✅ 已儲存「' + h.name + '」', 3000); return 'saved';
     } catch (e) { if (e.name === 'AbortError') return 'cancel'; console.warn(e); }
   }
+  // 只傳檔案、不帶標題文字：iPhone 帶了文字時，有時「儲存到檔案」會不見或只存成文字
   if (navigator.canShare?.({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: file.name }); return 'shared'; }
-    catch (e) { if (e.name === 'AbortError') return 'cancel'; console.warn(e); }
-  }
+    try { await navigator.share({ files: [file] }); return 'shared'; }
+    catch (e) {
+      if (e.name === 'AbortError') return 'cancel';
+      console.warn(e); saveToFiles.err = `${e.name}: ${e.message}`;
+      if (isIOS()) return 'error';          // iPhone 上下載連結不會真的存檔，直接告訴使用者
+    }
+  } else if (isIOS()) { saveToFiles.err = '這個檔案沒辦法用分享選單存（canShare=false）'; return 'error'; }
   anchorDownload(file); return 'download';
+}
+// 存檔失敗時：說清楚原因，給「再試一次」和其他方法
+function saveFailSheet(file, retry) {
+  openSheet(`<h4>⚠️ 沒有成功叫出「儲存到檔案」</h4>
+    <p class="hint" style="padding:0 20px">原因：${esc(saveToFiles.err || '不明')}<br>檔案：${esc(file.name)}（${(file.size / 1048576).toFixed(1)}MB）<br><br>可以按「再試一次」。還是不行的話，按「用 Safari 下載」：iPhone 會問要不要下載，下載好的檔案在「檔案」App ›「下載項目」。</p>
+    <button class="sheet-item" data-a="re" data-keep>🔁 再試一次</button>
+    <button class="sheet-item" data-a="dl">⬇️ 用 Safari 下載</button>
+    <button class="sheet-item" data-a="no">關閉</button>`, a => {
+    if (a === 're') retry();
+    if (a === 'dl') anchorDownload(file);
+  });
 }
 function filesSheet(file) {
   const ext = file.name.split('.').pop(), base = file.name.slice(0, -(ext.length + 1));
@@ -324,7 +340,8 @@ function filesSheet(file) {
     if (a !== 'go') return;
     const nm = safeName($('#stFileName').value.trim().replace(/\.[a-z0-9]{2,4}$/i, '') || base) + '.' + ext;
     const f = nm === file.name ? file : new File([file], nm, { type: file.type });
-    saveToFiles(f).then(r => { if (r === 'cancel') toast('已取消，可以再按一次'); else if (r === 'shared') toast('✅ 已存「' + nm + '」', 3000); });
+    const go = () => saveToFiles(f).then(r => { if (r === 'cancel') toast('已取消，可以再按一次'); else if (r === 'shared') toast('✅ 已交給「檔案」App：' + nm, 3000); else if (r === 'error') saveFailSheet(f, go); });
+    go();
   });
   const inp = $('#stFileName'); inp.onfocus = () => inp.select();
 }

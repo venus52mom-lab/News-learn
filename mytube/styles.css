@@ -440,3 +440,4 @@ label.sheet-item{cursor:pointer}
 .ph-bar i{display:block;height:100%;width:0;background:#ff0033;transition:width .2s}
 .share-card{display:flex;flex-direction:column;font-weight:700;font-size:16px;color:var(--text);text-decoration:none}
 .share-card small{font-weight:400;font-size:13px;color:var(--text2);margin-top:2px}
+.sheet-item.ph-big{background:#ff0033;color:#fff;font-weight:700;justify-content:center;border-radius:14px;margin:8px 16px;width:auto}
