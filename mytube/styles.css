@@ -438,3 +438,5 @@ label.sheet-item{cursor:pointer}
 .sheet-input textarea{flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px;outline:none;font-family:inherit;resize:vertical}
 .ph-bar{margin:4px 20px 14px;height:8px;border-radius:4px;background:var(--chip);overflow:hidden}
 .ph-bar i{display:block;height:100%;width:0;background:#ff0033;transition:width .2s}
+.share-card{display:flex;flex-direction:column;font-weight:700;font-size:16px;color:var(--text);text-decoration:none}
+.share-card small{font-weight:400;font-size:13px;color:var(--text2);margin-top:2px}

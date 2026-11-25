@@ -62,7 +62,7 @@ def ensure_tools():
     print("📦 第一次使用，正在安裝下載工具（約 1 分鐘，只有第一次）…")
     try:
         from pip._internal.cli.main import main as pip_main
-        pip_main(["install", "-q", "-U"] + missing)
+        pip_main(["install", "-qq", "-U", "--disable-pip-version-check"] + missing)
     except Exception as e:
         print("   自動安裝失敗：", e)
         print("   請手動執行：python3 -m pip install -U " + " ".join(NEEDED))
@@ -206,6 +206,21 @@ def download_once(url, audio, client):
 
 def main():
     text = " ".join(sys.argv[1:])
+    if text.strip().lower() == "setup":
+        # 安裝頁的「一鍵準備下載工具」：工具已在上面自動裝好，這裡只確認
+        try:
+            import importlib.metadata as md
+            vers = {p: md.version(p) for p in NEEDED}
+        except Exception as e:
+            sys.exit(f"❌ 工具沒有裝好：{e}\n請再貼一次同樣的指令試試看")
+        print("\n" + "=" * 34)
+        print("✅ 準備好了！下載工具已安裝：")
+        for p, v in vers.items():
+            print(f"   • {p} {v}")
+        print("\n👉 回到 myTube（按最左上角「◀」或從桌面打開），")
+        print("   到「下載」頁貼 YouTube 網址就可以下載了。")
+        print("=" * 34)
+        return
     if not re.search(r"https?://|\b[vm]:[\w-]{11}\b", text):
         text = input("貼上 YouTube 網址（可以貼很多個，用空白隔開）：")
     jobs = parse(text)
