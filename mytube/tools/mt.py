@@ -69,11 +69,13 @@ def ensure_tools():
     importlib.invalidate_caches()
 
 
-ensure_tools()
-try:
-    import yt_dlp
-except ImportError:
-    sys.exit("找不到 yt-dlp，請執行：python3 -m pip install -U " + " ".join(NEEDED))
+TTS_MODE = len(sys.argv) > 1 and sys.argv[1] == "tts"     # 電子書離線朗讀：不需要 yt-dlp
+if not TTS_MODE:
+    ensure_tools()
+    try:
+        import yt_dlp
+    except ImportError:
+        sys.exit("找不到 yt-dlp，請執行：python3 -m pip install -U " + " ".join(NEEDED))
 
 BASE = os.path.expanduser("~/Documents/myTube")
 
@@ -204,7 +206,110 @@ def download_once(url, audio, client):
     return saved
 
 
+# ---------------- 電子書離線朗讀：把整本書的語音下載成一個 zip，再匯入 myTube ----------------
+TTS_BASE = os.environ.get("MT_TTS_BASE") or "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl={lang}&q={q}"
+
+
+def read_clipboard():
+    try:
+        t = os.popen("pbpaste").read()
+        if t:
+            return t
+    except Exception:
+        pass
+    tmp = os.path.expanduser("~/Documents/.mtjob.txt")
+    try:
+        os.system(f"pbpaste > '{tmp}'")
+        with open(tmp, encoding="utf-8") as f:
+            return f.read()
+    except Exception:
+        return ""
+
+
+def tts_fetch(lang, text):
+    import urllib.parse
+    import urllib.request
+    url = TTS_BASE.format(lang=urllib.parse.quote(lang), q=urllib.parse.quote(text))
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = r.read()
+    if len(data) < 300:
+        raise RuntimeError("聲音檔太小")
+    return data
+
+
+def tts_job():
+    import json
+    import time
+    import zipfile
+    from concurrent.futures import ThreadPoolExecutor
+    raw = ""
+    if len(sys.argv) > 2 and os.path.exists(sys.argv[2]):
+        raw = open(sys.argv[2], encoding="utf-8").read()
+    for _ in range(5):
+        if raw.startswith("MYTUBE-TTS1"):
+            break
+        print("\n" + "=" * 34)
+        print("👉 回到 myTube，按「② 複製書的內容」，")
+        print("   再回到這裡，按鍵盤的「換行／return」。")
+        print("=" * 34)
+        input("（好了就按換行）")
+        raw = read_clipboard()
+        if not raw.startswith("MYTUBE-TTS1"):
+            print("❌ 剪貼簿裡不是書的內容，請再按一次 myTube 的「② 複製書的內容」")
+    else:
+        sys.exit("沒有拿到書的內容，請重新來一次")
+    job = json.loads(raw.split("\n", 1)[1])
+    items = job["items"]
+    title = re.sub(r'[\\/:*?"<>|]', "_", job.get("title") or "book")[:60]
+    work = os.path.join(BASE, ".tts", job["book"])
+    os.makedirs(work, exist_ok=True)
+    todo = [it for it in items if not os.path.exists(os.path.join(work, it[0] + ".mp3"))]
+    print(f"\n📖 {job.get('title')}：共 {len(items)} 段聲音，要下載 {len(todo)} 段")
+    print("💡 下載時請停在 a-Shell，不要切到別的 App。中斷了再貼一次指令會接著下載。")
+    done = [len(items) - len(todo)]
+    fails = []
+
+    def one(it):
+        h, lang, text = it
+        for k in range(4):
+            try:
+                data = tts_fetch(lang, text)
+                with open(os.path.join(work, h + ".mp3"), "wb") as f:
+                    f.write(data)
+                break
+            except Exception as e:
+                if k == 3:
+                    fails.append((h, str(e)[:80]))
+                time.sleep(1.5 * (k + 1))
+        done[0] += 1
+        if done[0] % 10 == 0 or done[0] == len(items):
+            print(f"   {done[0]} / {len(items)}")
+
+    with ThreadPoolExecutor(3) as ex:
+        list(ex.map(one, todo))
+    have = [it[0] for it in items if os.path.exists(os.path.join(work, it[0] + ".mp3"))]
+    out_dir = os.path.join(BASE, "朗讀")
+    os.makedirs(out_dir, exist_ok=True)
+    out = os.path.join(out_dir, f"{title}.zip")
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as z:
+        z.writestr("info.json", json.dumps({"book": job["book"], "title": job.get("title"), "keys": have}, ensure_ascii=False))
+        for h in have:
+            z.write(os.path.join(work, h + ".mp3"), h + ".mp3")
+    print("\n" + "=" * 34)
+    if fails:
+        print(f"⚠️ 有 {len(fails)} 段下載失敗（再貼一次指令可以補下載），其他 {len(have)} 段已完成。")
+    else:
+        print(f"✅ 完成！{len(have)} 段聲音都下載好了。")
+    print("👉 回到 myTube，按「③ 匯入下載好的朗讀聲音」，")
+    print("   選：我的 iPhone › a-Shell › myTube › 朗讀 ›")
+    print(f"   「{title}.zip」")
+    print("=" * 34)
+
+
 def main():
+    if TTS_MODE:
+        return tts_job()
     text = " ".join(sys.argv[1:])
     if text.strip().lower() == "setup":
         # 安裝頁的「一鍵準備下載工具」：工具已在上面自動裝好，這裡只確認

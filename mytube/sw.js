@@ -1,5 +1,5 @@
 // myTube service worker：沒網路時也能打開；有網路時一定拿最新版（不用 iPhone 舊的快取）
-const VER = '20261125c';
+const VER = '20261125d';
 const CACHE = 'mytube-' + VER;
 const SHELL = ['./', 'index.html', 'styles.css?v=' + VER, 'app.js?v=' + VER, 'books.js?v=' + VER, 'studio.js?v=' + VER, 'photo.js?v=' + VER, 'vendor/ffmpeg/ffmpeg.js', 'vendor/ffmpeg/814.ffmpeg.js', 'vendor/ffmpeg/util.js', 'vendor/photo/mp4-muxer.js', 'vendor/photo/jszip.min.js', 'vendor/photo/pptxgen.min.js', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => {

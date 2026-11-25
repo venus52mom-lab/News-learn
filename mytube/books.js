@@ -296,6 +296,7 @@ async function deleteBook(book) {
   B.books = B.books.filter(b => b !== book);
   for (const k of [...B.trans.keys()]) if (k.startsWith(book.id + '|')) B.trans.delete(k);
   if (book.saved) { await DB.del('books', book.id); await DB.delPrefix('trans', book.id + '|'); }
+  await DB.delPrefix('blobs', `tts_${book.id}_`).catch(() => {}); await DB.del('kv', packKey(book)).catch(() => {});
   renderBooks(); toast('已刪除');
 }
 async function importWith(fn, meta) {
@@ -357,10 +358,12 @@ function bookMenu(b) {
     <button class="sheet-item" data-a="open">📖 打開</button>
     <button class="sheet-item" data-a="save">${b.saved ? '📤 從手機移除（不刪這次的）' : '💾 存到手機'}</button>
     <button class="sheet-item" data-a="all">🌐 整本翻譯成${esc(langName(B.lang))}並存起來（開車前先做）</button>
+    <button class="sheet-item" data-a="offline">🎧 離線朗讀（飛機上、沒網路也能背景聽）</button>
     <button class="sheet-item" data-a="test">🔈 測試朗讀聲音</button>
     <button class="sheet-item" data-a="rename">✏️ 重新命名</button>
     <button class="sheet-item danger" data-a="del">🗑️ 刪除</button>`, async a => {
     if (a === 'test') return soundTest();
+    if (a === 'offline') return offlineSheet(b);
     if (a === 'open') openReader(b.id);
     if (a === 'save') saveBook(b, !b.saved);
     if (a === 'all') translateAll(b);
@@ -736,7 +739,9 @@ const TTS = {
     P.guardUntil = 0;
     if (P.item && !audioEl.paused) audioEl.pause();          // 先停掉影片／音樂
     this.book = book; this.pos = { ...pos }; this.phase = 0; this.on = true;
-    this.setSession(); this.loop(++this.token);
+    const tok = ++this.token;
+    this.setSession();
+    loadPack(book).finally(() => { if (tok === this.token) this.loop(tok); });
     updateSpeakBtn(); renderBooks();
   },
   restart() { if (this.on && this.book) this.start(this.book, this.pos); },
@@ -815,9 +820,22 @@ const TTS = {
   },
   async speak(text, lang, tok) {
     if (!text || !text.trim()) return;
-    const parts = this.chunks(text, serverReady() ? 900 : 180);
+    const off = PACK.id === this.book?.id && PACK.keys.size > 0;
+    const parts = this.chunks(text, off || !serverReady() ? 180 : 900);
     for (const c of parts) {
       let tries = 0;
+      // 已經下載好的聲音：直接從手機裡播，不用網路（飛機上、鎖螢幕都可以）
+      if (off && PACK.keys.has(ttsHash(lang, c))) {
+        const blob = await DB.get('blobs', `tts_${this.book.id}_${ttsHash(lang, c)}`).catch(() => null);
+        if (!this.on || tok !== this.token) return;
+        if (blob) {
+          const u = URL.createObjectURL(blob);
+          const ok = await this.playChunk(c, lang, tok, u);
+          URL.revokeObjectURL(u);
+          if (!this.on || tok !== this.token) return;
+          if (ok) continue;
+        }
+      }
       while (this.on && tok === this.token) {
         let ok = false;
         // 背景（鎖螢幕、開車）時一定用線上語音：手機內建語音在背景不會出聲
@@ -836,7 +854,7 @@ const TTS = {
       }
     }
   },
-  playChunk(text, lang, tok) {
+  playChunk(text, lang, tok, src) {
     return new Promise(res => {
       const el = this.el;
       let done = false;
@@ -850,7 +868,7 @@ const TTS = {
       el.onended = () => fin(true);
       el.onerror = () => fin(false);
       this.synthMode = false;
-      el.src = this.url(text, lang);
+      el.src = src || this.url(text, lang);
       el.playbackRate = B.rate;
       this.playing = true; updateSpeakBtn();
       el.play().then(() => { clearTimeout(t); }).catch(err => { console.warn('tts play', err); fin(false); });
@@ -933,6 +951,187 @@ $('#rdSpeak').onclick = () => {
 };
 $('#rdPrev').onclick = () => { if (TTS.on) { TTS.unlock(); TTS.step(-1); } };
 $('#rdNext').onclick = () => { if (TTS.on) { TTS.unlock(); TTS.step(1); } };
+
+/* ---------------- 離線朗讀：先把整本書的聲音下載到手機 ---------------- */
+const PACK = { id: null, keys: new Set() };
+const packKey = b => 'ttspack_' + b.id;
+function ttsHash(lang, text) {
+  const str = lang + '|' + text;
+  let h1 = 0x811c9dc5, h2 = 0x9747b28c;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 16777619);
+    h2 = Math.imul(h2 ^ c, 0x5bd1e995); h2 ^= h2 >>> 15;
+  }
+  return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36);
+}
+async function loadPack(b) {
+  if (!b) return;
+  const m = await DB.get('kv', packKey(b)).catch(() => null);
+  PACK.id = b.id; PACK.keys = new Set(m?.keys || []); PACK.meta = m || null;
+}
+async function savePack(b, keys, extra) {
+  const m = { keys: [...keys], at: Date.now(), mode: B.mode, read: B.read, lang: B.lang, ...extra };
+  await DB.put('kv', m, packKey(b));
+  if (PACK.id === b.id) { PACK.keys = new Set(keys); PACK.meta = m; }
+}
+const readDesc = () => B.mode === 'orig' ? '只唸原文' : B.mode === 'full' ? `只唸${langName(B.lang)}翻譯` : B.read === 'both' ? `原文＋${langName(B.lang)}翻譯` : B.read === 'trans' ? `只唸${langName(B.lang)}翻譯` : '只唸原文';
+// 照「現在的朗讀設定」列出整本書要唸的每一小段（跟朗讀時切的方式一模一樣）
+async function buildPackList(b, prog) {
+  const ss = sentsOf(b), parts = TTS.parts();
+  if (parts.includes('t')) {
+    for (let p = 0; p < ss.length; p += 8) {
+      prog(`先翻譯整本書（需要網路）… ${Math.round(p / ss.length * 100)}%`);
+      await ensureTrans(b, B.lang, p, p + 7);
+    }
+  }
+  const items = [], seen = new Set();
+  for (let p = 0; p < ss.length; p++) for (let s = 0; s < ss[p].length; s++) for (const part of parts) {
+    let text = ss[p][s], lang = sentLang(text, b.srcLang);
+    if (part === 't') {
+      const tr = B.trans.get(tKey(b, B.lang, p));
+      if (tr && tr[s]) { text = tr[s]; lang = sentLang(text, B.lang); }
+      else if (parts.includes('o')) continue;
+    }
+    if (!text || !text.trim()) continue;
+    for (const c of TTS.chunks(text, 180)) {
+      const h = ttsHash(lang, c);
+      if (!seen.has(h)) { seen.add(h); items.push([h, lang, c]); }
+    }
+  }
+  return items;
+}
+const TTS_SRC = [
+  () => serverReady() && ((l, t) => `${getServer()}/api/tts?key=${encodeURIComponent((serverKey.value || '').trim())}&lang=${encodeURIComponent(l)}&text=${encodeURIComponent(t)}`),
+  () => (l, t) => `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=${encodeURIComponent(l)}&q=${encodeURIComponent(t)}`,
+  () => (l, t) => `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${encodeURIComponent(l)}&q=${encodeURIComponent(t)}`,
+];
+let ttsSrcOk = -1;
+async function fetchTTS(lang, text) {
+  const order = ttsSrcOk >= 0 ? [ttsSrcOk, ...TTS_SRC.keys()] : [...TTS_SRC.keys()];
+  for (const i of [...new Set(order)]) {
+    const mk = TTS_SRC[i](); if (!mk) continue;
+    try {
+      const r = await fetch(mk(lang, text), { referrerPolicy: 'no-referrer', cache: 'no-store' });
+      if (!r.ok) continue;
+      const b = await r.blob();
+      if (b.size < 300) continue;
+      ttsSrcOk = i;
+      return b.type.startsWith('audio') ? b : new Blob([b], { type: 'audio/mpeg' });
+    } catch (e) { /* 這個來源不給網頁下載（CORS）或沒網路 → 換下一個 */ }
+  }
+  throw new Error('no-source');
+}
+async function offlineSheet(b) {
+  await loadPack(b);
+  const n = PACK.keys.size, m = PACK.meta;
+  openSheet(`<h4>🎧 離線朗讀：${esc(b.title)}</h4>
+    <p class="hint" style="padding:0 20px">先在有網路時把整本書的聲音<b>下載到手機</b>，之後在飛機上、沒網路也能朗讀，鎖螢幕、切到別的 App 都會繼續唸。<br><br>
+    會照<b>現在的朗讀設定</b>下載：${esc(readDesc())}。（之後改了朗讀方式或翻譯語言，要再下載一次）<br>
+    ${n ? `目前已下載：<b>${n} 段</b>（${m?.lang ? esc(langName(m.lang)) + '，' : ''}${new Date(m?.at || Date.now()).toLocaleDateString()}）` : '目前還沒有下載。'}</p>
+    <button class="sheet-item" data-a="dl">⬇️ ${n ? '補齊／更新' : '開始下載'}離線朗讀聲音</button>
+    <button class="sheet-item" data-a="imp">📥 匯入 a-Shell 下載好的朗讀聲音（.zip）</button>
+    ${n ? '<button class="sheet-item danger" data-a="del">🗑 刪除離線朗讀聲音（釋放空間）</button>' : ''}
+    <button class="sheet-item" data-a="no">關閉</button>`, async a => {
+    if (a === 'dl') downloadPack(b);
+    if (a === 'imp') pickPackZip(b);
+    if (a === 'del') { await DB.delPrefix('blobs', `tts_${b.id}_`); await DB.del('kv', packKey(b)); await loadPack(b); toast('已刪除離線朗讀聲音'); }
+  });
+}
+async function downloadPack(b) {
+  if (!navigator.onLine) return toast('要有網路才能下載，請連上網路再試');
+  let cancel = false;
+  const sh = openSheet(`<h4>⬇️ 下載離線朗讀聲音</h4><p class="hint" style="padding:0 20px" id="pkProg">準備中…</p><div class="ph-bar"><i id="pkBar"></i></div>
+    <p class="hint" style="padding:0 20px">下載時請停在 myTube（不要鎖螢幕）。中斷了沒關係，再按一次會接著下載。</p>
+    <button class="sheet-item" data-a="stop">停止</button>`, a => { if (a === 'stop') cancel = true; });
+  $('#sheetBackdrop').onclick = null;
+  const prog = (t, f) => { const el = $('#pkProg'); if (el) el.textContent = t; if (f != null && $('#pkBar')) $('#pkBar').style.width = Math.round(f * 100) + '%'; };
+  try {
+    if (!b.saved) { prog('先把這本書存到手機…'); await saveBook(b, true); }   // 沒存的書，關掉 App 就不見了
+    await loadPack(b);
+    const items = await buildPackList(b, prog);
+    if (b.saved) for (const [k, v] of B.trans) if (k.startsWith(b.id + '|')) await DB.put('trans', { k, v }).catch(() => {});
+    const have = new Set([...PACK.keys].filter(h => items.some(it => it[0] === h)));
+    const todo = items.filter(it => !have.has(it[0]));
+    if (!todo.length) { await savePack(b, have); sh.close(); toast('✅ 已經全部下載好了，可以離線朗讀', 3500); return; }
+    prog('測試下載…', 0);
+    try { const first = await fetchTTS(todo[0][1], todo[0][2]); await DB.put('blobs', first, `tts_${b.id}_${todo[0][0]}`); have.add(todo[0][0]); }
+    catch { sh.close(); return ashellPackSheet(b, items, have); }      // 瀏覽器不能直接下載 → 用 a-Shell
+    let done = 1, fail = 0, i = 1;
+    const worker = async () => {
+      while (!cancel && i < todo.length) {
+        const it = todo[i++];
+        let ok = false;
+        for (let k = 0; k < 3 && !ok && !cancel; k++) {
+          try { const bl = await fetchTTS(it[1], it[2]); await DB.put('blobs', bl, `tts_${b.id}_${it[0]}`); have.add(it[0]); ok = true; }
+          catch { await sleep(800 * (k + 1)); }
+        }
+        if (!ok && !cancel) fail++;
+        done++;
+        prog(`下載中 ${done} / ${todo.length}${fail ? `（${fail} 段失敗）` : ''}`, done / todo.length);
+        if (done % 25 === 0) await savePack(b, have);
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    await savePack(b, have);
+    sh.close();
+    const missing = items.length - [...have].length;
+    if (cancel) toast(`已停止，下載了 ${have.size} / ${items.length} 段，下次會接著下載`, 4000);
+    else if (missing > 0) toast(`下載完成，但有 ${missing} 段失敗，再按一次「補齊」就好`, 4500);
+    else toast('✅ 整本書的聲音都下載好了！沒網路也能背景朗讀', 4000);
+  } catch (e) {
+    console.error(e); sh.close();
+    openSheet(`<h4>下載沒有完成</h4><p class="hint" style="padding:0 20px">${esc(/翻譯|translate|fetch|network/i.test(e.message) ? '翻譯或下載需要網路，請確認網路後再試。' : e.message)}<br>已經下載好的部分會保留，下次會接著下載。</p><button class="sheet-item" data-a="ok">知道了</button>`);
+  }
+}
+// 瀏覽器被 Google 擋住時：請 a-Shell 幫忙下載（Python 沒有這個限制），下載好再匯入
+function ashellPackSheet(b, items, have) {
+  const todo = items.filter(it => !have.has(it[0]));
+  const job = 'MYTUBE-TTS1\n' + JSON.stringify({ book: b.id, title: b.title, items: todo });
+  const cmd = `python3 -c "import urllib.request as u;exec(u.urlopen('${MT_URL}').read())" tts`;
+  openSheet(`<h4>🎧 用 a-Shell 下載朗讀聲音</h4>
+    <p class="hint" style="padding:0 20px">Google 不讓網頁直接下載聲音，改請 a-Shell 幫忙（共 ${todo.length} 段）。照順序按：</p>
+    <button class="sheet-item" data-a="c1" data-keep>① 複製指令並打開 a-Shell</button>
+    <p class="hint" style="padding:0 20px;margin:0">在 a-Shell 長按 → 貼上 → 按換行。它會叫你回來按 ②。</p>
+    <button class="sheet-item" data-a="c2" data-keep>② 複製書的內容（再回 a-Shell 按換行）</button>
+    <p class="hint" style="padding:0 20px;margin:0">a-Shell 開始下載，等它顯示「✅ 完成」。</p>
+    <button class="sheet-item" data-a="imp" data-keep>③ 匯入下載好的朗讀聲音</button>
+    <p class="hint" style="padding:0 20px;margin:0">選：我的 iPhone › a-Shell › myTube › 朗讀 › 「${esc(b.title.slice(0, 60))}.zip」</p>
+    <button class="sheet-item" data-a="no">關閉</button>`, a => {
+    if (a === 'c1') { copyText(cmd); toast('✅ 已複製指令'); setTimeout(() => { location.href = 'ashell://'; }, 600); }
+    if (a === 'c2') { copyText(job); toast('✅ 已複製書的內容，回 a-Shell 按換行'); setTimeout(() => { location.href = 'ashell://'; }, 900); }
+    if (a === 'imp') pickPackZip(b);
+  });
+}
+function pickPackZip(b) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.onchange = () => { const f = inp.files[0]; if (f) importPackZip(b, f); };
+  inp.click();
+}
+async function importPackZip(b, file) {
+  toast('匯入朗讀聲音…', 60000);
+  try {
+    await loadScript('vendor/photo/jszip.min.js');
+    const zip = await JSZip.loadAsync(file);
+    const info = JSON.parse(await zip.file('info.json').async('string'));
+    const target = B.books.find(x => x.id === info.book) || b;
+    if (target.id !== info.book && !confirm(`這個檔案是「${info.title}」的朗讀聲音，不是「${b.title}」的。還是要匯入嗎？`)) return toast('已取消');
+    await loadPack(target);
+    const have = new Set(PACK.keys);
+    let n = 0;
+    for (const name of Object.keys(zip.files)) {
+      if (!name.endsWith('.mp3')) continue;
+      const h = name.replace(/\.mp3$/, '').split('/').pop();
+      const data = await zip.file(name).async('blob');
+      await DB.put('blobs', new Blob([data], { type: 'audio/mpeg' }), `tts_${target.id}_${h}`);
+      have.add(h); n++;
+    }
+    await savePack(target, have);
+    $('#sheet').hidden = true; $('#sheetBackdrop').hidden = true;
+    toast(`✅ 匯入 ${n} 段聲音，「${target.title}」沒網路也能朗讀了`, 4500);
+  } catch (e) { console.error(e); toast('匯入失敗：這不是 myTube 的朗讀聲音檔（' + (e.message || e) + '）', 5000); }
+}
 
 /* ---------------- 測試朗讀聲音：找出是哪一段不通 ---------------- */
 function soundTest() {
