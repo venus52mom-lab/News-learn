@@ -5,14 +5,20 @@
 'use strict';
 
 /* ---------------- 工作室下拉選單：影片音樂工作室／照片工作室 ---------------- */
-const STMODES = { vm: '🎬 影片／音樂工作室', ph: '🖼️ 照片工作室' };
+const STMODES = { vm: '🎬 影片／音樂工作室', ph: '🖼️ 照片工作室', mix: '🎞️ 綜合工作室' };
+const curMode = () => ({ ph: 'ph', mix: 'mix' }[LS.get('stmode')] || 'vm');
+const HOME_HINT = {
+  ph: '從手機照片匯入，一張一張接起來，加轉場、文字、背景音樂，做成<b>短影片</b>或 <b>PPT 簡報</b>。',
+  mix: '<b>影片和照片</b>都可以放進來，排好順序、剪掉不要的部分，加轉場、文字和背景音樂，做成<b>短影片</b>。可以選音樂要蓋過影片聲音、小小聲，還是播影片時不放音樂。',
+};
 function applyStudioMode() {
-  const m = LS.get('stmode') === 'ph' ? 'ph' : 'vm';
+  const m = curMode();
   $('#stVM').hidden = m !== 'vm';
-  $('#phHome').hidden = m !== 'ph';
+  $('#phHome').hidden = m === 'vm';
+  if (m !== 'vm') $('#phHomeHint').innerHTML = HOME_HINT[m];
   $('#stModeLbl').textContent = STMODES[m];
   $$('#stMenu [data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === m));
-  if (m === 'ph') renderPhHome();
+  if (m !== 'vm') renderPhHome();
 }
 function openStudioMenu(anchor) {
   const menu = $('#stMenu'), r = anchor.getBoundingClientRect();
@@ -63,19 +69,26 @@ function saveProj(now) {
   saveT = setTimeout(go, 400);
 }
 function totalDur(p) { return p.slides.reduce((a, s) => a + s.d, 0); }
+function clipCount(p) {
+  const v = p.slides.filter(s => s.kind === 'video').length, ph = p.slides.length - v;
+  return [ph && `${ph} 張照片`, v && `${v} 段影片`].filter(Boolean).join('、') || '0 張';
+}
 
 /* ---------------- 首頁：作品清單 ---------------- */
+const kindOf = p => p.kind || 'photo';
 async function renderPhHome() {
   await loadProjects();
+  const want = curMode() === 'mix' ? 'mix' : 'photo';
+  const list = PH.list.filter(p => kindOf(p) === want);
   const box = $('#phList');
-  if (!PH.list.length) {
-    box.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg><div>還沒有作品<br><small>按「＋ 新增作品」從手機照片開始</small></div></div>`;
+  if (!list.length) {
+    box.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg><div>還沒有作品<br><small>按「＋ 新增作品」從手機${want === 'mix' ? '影片和照片' : '照片'}開始</small></div></div>`;
     return;
   }
-  box.innerHTML = PH.list.map(p => `<div class="mrow" data-id="${p.id}">
+  box.innerHTML = list.map(p => `<div class="mrow" data-id="${p.id}">
     <img class="mart" src="${p.slides[0]?.thumb || ''}" alt="" style="background:#222;object-fit:cover">
     <div class="mtext"><div class="mtitle">${esc(p.name)}</div>
-      <div class="msub">${p.target === 'ppt' ? '📊 PPT' : '🎬 短影片'} · ${p.slides.length} 張 · ${fmtS(totalDur(p))}</div></div>
+      <div class="msub">${p.target === 'ppt' ? '📊 PPT' : '🎬 短影片'} · ${clipCount(p)} · ${fmtS(totalDur(p))}</div></div>
     <button class="more-btn" data-a="more">${ICON.more}</button></div>`).join('');
 }
 $('#phList').onclick = e => {
@@ -101,6 +114,24 @@ function projMenu(p) {
 }
 $('#phNew').onclick = () => {
   const n = PH.list.length + 1;
+  if (curMode() === 'mix') {
+    openSheet(`<h4>＋ 新增綜合作品</h4>
+      <p class="hint" style="padding:0 20px;margin:0"><b>作品名稱</b></p>
+      <div class="sheet-input"><input id="phNewName" value="我的影片 ${n}"></div>
+      <button class="sheet-item" data-a="mix">🎞️ 選影片和照片（可以一次選很多個）</button>
+      <p class="hint" style="padding:0 20px">之後還可以再加，也可以從 myTube 的影片裡選。</p>`, a => {
+      if (a !== 'mix') return;
+      const p = {
+        id: uid(), kind: 'mix', name: ($('#phNewName').value || '').trim() || `我的影片 ${n}`, target: 'video',
+        ratio: '9:16', fit: 'contain', dur: 3, trans: 'fade', tdur: 0.6, kb: true, amix: 'duck',
+        music: null, slides: [], created: Date.now(), updated: Date.now(),
+      };
+      $('#phFile').accept = 'image/*,video/*';
+      $('#phFile').click();
+      openEditor(p, true);
+    });
+    return;
+  }
   openSheet(`<h4>＋ 新增作品</h4>
     <p class="hint" style="padding:0 20px;margin:0"><b>① 作品名稱</b></p>
     <div class="sheet-input"><input id="phNewName" value="我的作品 ${n}"></div>
@@ -114,6 +145,7 @@ $('#phNew').onclick = () => {
       ratio: a === 'ppt' ? '16:9' : '9:16', fit: 'contain', dur: 3, trans: 'fade', tdur: 0.8, kb: a !== 'ppt',
       music: null, slides: [], created: Date.now(), updated: Date.now(),
     };
+    $('#phFile').accept = 'image/*';
     $('#phFile').click();             // iPhone 規定：要在點擊當下打開照片選擇
     openEditor(p, true);
   });
@@ -123,7 +155,9 @@ $('#phNew').onclick = () => {
 const cv = $('#phCanvas'), cx = cv.getContext('2d');
 async function openEditor(p, isNew) {
   if (P.item && !audioEl.paused) audioEl.pause();
-  PH.p = p; PH.t = 0; PH.imgs.clear(); stopPreview();
+  PH.p = p; PH.t = 0; clearImgs(); stopPreview();
+  if (kindOf(p) === 'mix') { p.target = 'video'; p.amix = p.amix || 'duck'; }
+  $('#phFile').accept = kindOf(p) === 'mix' ? 'image/*,video/*' : 'image/*';
   if (isNew) saveProj(true);
   $('#phTitle').textContent = p.name;
   $('#phEditor').hidden = false; document.body.style.overflow = 'hidden';
@@ -136,7 +170,7 @@ function closeEditor(fromPop) {
   stopPreview(); saveProj(true);
   $('#phEditor').hidden = true; document.body.style.overflow = '';
   if (PH.musicURL) { URL.revokeObjectURL(PH.musicURL); PH.musicURL = null; }
-  PH.imgs.clear();
+  clearImgs();
   if (!fromPop && history.state?.phed) history.back();
   renderPhHome();
 }
@@ -151,6 +185,12 @@ function syncControls() {
   $('#phTDur').textContent = p.tdur.toFixed(1) + ' 秒';
   $('#phTrans').innerHTML = Object.entries(TRANS).map(([k, v]) => `<option value="${k}"${k === p.trans ? ' selected' : ''}>${v}</option>`).join('');
   $('#phKB').checked = !!p.kb;
+  const mix = kindOf(p) === 'mix';
+  $('#phTargetRow').hidden = mix;
+  $('#phAmixRow').hidden = !mix; $('#phAmixNote').hidden = !mix;
+  $('#phAmix').value = p.amix || 'duck';
+  $('#phLibVid').hidden = !mix;
+  $('#phAdd').textContent = mix ? '＋ 加入影片／照片' : '＋ 從照片加入';
   $('#phMusicRow').hidden = p.target === 'ppt';
   $('#phPptNote').hidden = p.target !== 'ppt';
   $('#phMusicName').textContent = p.music ? '🎵 ' + p.music.name : '沒有';
@@ -165,6 +205,7 @@ const onSeg = (id, key, after) => $('#' + id).onclick = e => {
 };
 onSeg('phTarget', 'target', () => { if (PH.p.target === 'ppt' && PH.p.ratio === '9:16') { /* 保留使用者的比例 */ } });
 onSeg('phRatio', 'ratio'); onSeg('phFit', 'fit');
+$('#phAmix').onchange = e => { PH.p.amix = e.target.value; saveProj(); };
 $('#phTrans').onchange = e => { PH.p.trans = e.target.value; saveProj(); drawAt(PH.t); };
 $('#phKB').onchange = e => { PH.p.kb = e.target.checked; saveProj(); drawAt(PH.t); };
 $$('.ph-step').forEach(st => st.onclick = e => {
@@ -174,27 +215,30 @@ $$('.ph-step').forEach(st => st.onclick = e => {
   else p.tdur = clamp(Math.round((p.tdur + d) * 10) / 10, 0.2, 3);
   saveProj(); syncControls();
 });
-$('#phDurAll').onclick = () => { PH.p.slides.forEach(s => s.d = PH.p.dur); saveProj(); renderSlides(); updTime(); toast(`每張都改成 ${PH.p.dur} 秒`); };
+$('#phDurAll').onclick = () => { PH.p.slides.forEach(s => { if (s.kind !== 'video') s.d = PH.p.dur; }); saveProj(); renderSlides(); updTime(); toast(`每張照片都改成 ${PH.p.dur} 秒`); };
 
 /* ---------------- 照片清單 ---------------- */
 function renderSlides() {
   const p = PH.p;
-  $('#phCount').textContent = `照片 ${p.slides.length} 張 · 共 ${fmtS(totalDur(p))}`;
+  $('#phCount').textContent = `${clipCount(p)} · 共 ${fmtS(totalDur(p))}`;
   $('#phSlides').innerHTML = p.slides.length ? p.slides.map((s, i) => `<div class="ph-slide" data-i="${i}">
     <img src="${s.thumb}" alt="" data-a="go">
-    <div class="ph-sl-mid"><b>第 ${i + 1} 張</b>${s.text?.title || s.text?.body ? `<small>📝 ${esc((s.text.title || s.text.body).slice(0, 14))}</small>` : ''}
+    <div class="ph-sl-mid"><b>${s.kind === 'video' ? `🎬 第 ${i + 1} 段 <button class="mini-btn" data-a="trim">✂️ ${fmtS(s.in)}–${fmtS(s.out)}</button>` : `第 ${i + 1} 張`}</b>${s.text?.title || s.text?.body ? `<small>📝 ${esc((s.text.title || s.text.body).slice(0, 14))}</small>` : ''}
       <div class="ph-step sm"><button data-a="dm">−</button><b>${s.d.toFixed(1)}秒</b><button data-a="dp">＋</button></div></div>
     <div class="ph-sl-btns"><button data-a="txt" class="${s.text ? 'on' : ''}">✏️</button><button data-a="up">↑</button><button data-a="down">↓</button><button data-a="rm">✕</button></div>
-  </div>`).join('') : '<p class="hint" style="text-align:center;padding:20px">還沒有照片，按「＋ 從照片加入」</p>';
+  </div>`).join('')
+  : `<p class="hint" style="text-align:center;padding:20px">還沒有${kindOf(p) === 'mix' ? '影片或照片，按「＋ 加入影片／照片」' : '照片，按「＋ 從照片加入」'}</p>`;
 }
 $('#phSlides').onclick = e => {
   const b = e.target.closest('[data-a]'); const row = e.target.closest('.ph-slide'); if (!b || !row) return;
   const p = PH.p, i = +row.dataset.i, s = p.slides[i], a = b.dataset.a;
   if (a === 'go') { stopPreview(); drawAt(slideStart(i) + 0.01); return; }
-  if (a === 'dm' || a === 'dp') s.d = clamp(Math.round((s.d + (a === 'dp' ? 0.5 : -0.5)) * 10) / 10, 0.5, 30);
+  if ((a === 'dm' || a === 'dp') && s.kind === 'video') { s.out = clamp(Math.round((s.out + (a === 'dp' ? 0.5 : -0.5)) * 10) / 10, s.in + 0.5, s.len); s.d = +(s.out - s.in).toFixed(2); }
+  else if (a === 'dm' || a === 'dp') s.d = clamp(Math.round((s.d + (a === 'dp' ? 0.5 : -0.5)) * 10) / 10, 0.5, 30);
+  if (a === 'trim') return trimSheet(i);
   if (a === 'up' && i > 0) [p.slides[i - 1], p.slides[i]] = [p.slides[i], p.slides[i - 1]];
   if (a === 'down' && i < p.slides.length - 1) [p.slides[i + 1], p.slides[i]] = [p.slides[i], p.slides[i + 1]];
-  if (a === 'rm') { DB.del('blobs', photoKey(p.id, s.id)); PH.imgs.delete(s.id); p.slides.splice(i, 1); }
+  if (a === 'rm') { if (!s.lib) DB.del('blobs', photoKey(p.id, s.id)); dropImg(s.id); p.slides.splice(i, 1); }
   if (a === 'txt') return textSheet(i);
   saveProj(); renderSlides(); updTime(); drawAt(Math.min(PH.t, totalDur(p)));
 };
@@ -206,16 +250,66 @@ $('#phFile').onchange = async e => {
   for (let k = 0; k < files.length; k++) {
     toast(`加入照片 ${k + 1} / ${files.length}…`, 60000);
     try {
-      const { blob, thumb, w, h } = await shrinkPhoto(files[k]);
-      const s = { id: uid(), d: p.dur, thumb, w, h, text: null };
-      await DB.put('blobs', blob, photoKey(p.id, s.id));
+      let s;
+      if (/^video\//.test(files[k].type) || /\.(mov|mp4|m4v|webm)$/i.test(files[k].name)) {
+        if (kindOf(p) !== 'mix') { toast('照片工作室只能放照片；要放影片請用「綜合工作室」', 3500); continue; }
+        s = await videoSlide(files[k]);
+        await DB.put('blobs', files[k], photoKey(p.id, s.id));
+      } else {
+        const { blob, thumb, w, h } = await shrinkPhoto(files[k]);
+        s = { id: uid(), d: p.dur, thumb, w, h, text: null };
+        await DB.put('blobs', blob, photoKey(p.id, s.id));
+      }
       p.slides.push(s); ok++;
       if (ok === 1 || k === files.length - 1) { renderSlides(); updTime(); }
     } catch (err) { console.warn(err); }
   }
   saveProj(true); renderSlides(); updTime(); drawAt(PH.t);
-  toast(ok === files.length ? `✅ 加入 ${ok} 張照片` : `加入 ${ok} 張，${files.length - ok} 張讀不到`, 2500);
+  if (ok) toast(ok === files.length ? `✅ 加入 ${ok} 個` : `加入 ${ok} 個，${files.length - ok} 個沒有加入`, 2500);
 };
+const blobToDataURL = b => new Promise(r => { if (!b) return r(''); const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(''); fr.readAsDataURL(b); });
+async function videoSlide(blob, lib) {
+  const pv = await probeVideo(blob);
+  const len = pv.duration || 0;
+  if (!len) throw new Error('讀不到這個影片');
+  return { id: uid(), kind: 'video', lib: lib || undefined, len: +len.toFixed(2), in: 0, out: +len.toFixed(2), d: +len.toFixed(2), thumb: await blobToDataURL(pv.thumb), text: null };
+}
+$('#phLibVid').onclick = () => {
+  const list = S.media.filter(m => m.type === 'video');
+  if (!list.length) return toast('myTube 的「影片」裡還沒有影片');
+  openSheet(`<h4>從 myTube 影片選</h4>${list.map(m => `<button class="sheet-item" data-a="${m.id}">🎬 ${esc(m.title)} <small style="color:var(--text2)">${fmtTime(m.duration)}</small></button>`).join('')}`, async id => {
+    const m = list.find(x => x.id === id); if (!m) return;
+    toast('讀取影片…', 30000);
+    try {
+      const b = await DB.get('blobs', m.id);
+      const s = await videoSlide(b, m.id);
+      PH.p.slides.push(s); saveProj(true); renderSlides(); updTime(); drawAt(PH.t);
+      toast('✅ 已加入「' + m.title + '」');
+    } catch (e) { toast('加入失敗：' + e.message); }
+  });
+};
+// 影片剪掉頭尾：用播放器找到位置，按「設為開始／設為結束」
+function trimSheet(i) {
+  const p = PH.p, s = p.slides[i];
+  let a = s.in, b = s.out, url = '';
+  openSheet(`<h4>✂️ 第 ${i + 1} 段：只用影片的哪一段？</h4>
+    <video id="phTrimV" playsinline controls muted style="width:calc(100% - 32px);margin:0 16px;max-height:34vh;background:#000;border-radius:10px"></video>
+    <p class="hint" style="padding:0 20px;text-align:center" id="phTrimLbl"></p>
+    <div class="row" style="gap:8px;padding:0 16px;justify-content:center"><button class="pill-btn" data-a="in" data-keep>⏮ 設為開始</button><button class="pill-btn" data-a="out" data-keep>設為結束 ⏭</button></div>
+    <button class="sheet-item" data-a="ok">✅ 儲存</button>
+    <button class="sheet-item" data-a="reset" data-keep>↺ 用整段影片</button>
+    <button class="sheet-item" data-a="no">取消</button>`, act => {
+    const v = $('#phTrimV');
+    if (act === 'in') { a = Math.min(v.currentTime, b - 0.5); lbl(); }
+    if (act === 'out') { b = Math.max(v.currentTime, a + 0.5); lbl(); }
+    if (act === 'reset') { a = 0; b = s.len; lbl(); }
+    if (act === 'ok') { s.in = +Math.max(0, a).toFixed(2); s.out = +Math.min(b, s.len).toFixed(2); s.d = +(s.out - s.in).toFixed(2); saveProj(); renderSlides(); updTime(); stopPreview(); drawAt(slideStart(i) + 0.01); }
+    if (act === 'ok' || act === 'no') { v?.pause(); URL.revokeObjectURL(url); }
+  });
+  const lbl = () => { $('#phTrimLbl').textContent = `開始 ${fmtS(a)}　結束 ${fmtS(b)}　（共 ${(b - a).toFixed(1)} 秒）`; };
+  lbl();
+  slideBlob(p, s).then(bl => { if (!bl) return; url = URL.createObjectURL(bl); const v = $('#phTrimV'); if (v) { v.src = url; v.currentTime = a; } });
+}
 async function shrinkPhoto(file) {
   const bmp = await createImageBitmap(file);
   const MAX = 1920, k = Math.min(1, MAX / Math.max(bmp.width, bmp.height));
@@ -314,13 +408,32 @@ function frameInfo(p, t) {
   }
   return null;
 }
+const slideBlob = (p, s) => DB.get('blobs', s.lib || photoKey(p.id, s.id));
+function dropImg(id) {
+  const v = PH.imgs.get(id); if (!v) return;
+  v.bmp?.close?.();
+  if (v.vid) { v.vid.pause(); v.vid.removeAttribute('src'); v.vid.load(); URL.revokeObjectURL(v.url); }
+  PH.imgs.delete(id);
+}
+function clearImgs() { for (const k of [...PH.imgs.keys()]) dropImg(k); }
 async function getImg(p, s) {
-  if (PH.imgs.has(s.id)) return PH.imgs.get(s.id);
-  const rec = { bmp: null, bg: null, p: null };
+  if (PH.imgs.has(s.id)) { const r = PH.imgs.get(s.id); await r.p; return r; }
+  const rec = { bmp: null, bg: null, p: null, vid: null };
   PH.imgs.set(s.id, rec);
   rec.p = (async () => {
-    const b = await DB.get('blobs', photoKey(p.id, s.id));
+    const b = await slideBlob(p, s);
     if (!b) return;
+    if (s.kind === 'video') {
+      const v = document.createElement('video');
+      v.muted = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', '');
+      rec.url = URL.createObjectURL(b); v.src = rec.url;
+      await new Promise(r => { v.onloadeddata = r; v.onerror = r; setTimeout(r, 8000); });
+      v.currentTime = s.in;
+      await new Promise(r => { v.onseeked = r; setTimeout(r, 3000); });
+      rec.vid = v;
+      rec.bg = document.createElement('canvas'); rec.bg.width = 40; rec.bg.height = Math.max(2, Math.round(40 * (v.videoHeight || 9) / (v.videoWidth || 16)));
+      return;
+    }
     rec.bmp = await createImageBitmap(b);
     const bg = document.createElement('canvas'), k = 40 / Math.max(rec.bmp.width, rec.bmp.height);
     bg.width = Math.max(2, Math.round(rec.bmp.width * k)); bg.height = Math.max(2, Math.round(rec.bmp.height * k));
@@ -328,32 +441,68 @@ async function getImg(p, s) {
     rec.bg = bg;
   })();
   // 只留最近幾張在記憶體，避免照片很多時 iPhone 記憶體不夠
-  if (PH.imgs.size > 6) for (const [k, v] of PH.imgs) { if (PH.imgs.size <= 6) break; if (k !== s.id && v.bmp) { v.bmp.close?.(); PH.imgs.delete(k); } }
+  if (PH.imgs.size > 6) for (const [k, v] of PH.imgs) { if (PH.imgs.size <= 6) break; if (k !== s.id && (v.bmp || v.vid) && !PH.keep?.has(k)) dropImg(k); }
   await rec.p;
   return rec;
 }
-function imgNow(s) { const r = PH.imgs.get(s.id); return r && r.bmp ? r : null; }
-async function ensureFor(p, f) {
+function imgNow(s) { const r = PH.imgs.get(s.id); return r && (r.bmp || r.vid) ? r : null; }
+async function ensureFor(p, f, exact) {
   if (!f) return;
-  await getImg(p, p.slides[f.i]);
-  if (f.j != null) await getImg(p, p.slides[f.j]);
+  PH.keep = new Set([p.slides[f.i].id, f.j != null && p.slides[f.j].id].filter(Boolean));
+  const A = await getImg(p, p.slides[f.i]);
+  const B = f.j != null ? await getImg(p, p.slides[f.j]) : null;
+  if (exact) {          // 匯出／暫停時：把影片轉到正確的那一格
+    if (A?.vid) await seekVid(A.vid, p.slides[f.i].in + f.lt);
+    if (B?.vid) await seekVid(B.vid, p.slides[f.j].in + Math.max(0, f.ltj));
+  }
   const n = p.slides[f.i + 1]; if (n && !PH.imgs.has(n.id)) getImg(p, n);   // 預先讀下一張
 }
+function seekVid(v, t) {
+  t = clamp(t, 0, Math.max(0, (v.duration || t + 1) - 0.04));
+  if (Math.abs(v.currentTime - t) < 0.002 && v.readyState >= 2) return Promise.resolve();
+  if (!v.paused) v.pause();
+  return new Promise(r => {
+    const done = () => { v.removeEventListener('seeked', done); clearTimeout(to); r(); };
+    const to = setTimeout(done, 3000);
+    v.addEventListener('seeked', done); v.currentTime = t;
+  });
+}
+// 預覽播放時：讓目前這段影片跟著時間播
+function liveSync(p, f) {
+  const act = new Map();
+  if (f) { act.set(p.slides[f.i].id, { s: p.slides[f.i], lt: f.lt, main: true }); if (f.j != null) act.set(p.slides[f.j].id, { s: p.slides[f.j], lt: 0, main: false }); }
+  let videoOn = false;
+  for (const [id, r] of PH.imgs) {
+    if (!r.vid) continue;
+    const a = act.get(id), v = r.vid;
+    if (!a || !a.main) { if (!v.paused) v.pause(); if (a && Math.abs(v.currentTime - a.s.in) > 0.05) v.currentTime = a.s.in; continue; }
+    videoOn = true;
+    const target = a.s.in + a.lt;
+    const wantSound = !(PH.musicURL && p.amix === 'cover');
+    if (v.muted === wantSound) v.muted = !wantSound;
+    if (v.paused) { v.currentTime = target; v.play().catch(() => { v.muted = true; v.play().catch(() => {}); }); }
+    else if (Math.abs(v.currentTime - target) > 0.35) v.currentTime = target;
+  }
+  if (PH.music && PH.musicURL) PH.music.volume = !videoOn || p.amix === 'cover' ? 1 : p.amix === 'duck' ? 0.25 : 0;
+}
+function pauseVids() { for (const r of PH.imgs.values()) r.vid?.pause(); }
 function coverRect(iw, ih, W, H) { const k = Math.max(W / iw, H / ih); return [(W - iw * k) / 2, (H - ih * k) / 2, iw * k, ih * k]; }
 function containRect(iw, ih, W, H) { const k = Math.min(W / iw, H / ih); return [(W - iw * k) / 2, (H - ih * k) / 2, iw * k, ih * k]; }
 function drawPhoto(c, p, s, lt, W, H) {
   c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
   const r = imgNow(s); if (!r) return;
-  const { bmp, bg } = r;
+  const bmp = r.vid || r.bmp, bg = r.bg;
+  const iw = r.vid ? r.vid.videoWidth : bmp.width, ih = r.vid ? r.vid.videoHeight : bmp.height;
+  if (r.vid) { if (!iw) return; try { bg.getContext('2d').drawImage(r.vid, 0, 0, bg.width, bg.height); } catch {} }
   if (p.fit === 'contain') {
     c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'low';
     c.drawImage(bg, ...coverRect(bg.width, bg.height, W * 1.1, H * 1.1).map((v, k) => k < 2 ? v - (k ? H : W) * 0.05 : v));
     c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(0, 0, W, H); c.restore();
   }
-  const z = p.kb ? 1 + 0.08 * clamp(lt / s.d, 0, 1) : 1;
+  const z = p.kb && !r.vid ? 1 + 0.08 * clamp(lt / s.d, 0, 1) : 1;
   c.save(); c.imageSmoothingQuality = 'high';
   c.translate(W / 2, H / 2); c.scale(z, z); c.translate(-W / 2, -H / 2);
-  c.drawImage(bmp, ...(p.fit === 'contain' ? containRect : coverRect)(bmp.width, bmp.height, W, H));
+  c.drawImage(bmp, ...(p.fit === 'contain' ? containRect : coverRect)(iw, ih, W, H));
   c.restore();
 }
 function wrapLines(c, text, maxW) {
@@ -431,7 +580,7 @@ async function drawAt(t) {
   PH.t = clamp(t, 0, totalDur(p));
   const f = frameInfo(p, PH.t);
   drawFrame(cx, p, PH.t, cv.width, cv.height);
-  await ensureFor(p, f);
+  await ensureFor(p, f, !PH.play);
   if (!PH.play) drawFrame(cx, p, PH.t, cv.width, cv.height);
   updTime();
 }
@@ -457,6 +606,7 @@ function startPreview() {
     PH.t = t;
     const f = frameInfo(p, t);
     ensureFor(p, f);
+    liveSync(p, f);
     drawFrame(cx, p, t, cv.width, cv.height);
     updTime();
     PH.play = requestAnimationFrame(tick);
@@ -467,7 +617,7 @@ function startPreview() {
 function stopPreview() {
   if (PH.play) cancelAnimationFrame(PH.play);
   PH.play = null;
-  PH.music?.pause();
+  PH.music?.pause(); pauseVids();
   if ($('#phPlay')) updTime();
 }
 $('#phPlay').onclick = () => PH.play ? stopPreview() : startPreview();
@@ -481,11 +631,11 @@ $('#phExport').onclick = () => {
   const p = PH.p; if (!p) return;
   if (!p.slides.length) return toast('先加入照片');
   stopPreview();
-  let fmt = p.target === 'ppt' ? 'pptx' : 'mp4';
+  let fmt = p.target === 'ppt' && kindOf(p) !== 'mix' ? 'pptx' : 'mp4';
   openSheet(`<h4>📤 匯出「${esc(p.name)}」</h4>
     ${p.lastOut ? `<button class="sheet-item" data-a="last">📁 再存一次上次做好的「${esc(p.lastOut.name)}」（不用重做）</button>` : ''}
     <p class="hint" style="padding:0 20px;margin:0"><b>① 格式</b></p>
-    <div style="padding:0 18px"><div class="seg small" id="phFmt"><button data-v="mp4" class="${fmt === 'mp4' ? 'active' : ''}">🎬 MP4 影片</button><button data-v="pptx" class="${fmt === 'pptx' ? 'active' : ''}">📊 PPT 簡報</button></div></div>
+    <div style="padding:0 18px${kindOf(p) === 'mix' ? ';display:none' : ''}"><div class="seg small" id="phFmt"><button data-v="mp4" class="${fmt === 'mp4' ? 'active' : ''}">🎬 MP4 影片</button><button data-v="pptx" class="${fmt === 'pptx' ? 'active' : ''}">📊 PPT 簡報</button></div></div>
     <p class="hint" style="padding:6px 20px 0;margin:0"><b>② 檔名</b>（點一下就能改）</p>
     <div class="sheet-input"><input id="phOutName" value="${esc(p.name)}"><span class="st-ext" id="phOutExt">.${fmt}</span></div>
     <p class="hint" style="padding:6px 20px 0;margin:0"><b>③ 存到哪裡</b></p>
@@ -573,7 +723,14 @@ async function exportVideo(p, prog) {
     try { video = await encodeWebCodecs(p, c, ctx, W, H, tot, prog); }
     catch (e) { console.warn('webcodecs', e); video = null; }
   }
-  if (!video) return recordRealtime(p, c, ctx, W, H, tot, prog);
+  if (!video) {
+    if (kindOf(p) === 'mix') throw new Error('這台裝置不支援做有影片的作品（需要 iOS 16.4 以上），請更新 iOS 後再試');
+    return recordRealtime(p, c, ctx, W, H, tot, prog);
+  }
+  if (kindOf(p) === 'mix') {
+    try { return { blob: await mixAudio(p, video, tot, prog), ext: 'mp4' }; }
+    catch (e) { console.warn(e); return { blob: video, ext: 'mp4', note: '⚠️ 聲音合成失敗，先匯出沒有聲音的版本（' + (e.message || e) + '）' }; }
+  }
   const mb = await musicBlob(p).catch(() => null);
   if (!mb) return { blob: video, ext: 'mp4' };
   try { return { blob: await addMusic(video, mb, p.music.ext || 'mp3', tot, prog), ext: 'mp4' }; }
@@ -595,7 +752,7 @@ async function encodeWebCodecs(p, c, ctx, W, H, tot, prog) {
   for (let f = 0; f < N; f++) {
     if (err) throw err;
     const t = Math.min(f / FPS, tot - 0.001);
-    await ensureFor(p, frameInfo(p, t));
+    await ensureFor(p, frameInfo(p, t), true);
     drawFrame(ctx, p, t, W, H);
     const fr = new VideoFrame(c, { timestamp: Math.round(f * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
     enc.encode(fr, { keyFrame: f % (FPS * 2) === 0 });
@@ -623,6 +780,66 @@ async function addMusic(video, music, ext, tot, prog) {
     prog('完成', 1);
     return new Blob([out.buffer], { type: 'video/mp4' });
   } finally { for (const f of ['pv.mp4', an, 'pout.mp4']) { try { await ff.deleteFile(f); } catch {} } }
+}
+// 綜合作品的聲音：影片原聲（照剪的段落、放在對的時間）＋背景音樂（依設定蓋過／小聲／影片時不放）
+async function mixAudio(p, video, tot, prog) {
+  const mb = await musicBlob(p).catch(() => null);
+  const clips = []; let st = 0;
+  p.slides.forEach(s => { if (s.kind === 'video') clips.push({ s, start: st }); st += s.d; });
+  const useVid = clips.length && !(mb && p.amix === 'cover');
+  if (!mb && !useVid) return video;
+  const ff = await loadFF(e => prog(`下載合成工具… ${e.total ? Math.round(e.received / e.total * 100) + '%' : ''}`, 0.87));
+  prog('合成聲音…', 0.9);
+  const files = ['pv.mp4'], args = ['-i', 'pv.mp4'];
+  await ff.writeFile('pv.mp4', new Uint8Array(await video.arrayBuffer()));
+  const logs = []; const onLog = ({ message }) => logs.push(message);
+  const parts = [], labels = [];
+  let n = 1;
+  try {
+    if (useVid) {
+      const srcIdx = new Map();
+      for (const c of clips) {
+        const key = c.s.lib || c.s.id;
+        if (!srcIdx.has(key)) {
+          const b = await slideBlob(p, c.s); if (!b) { srcIdx.set(key, -1); continue; }
+          const nm = `src${n}.${(b.name?.match(/\.([a-z0-9]{2,4})$/i)?.[1] || 'mp4').toLowerCase()}`;
+          await ff.writeFile(nm, new Uint8Array(await b.arrayBuffer())); files.push(nm);
+          logs.length = 0; ff.on('log', onLog);
+          try { await ff.exec(['-hide_banner', '-i', nm]); } catch {}
+          ff.off('log', onLog);
+          const hasA = logs.some(l => /Stream .*Audio:/.test(l));
+          if (hasA) { args.push('-i', nm); srcIdx.set(key, n); n++; } else srcIdx.set(key, -1);
+        }
+        const idx = srcIdx.get(key); if (idx == null || idx < 0) continue;
+        const ms = Math.round(c.start * 1000), k = labels.length;
+        parts.push(`[${idx}:a]atrim=start=${c.s.in}:end=${c.s.out},asetpts=PTS-STARTPTS,aformat=sample_rates=44100:channel_layouts=stereo,adelay=${ms}|${ms}[c${k}]`);
+        labels.push(`[c${k}]`);
+      }
+    }
+    if (mb) {
+      const mn = 'bgm.' + (p.music.ext || 'mp3');
+      await ff.writeFile(mn, new Uint8Array(await mb.arrayBuffer())); files.push(mn);
+      args.push('-stream_loop', '-1', '-i', mn);
+      const iv = clips.map(c => `between(t,${c.start.toFixed(2)},${(c.start + c.s.d).toFixed(2)})`).join('+') || '0';
+      const vol = p.amix === 'cover' || !clips.length ? '1' : `if(gt(${iv},0),${p.amix === 'duck' ? '0.22' : '0'},1)`;
+      parts.push(`[${n}:a]aformat=sample_rates=44100:channel_layouts=stereo,atrim=0:${tot.toFixed(3)},volume='${vol}':eval=frame,afade=t=in:st=0:d=0.5[mus]`);
+      labels.push('[mus]');
+    }
+    if (!labels.length) return video;
+    const fadeAt = Math.max(0, tot - 1.5).toFixed(2);
+    const tail = `apad,atrim=0:${tot.toFixed(3)},afade=t=out:st=${fadeAt}:d=1.5[aout]`;
+    const run = async mixer => {
+      const fc = [...parts, labels.length > 1 ? `${labels.join('')}${mixer},${tail}` : `${labels[0]}${tail}`].join(';');
+      try { await ff.deleteFile('mout.mp4'); } catch {}
+      return ff.exec([...args, '-filter_complex', fc, '-map', '0:v:0', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k', '-t', tot.toFixed(3), '-movflags', '+faststart', 'mout.mp4']);
+    };
+    let code = await run(`amix=inputs=${labels.length}:duration=longest:dropout_transition=0:normalize=0`);
+    if (code !== 0) code = await run(`amix=inputs=${labels.length}:duration=longest:dropout_transition=0,volume=${labels.length}`);
+    if (code !== 0) throw new Error('ffmpeg 合成失敗');
+    const out = await ff.readFile('mout.mp4'); files.push('mout.mp4');
+    prog('完成', 1);
+    return new Blob([out.buffer], { type: 'video/mp4' });
+  } finally { for (const f of files) { try { await ff.deleteFile(f); } catch {} } }
 }
 // 備用：用螢幕即時錄下來（較舊的 iPhone）。影片多長就要等多久。
 async function recordRealtime(p, c, ctx, W, H, tot, prog) {
