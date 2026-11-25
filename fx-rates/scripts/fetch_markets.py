@@ -96,7 +96,46 @@ def full_history(sym):
         if len(daily) > 300:
             break
         time.sleep(1)
+    if len(daily) < 300:   # 有些指數（例如歐洲500）Yahoo 只給每小時資料：取每天最後一筆當收盤
+        for q in ("?range=730d&interval=1h", "?range=3mo&interval=1h"):
+            r = chart(sym, q)
+            if r and len(r.get("timestamp") or []) > 50:
+                off = r["meta"].get("gmtoffset", 0)
+                for t, c in zip(r["timestamp"], r["indicators"]["quote"][0].get("close") or []):
+                    if c:
+                        daily[day_key(t, off)] = round(c, 4)
+                break
     return daily
+
+
+def alt_history(mid):
+    """Yahoo 沒有完整歷史時的其他來源。"""
+    out = {}
+    if mid == "CSI300":
+        j = get("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.000300&fields1=f1&fields2=f51,f53&klt=101&fqt=0&beg=0&end=20500101")
+        try:
+            for k in j["data"]["klines"]:
+                d, c = k.split(",")[:2]
+                out[d.replace("-", "")] = round(float(c), 4)
+        except Exception:  # noqa: BLE001
+            pass
+        if len(out) < 300:   # 中證指數官網
+            end = dt.datetime.now(TPE).strftime("%Y%m%d")
+            j = get(f"https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=000300&startDate=20050101&endDate={end}")
+            try:
+                for r in j["data"]:
+                    out[r["tradeDate"]] = round(float(r["close"]), 4)
+            except Exception:  # noqa: BLE001
+                pass
+        if len(out) < 300:   # 鉅亨網
+            j = get("https://ws.api.cnyes.com/ws/api/v1/charting/history?resolution=D&symbol=GI:CSI300:INDEX&from=9999999999&to=1100000000")
+            try:
+                d = j["data"]
+                for t, c in zip(d["t"], d["c"]):
+                    out[dt.datetime.fromtimestamp(t, TPE).strftime("%Y%m%d")] = round(c, 4)
+            except Exception:  # noqa: BLE001
+                pass
+    return out
 
 
 def cnyes(sym):
@@ -154,11 +193,13 @@ def main():
             off = m.get("gmtoffset", 0)
             for t, v in pts:
                 hist[day_key(t, off)] = round(v, 4)
-        if ysym and len(hist) < 300 and full_done < FULL_PER_RUN and mid not in tried:
-            hist.update(full_history(ysym))
+        if ysym and len(hist) < 300 and full_done < FULL_PER_RUN and tried.get(mid) != 2:
+            hist.update(alt_history(mid))
+            if len(hist) < 300:
+                hist.update(full_history(ysym))
             full_done += 1
             if len(hist) < 300:
-                tried[mid] = 1
+                tried[mid] = 2
         if hist:
             with open(p, "w", encoding="utf-8") as f:
                 json.dump([[k, hist[k]] for k in sorted(hist)], f, separators=(",", ":"))
