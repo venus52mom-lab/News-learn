@@ -445,3 +445,31 @@ label.sheet-item{cursor:pointer}
 .sheet-item.btnlike{border:1px solid var(--line);border-radius:12px;margin:6px 16px;width:auto;justify-content:center;font-weight:600}
 .upd-bar{position:fixed;left:12px;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:95;padding:12px;border-radius:14px;background:#2f80ff;color:#fff;font-weight:700;font-size:15px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .sheet-item.on{color:#ff0033;font-weight:700}
+/* 歌詞 */
+.lyrics{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;background:rgba(0,0,0,.78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#fff}
+.lyrics[hidden]{display:none}
+.ly-ctl{display:flex;gap:6px;justify-content:flex-end;padding:8px 10px 0}
+.ly-ctl button{padding:5px 11px;border-radius:14px;background:rgba(255,255,255,.14);color:#fff;font-size:13px;font-weight:600}
+.ly-ctl #lyTrans.on{background:#ff0033}
+.ly-list{flex:1;overflow-y:auto;padding:30% 18px;text-align:center;scroll-behavior:auto;-webkit-mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(transparent,#000 18%,#000 82%,transparent)}
+.ly-line{padding:7px 0;opacity:.4;transition:opacity .25s,transform .25s;transform-origin:center}
+.ly-line.gap{padding:4px 0}
+.ly-o{font-size:17px;font-weight:600;line-height:1.35}
+.ly-t{font-size:14px;color:#9fe3ff;margin-top:2px;line-height:1.35}
+.ly-line.cur{opacity:1;transform:scale(1.12)}
+.ly-line.cur .ly-o{color:#fff;text-shadow:0 0 12px rgba(255,255,255,.75),0 0 26px rgba(255,80,120,.55)}
+.ly-line.cur .ly-t{color:#c8f1ff;text-shadow:0 0 10px rgba(120,220,255,.6)}
+.ly-note{font-size:11px;color:rgba(255,255,255,.45);text-align:center;padding:2px 0 6px}
+.lyrics.big{position:fixed;z-index:120;background:#000;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.lyrics.big .ly-list{padding:45vh 22px}
+.lyrics.big .ly-o{font-size:24px}
+.lyrics.big .ly-t{font-size:18px}
+.lyrics.big .ly-line{padding:12px 0}
+.lyrics.big .ly-line.cur{transform:scale(1.22)}
+.lyrics.big .ly-line.cur .ly-o{color:#ffe14d;text-shadow:0 0 16px rgba(255,225,77,.9),0 0 34px rgba(255,140,0,.6)}
+.chip-btn.dim{opacity:.55}
+.chip-btn.on{background:#ff0033;color:#fff}
+.player.mini .lyrics{display:none}
+.ly-ctl{order:3;justify-content:center;padding:4px 10px 10px}
+.ly-note{order:2}
+.lyrics.big .ly-ctl{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
