@@ -277,31 +277,78 @@ async function rename(r){
   if(v&&v.trim()){r.title=v.trim().slice(0,60);await putRec(r);renderList();if(cur===r)$('#cTitle').textContent=r.title}
 }
 
-/* ---------- 錄音 ---------- */
-let mr,stream,chunks,startT,tick,actx,raf,cancelled,recKind='audio',facing='user';
+/* ---------- 錄音／錄影 ---------- */
+let mr,aStream,vStream,chunks,startT,tick,actx,raf,vraf,cancelled,recKind='audio',facing='user',recording=false,canvasMode=false,flipping=false;
+const XICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const FLIP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2M20 4v4h-4M4 20v-4h4"/></svg>';
+const camOf=f=>navigator.mediaDevices.getUserMedia({video:{facingMode:f,width:{ideal:1280},height:{ideal:720}}});
 async function startRec(kind='audio'){
-  recKind=kind;
+  recKind=kind;recording=false;cancelled=false;chunks=[];
   if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){modal({title:'無法使用',text:'這個瀏覽器不支援。iPhone 請用 Safari 開啟，並確認網址是 https 開頭。'});return}
-  try{stream=await getStream()}
-  catch(e){modal({title:kind==='video'?'需要相機和麥克風權限':'需要麥克風權限',text:'請到「設定 › Safari › 相機／麥克風」允許此網站使用，然後再試一次。'});return}
-  const mime=(kind==='video'?['video/mp4','video/webm;codecs=vp9,opus','video/webm']:['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg']).find(t=>MediaRecorder.isTypeSupported(t))||'';
-  mr=new MediaRecorder(stream,mime?{mimeType:mime}:{});chunks=[];cancelled=false;
-  mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
-  mr.onstop=saveRec;mr.start(1000);startT=Date.now();
-  $('#sheet').className='recbar';$('#mask').classList.add('recm');
-  $('#sheet').innerHTML=`${kind==='video'?'<div class="pvw"><video id="pv" muted playsinline autoplay></video><button class="flip" id="flipB" aria-label="切換鏡頭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2M20 4v4h-4M4 20v-4h4"/></svg></button></div>':''}<div class="recrow"><button class="x" id="cancelB" aria-label="取消不儲存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="dot"></span><span class="clock" id="clk">0:00</span><canvas id="meter"></canvas><button class="stop" id="stopB" aria-label="STOP">STOP</button></div>`;
-  $('#mask').hidden=false;$('#mask').onclick=null;
-  if(kind==='video'){const v=$('#pv');v.srcObject=stream;v.style.transform=facing==='user'?'scaleX(-1)':'';$('#flipB').onclick=()=>{if(Date.now()-startT>1500){toast('錄影開始後無法切換，請下次錄影前切換');return}facing=facing==='user'?'environment':'user';stopRec(true,true);startRec('video')}}
-  $('#stopB').onclick=()=>stopRec(false);$('#cancelB').onclick=()=>stopRec(true);
-  tick=setInterval(()=>{const c=$('#clk');if(c)c.textContent=fmtDur((Date.now()-startT)/1000)},250);
   try{
-    actx=new (window.AudioContext||window.webkitAudioContext)();const an=actx.createAnalyser();an.fftSize=256;actx.createMediaStreamSource(stream).connect(an);
+    aStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    if(kind==='video')vStream=await camOf(facing);
+  }catch(e){cleanup();modal({title:kind==='video'?'需要相機和麥克風權限':'需要麥克風權限',text:'請到「設定 › Safari › 相機／麥克風」允許此網站使用，然後再試一次。'});return}
+  $('#sheet').className='recbar';$('#mask').classList.add('recm');
+  $('#sheet').innerHTML=`${kind==='video'?`<div class="pvw"><video id="pv" muted playsinline autoplay></video><button class="flip" id="flipB" aria-label="切換鏡頭">${FLIP}</button></div>`:''}<div class="recrow"><button class="x" id="cancelB" aria-label="取消不儲存">${XICON}</button><span class="dot" id="dot"></span><span class="clock" id="clk">0:00</span><canvas id="meter"></canvas><button class="stop" id="stopB">STOP</button></div>`;
+  $('#mask').hidden=false;$('#mask').onclick=null;
+  $('#cancelB').onclick=()=>stopRec(true);
+  $('#stopB').onclick=()=>recording?stopRec(false):beginRec();
+  if(kind==='video'){
+    showCam();$('#flipB').onclick=flip;
+    $('#stopB').textContent='REC';$('#dot').style.visibility='hidden';$('#clk').style.visibility='hidden';
+  }
+  meter();
+  if(kind==='audio')beginRec();
+}
+function showCam(){const v=$('#pv');if(!v)return;v.srcObject=vStream;v.style.transform=facing==='user'?'scaleX(-1)':'';v.play().catch(()=>{})}
+async function flip(){
+  if(flipping)return;
+  if(recording&&!canvasMode){toast('這支手機錄影中無法切換鏡頭');return}
+  flipping=true;const nf=facing==='user'?'environment':'user';
+  try{vStream&&vStream.getTracks().forEach(t=>t.stop());vStream=await camOf(nf);facing=nf}
+  catch(e){try{vStream=await camOf(facing)}catch(e2){}toast('無法切換鏡頭')}
+  showCam();flipping=false;
+}
+async function beginRec(){
+  let recStream;
+  if(recKind==='video'){
+    const v=$('#pv');
+    if(!v.videoWidth)await new Promise(r=>{v.onloadedmetadata=r;setTimeout(r,1500)});
+    const cv=document.createElement('canvas');
+    canvasMode=typeof cv.captureStream==='function';
+    if(canvasMode){
+      let w=v.videoWidth||720,h=v.videoHeight||1280;const k=Math.min(1,1280/Math.max(w,h));cv.width=Math.round(w*k/2)*2;cv.height=Math.round(h*k/2)*2;
+      const g=cv.getContext('2d');
+      const draw=()=>{const vv=$('#pv');if(vv&&vv.videoWidth){const sc=Math.max(cv.width/vv.videoWidth,cv.height/vv.videoHeight),dw=vv.videoWidth*sc,dh=vv.videoHeight*sc;g.drawImage(vv,(cv.width-dw)/2,(cv.height-dh)/2,dw,dh)}vraf=requestAnimationFrame(draw)};draw();
+      recStream=new MediaStream([...cv.captureStream(30).getVideoTracks(),...aStream.getAudioTracks()]);
+    }else recStream=new MediaStream([...vStream.getVideoTracks(),...aStream.getAudioTracks()]);
+  }else recStream=aStream;
+  const mime=(recKind==='video'?['video/mp4','video/webm;codecs=vp9,opus','video/webm']:['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg']).find(t=>MediaRecorder.isTypeSupported(t))||'';
+  try{mr=new MediaRecorder(recStream,mime?{mimeType:mime}:{})}catch(e){stopRec(true);modal({title:'無法開始',text:e.message});return}
+  mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+  mr.onstop=saveRec;mr.start(1000);startT=Date.now();recording=true;
+  $('#stopB').textContent='STOP';$('#dot').style.visibility='';$('#clk').style.visibility='';
+  tick=setInterval(()=>{const c=$('#clk');if(c)c.textContent=fmtDur((Date.now()-startT)/1000)},250);
+}
+function meter(){
+  try{
+    actx=new (window.AudioContext||window.webkitAudioContext)();const an=actx.createAnalyser();an.fftSize=256;actx.createMediaStreamSource(aStream).connect(an);
     const cv=$('#meter'),g=cv.getContext('2d'),buf=new Uint8Array(an.frequencyBinCount),hist=[];
     const draw=()=>{const W=cv.width=cv.clientWidth*devicePixelRatio,H=cv.height=cv.clientHeight*devicePixelRatio;an.getByteTimeDomainData(buf);let pk=0;for(const v of buf)pk=Math.max(pk,Math.abs(v-128));hist.push(pk/128);const n=Math.floor(W/(5*devicePixelRatio));while(hist.length>n)hist.shift();g.clearRect(0,0,W,H);g.fillStyle='#06c755';hist.forEach((v,i)=>{const h=Math.max(2*devicePixelRatio,v*H*1.8);g.fillRect(W-(hist.length-i)*5*devicePixelRatio,(H-h)/2,3*devicePixelRatio,Math.min(H,h))});raf=requestAnimationFrame(draw)};draw();
   }catch(e){}
 }
-function getStream(){const a={echoCancellation:true,noiseSuppression:true};return navigator.mediaDevices.getUserMedia(recKind==='video'?{audio:a,video:{facingMode:facing,width:{ideal:1280},height:{ideal:720}}}:{audio:a})}
-function stopRec(cancel,quiet){cancelled=cancel;if(quiet&&mr)mr.onstop=null;clearInterval(tick);cancelAnimationFrame(raf);try{actx&&actx.close()}catch(e){}if(mr&&mr.state!=='inactive')mr.stop();stream&&stream.getTracks().forEach(t=>t.stop());$('#mask').hidden=true;$('#mask').classList.remove('recm');$('#sheet').className='sheet'}
+function cleanup(){
+  clearInterval(tick);cancelAnimationFrame(raf);cancelAnimationFrame(vraf);try{actx&&actx.close()}catch(e){}actx=null;
+  [aStream,vStream].forEach(st=>st&&st.getTracks().forEach(t=>t.stop()));aStream=vStream=null;
+}
+function stopRec(cancel){
+  cancelled=cancel;const wasRec=recording;recording=false;
+  if(wasRec&&mr&&mr.state!=='inactive'){mr.requestData&&mr.requestData();mr.stop()}
+  setTimeout(cleanup,wasRec?300:0);
+  $('#mask').hidden=true;$('#mask').classList.remove('recm');$('#sheet').className='sheet';
+  if(!wasRec&&cancel)toast('已取消');
+}
 async function saveRec(){
   if(cancelled||!chunks.length){toast('已取消');return}
   const blob=new Blob(chunks,{type:mr.mimeType||chunks[0].type||(recKind==='video'?'video/mp4':'audio/mp4')});
