@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="錄音聊天">
+<meta name="apple-mobile-web-app-title" content="RE">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#3c4660">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.json">
-<title>錄音聊天</title>
+<title>RE</title>
 <style>
 :root{
   --navy:#3c4660;--navy2:#2f374c;--sky:#87a0c4;--ink:#111;--sub:#8a8f99;--card:#fff;
@@ -62,10 +62,10 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .empty b{display:block;font-size:18px;margin-bottom:4px}
 
 /* 小小的錄音、錄影鍵 */
-.dock{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 18px);display:flex;gap:10px}
-.rbtn{width:46px;height:46px;border-radius:50%;background:rgba(40,48,68,.78);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:grid;place-items:center;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.2)}
-.rbtn svg{width:21px;height:21px}
-.rbtn::after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:var(--red);transform:translate(13px,-13px)}
+.dock{position:fixed;right:14px;bottom:calc(env(safe-area-inset-bottom) + 14px);display:flex;gap:8px}
+.rbtn{height:32px;min-width:32px;padding:0 10px;border-radius:16px;gap:5px;font-size:12px;font-weight:800;letter-spacing:.04em;display:flex!important;align-items:center;justify-content:center;background:rgba(40,48,68,.78);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:grid;place-items:center;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.rbtn svg{width:16px;height:16px}
+.rbtn i{width:7px;height:7px;border-radius:50%;background:var(--red)}
 
 /* 聊天室 */
 .bar{display:flex;align-items:center;gap:4px;padding:6px 6px 6px}
@@ -120,15 +120,14 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .btns .ok{background:var(--green);color:#fff}.btns .danger{background:var(--red);color:#fff}
 /* 錄音中：精簡深色小條 */
 .mask.recm{background:transparent;pointer-events:none}
-.recbar{pointer-events:auto;width:calc(100% - 24px);max-width:480px;margin-bottom:calc(env(safe-area-inset-bottom) + 14px);background:rgba(28,33,48,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;border-radius:22px;padding:10px;animation:up .2s ease}
+.recbar{pointer-events:auto;width:calc(100% - 24px);max-width:420px;margin-bottom:calc(env(safe-area-inset-bottom) + 14px);background:rgba(28,33,48,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;border-radius:22px;padding:6px 8px;animation:up .2s ease}
 .recrow{display:flex;align-items:center;gap:10px}
-.recrow .x{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:rgba(255,255,255,.7)}
+.recrow .x{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:rgba(255,255,255,.7)}
 .recrow .x svg{width:18px;height:18px}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--red);animation:b 1s infinite;flex:none}
-.clock{font-size:16px;font-variant-numeric:tabular-nums;width:44px}
-#meter{flex:1;height:30px;display:block}
-.stop{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.85);display:grid;place-items:center;flex:none}
-.stop i{width:14px;height:14px;border-radius:3px;background:var(--red)}
+.clock{font-size:13px;font-variant-numeric:tabular-nums;width:44px}
+#meter{flex:1;height:22px;display:block}
+.stop{height:28px;padding:0 10px;border-radius:14px;background:var(--red);color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;flex:none}
 #pv{width:100%;max-height:40vh;border-radius:14px;background:#000;display:block;object-fit:cover;margin-bottom:8px}
 .flip{position:absolute;right:10px;top:10px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center}
 .flip svg{width:18px;height:18px}
@@ -147,7 +146,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 <!-- 列表 -->
 <section class="view" id="home">
   <div class="head"><div class="top">
-    <div class="pills"><button class="on" data-f="all">錄音</button><button data-f="txt">有文字</button></div>
+    <div class="pills"><button class="on" data-f="all">全部</button><button data-f="txt">有文字</button></div>
     <div class="icons">
       <button id="setBtn" aria-label="設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       <button id="plusBtn" aria-label="新錄音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg></button>
@@ -155,7 +154,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
   </div>
   <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="搜尋標題或文字內容"></label></div>
   <ul id="list"></ul>
-  <div class="dock"><button class="rbtn" id="recBtn" aria-label="錄音"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="rbtn" id="vidBtn" aria-label="錄影"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M17 10l5-3v10l-5-3z"/></svg></button></div>
+  <div class="dock"><button class="rbtn" id="recBtn" aria-label="RE"><i></i>RE</button><button class="rbtn" id="vidBtn" aria-label="錄影"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M17 10l5-3v10l-5-3z"/></svg></button></div>
 </section>
 
 <!-- 聊天室 -->
@@ -223,7 +222,7 @@ function renderList(){
   const q=$('#q').value.trim().toLowerCase();
   const items=recs.filter(r=>(filter==='all'||r.transcript)&&(!q||(r.title+' '+(r.transcript||'')).toLowerCase().includes(q))).sort((a,b)=>b.created-a.created);
   const L=$('#list');
-  if(!items.length){L.innerHTML=`<li class="empty"><b>${recs.length?'找不到符合的錄音':'還沒有錄音'}</b>${recs.length?'換個關鍵字試試':'按右下角的麥克風或攝影機開始，<br>每段錄音都會變成一個對話框'}</li>`;return}
+  if(!items.length){L.innerHTML=`<li class="empty"><b>${recs.length?'找不到符合的項目':'還沒有內容'}</b>${recs.length?'換個關鍵字試試':'按右下角 RE 或攝影機開始，<br>每一段都會變成一個對話框'}</li>`;return}
   L.innerHTML=items.map(r=>`<li class="item" data-id="${esc(r.id)}">
     <div class="acts"><button class="ren">重新命名</button><button class="del">刪除</button></div>
     <div class="fg">
@@ -255,7 +254,7 @@ $('#list').addEventListener('pointerdown',e=>{
 $('#list').addEventListener('click',async e=>{
   const li=e.target.closest('.item');if(!li)return;const r=recs.find(x=>x.id===li.dataset.id);
   if(e.target.closest('.del')){
-    const ok=await modal({title:'刪除錄音',text:`「${r.title}」的錄音、文字和翻譯都會一起刪除，無法復原。`,btns:[['取消',''],['刪除','danger',1]]});
+    const ok=await modal({title:'刪除',text:`「${r.title}」的檔案、文字和翻譯都會一起刪除，無法復原。`,btns:[['取消',''],['刪除','danger',1]]});
     if(ok){await delRec(r.id);recs=recs.filter(x=>x!==r);openFg=null;renderList();toast('已刪除')}else closeOpen();
   }else if(e.target.closest('.ren')){await rename(r);closeOpen()}
 });
@@ -282,7 +281,7 @@ async function rename(r){
 let mr,stream,chunks,startT,tick,actx,raf,cancelled,recKind='audio',facing='user';
 async function startRec(kind='audio'){
   recKind=kind;
-  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){modal({title:'無法錄音',text:'這個瀏覽器不支援錄音。iPhone 請用 Safari 開啟，並確認網址是 https 開頭。'});return}
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){modal({title:'無法使用',text:'這個瀏覽器不支援。iPhone 請用 Safari 開啟，並確認網址是 https 開頭。'});return}
   try{stream=await getStream()}
   catch(e){modal({title:kind==='video'?'需要相機和麥克風權限':'需要麥克風權限',text:'請到「設定 › Safari › 相機／麥克風」允許此網站使用，然後再試一次。'});return}
   const mime=(kind==='video'?['video/mp4','video/webm;codecs=vp9,opus','video/webm']:['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg']).find(t=>MediaRecorder.isTypeSupported(t))||'';
@@ -290,7 +289,7 @@ async function startRec(kind='audio'){
   mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
   mr.onstop=saveRec;mr.start(1000);startT=Date.now();
   $('#sheet').className='recbar';$('#mask').classList.add('recm');
-  $('#sheet').innerHTML=`${kind==='video'?'<div class="pvw"><video id="pv" muted playsinline autoplay></video><button class="flip" id="flipB" aria-label="切換鏡頭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2M20 4v4h-4M4 20v-4h4"/></svg></button></div>':''}<div class="recrow"><button class="x" id="cancelB" aria-label="取消不儲存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="dot"></span><span class="clock" id="clk">0:00</span><canvas id="meter"></canvas><button class="stop" id="stopB" aria-label="停止並儲存"><i></i></button></div>`;
+  $('#sheet').innerHTML=`${kind==='video'?'<div class="pvw"><video id="pv" muted playsinline autoplay></video><button class="flip" id="flipB" aria-label="切換鏡頭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2M20 4v4h-4M4 20v-4h4"/></svg></button></div>':''}<div class="recrow"><button class="x" id="cancelB" aria-label="取消不儲存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="dot"></span><span class="clock" id="clk">0:00</span><canvas id="meter"></canvas><button class="stop" id="stopB" aria-label="STOP">STOP</button></div>`;
   $('#mask').hidden=false;$('#mask').onclick=null;
   if(kind==='video'){const v=$('#pv');v.srcObject=stream;v.style.transform=facing==='user'?'scaleX(-1)':'';$('#flipB').onclick=()=>{if(Date.now()-startT>1500){toast('錄影開始後無法切換，請下次錄影前切換');return}facing=facing==='user'?'environment':'user';stopRec(true,true);startRec('video')}}
   $('#stopB').onclick=()=>stopRec(false);$('#cancelB').onclick=()=>stopRec(true);
@@ -307,12 +306,12 @@ async function saveRec(){
   if(cancelled||!chunks.length){toast('已取消');return}
   const blob=new Blob(chunks,{type:mr.mimeType||chunks[0].type||(recKind==='video'?'video/mp4':'audio/mp4')});
   const now=Date.now(),d=new Date(now);
-  const r={id:now.toString(36)+Math.random().toString(36).slice(2,6),kind:recKind,title:`${recKind==='video'?'錄影':'錄音'} ${d.getMonth()+1}/${d.getDate()} ${clock(d)}`,created:now,duration:(now-startT)/1000,mime:blob.type,blob,transcript:'',translations:[],opened:false};
+  const r={id:now.toString(36)+Math.random().toString(36).slice(2,6),kind:recKind,title:`${recKind==='video'?'VIDEO':'RE'} ${d.getMonth()+1}/${d.getDate()} ${clock(d)}`,created:now,duration:(now-startT)/1000,mime:blob.type,blob,transcript:'',translations:[],opened:false};
   try{await putRec(r)}catch(e){modal({title:'儲存失敗',text:'手機空間可能不足：'+e.message});return}
-  recs.push(r);renderList();toast(recKind==='video'?'影片已儲存':'錄音已儲存');
+  recs.push(r);renderList();toast('已儲存');
 }
 $('#recBtn').onclick=()=>startRec('audio');$('#vidBtn').onclick=()=>startRec('video');
-$('#plusBtn').onclick=async()=>{const v=await modal({title:'新增',text:'要錄音還是錄影？',btns:[['錄音','ok','audio'],['錄影','danger','video']]});if(v)startRec(v)};
+$('#plusBtn').onclick=async()=>{const v=await modal({title:'新增',btns:[['RE','ok','audio'],['VIDEO','danger','video']]});if(v)startRec(v)};
 
 /* ---------- 聊天室 ---------- */
 let cur=null,url=null,busy=null,prog=0,progMsg='';
@@ -414,7 +413,7 @@ async function toTrad(t){
 $('#sttBtn').onclick=()=>{
   if(!cur||busy)return;
   const sh=$('#sheet');sh.className='sheet';$('#mask').classList.remove('recm');
-  sh.innerHTML=`<h2>錄音裡說的是哪種語言？</h2><p>選對語言，文字才會用那個語言寫出來</p><div class="langs">${SPOKEN.map(l=>`<button data-s="${l[0]}" class="${l[0]===S.sttLang?'on':''}">${l[1]}</button>`).join('')}</div><div class="btns"><button id="sx">取消</button></div>`;
+  sh.innerHTML=`<h2>裡面說的是哪種語言？</h2><p>選對語言，文字才會用那個語言寫出來</p><div class="langs">${SPOKEN.map(l=>`<button data-s="${l[0]}" class="${l[0]===S.sttLang?'on':''}">${l[1]}</button>`).join('')}</div><div class="btns"><button id="sx">取消</button></div>`;
   $('#mask').hidden=false;$('#mask').onclick=e=>{if(e.target.id==='mask')$('#mask').hidden=true};
   $('#sx').onclick=()=>$('#mask').hidden=true;
   sh.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{$('#mask').hidden=true;S.sttLang=b.dataset.s;saveS();runStt(b.dataset.s)});
@@ -470,7 +469,7 @@ $('#setBtn').onclick=async()=>{
   const v=await modal({title:'設定',html:`<div class="opt"><label>語音辨識模型（在本機執行，不花 AI token）</label><select id="mSel">
     <option value="Xenova/whisper-tiny">快速（約 40 MB，準確度較低）</option>
     <option value="Xenova/whisper-base">標準（約 80 MB，中英文較準）</option></select></div>
-    <p>錄音存在這支手機的瀏覽器裡，不會上傳。刪除 Safari 網站資料會一併清除錄音，重要的錄音請用右上角分享鍵另存。${esc(used)}</p>`,btns:[['完成','ok']]});
+    <p>所有檔案只存在這支手機的瀏覽器裡，不會上傳。刪除 Safari 網站資料會一併清除，重要的請用右上角分享鍵另存。${esc(used)}</p>`,btns:[['完成','ok']]});
   // 讀取選單需在關閉前，所以用事件
 };
 document.addEventListener('change',e=>{if(e.target.id==='mSel'){S.model=e.target.value;saveS();toast('已切換模型')}});
@@ -478,7 +477,7 @@ new MutationObserver(()=>{const s=$('#mSel');if(s&&!s.dataset.set){s.value=S.mod
 
 /* ---------- 啟動 ---------- */
 (async()=>{
-  try{db=await openDB();recs=await allRecs();navigator.storage?.persist?.()}catch(e){toast('無法使用儲存空間，錄音不會被保存')}
+  try{db=await openDB();recs=await allRecs();for(const r of recs){if(/^錄音 /.test(r.title)){r.title=r.title.replace(/^錄音/,'RE');putRec(r)}else if(/^錄影 /.test(r.title)){r.title=r.title.replace(/^錄影/,'VIDEO');putRec(r)}}navigator.storage?.persist?.()}catch(e){toast('無法使用儲存空間，檔案不會被保存')}
   renderList();
 })();
 }
