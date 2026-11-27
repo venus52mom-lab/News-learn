@@ -226,7 +226,7 @@ function renderList(){
   L.innerHTML=items.map(r=>`<li class="item" data-id="${esc(r.id)}">
     <div class="acts"><button class="ren">重新命名</button><button class="del">刪除</button></div>
     <div class="fg">
-      <div class="av" style="background:${colorOf(r.id)}">${r.kind==='video'?CAM:MIC}${r.transcript?'<span class="tag">文</span>':''}</div>
+      <div class="av" style="background:${colorOf(r.id)}${r.poster&&r.poster.startsWith('data:image/')?` url('${r.poster}') center/cover`:''}">${r.kind==='video'&&!r.poster?CAM:r.kind==='video'?'':MIC}${r.transcript?'<span class="tag">文</span>':''}</div>
       <div class="mid"><div class="ttl">${esc(r.title)}</div><div class="pv">${r.transcript?esc(r.transcript):(r.kind==='video'?'影片 ':'語音訊息 ')+fmtDur(r.duration)}</div></div>
       <div class="rt"><span class="tm">${fmtTime(r.created)}</span>${r.opened?'':'<span class="badge">新</span>'}</div>
     </div></li>`).join('');
@@ -278,12 +278,12 @@ async function rename(r){
 }
 
 /* ---------- 錄音／錄影 ---------- */
-let mr,aStream,vStream,chunks,startT,tick,actx,raf,vraf,cancelled,recKind='audio',facing='user',recording=false,canvasMode=false,flipping=false;
+let mr,aStream,vStream,startT,tick,actx,raf,vraf,cancelled,recKind='audio',facing='user',recording=false,flipping=false;
 const XICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const FLIP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2M20 4v4h-4M4 20v-4h4"/></svg>';
 const camOf=f=>navigator.mediaDevices.getUserMedia({video:{facingMode:f,width:{ideal:1280},height:{ideal:720}}});
 async function startRec(kind='audio'){
-  recKind=kind;recording=false;cancelled=false;chunks=[];
+  recKind=kind;recording=false;cancelled=false;
   if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){modal({title:'無法使用',text:'這個瀏覽器不支援。iPhone 請用 Safari 開啟，並確認網址是 https 開頭。'});return}
   try{
     aStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
@@ -304,30 +304,31 @@ async function startRec(kind='audio'){
 function showCam(){const v=$('#pv');if(!v)return;v.srcObject=vStream;v.style.transform=facing==='user'?'scaleX(-1)':'';v.play().catch(()=>{})}
 async function flip(){
   if(flipping)return;
-  if(recording&&!canvasMode){toast('這支手機錄影中無法切換鏡頭');return}
-  flipping=true;const nf=facing==='user'?'environment':'user';
+  flipping=true;const nf=facing==='user'?'environment':'user';const wasRec=recording;
+  if(wasRec)await stopSeg();
   try{vStream&&vStream.getTracks().forEach(t=>t.stop());vStream=await camOf(nf);facing=nf}
   catch(e){try{vStream=await camOf(facing)}catch(e2){}toast('無法切換鏡頭')}
-  showCam();flipping=false;
+  showCam();
+  if(wasRec&&recording){if(!$('#pv').videoWidth)await new Promise(r=>{$('#pv').onloadedmetadata=r;setTimeout(r,1500)});try{startSeg()}catch(e){toast('切換後無法繼續錄影')}}
+  flipping=false;
+}
+let segs=[],segDone=null,poster='';
+function startSeg(){
+  const st=recKind==='video'?new MediaStream([...vStream.getVideoTracks(),...aStream.getAudioTracks()]):aStream;
+  const mime=(recKind==='video'?['video/mp4','video/webm;codecs=vp9,opus','video/webm']:['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg']).find(t=>MediaRecorder.isTypeSupported(t))||'';
+  mr=new MediaRecorder(st,mime?{mimeType:mime}:{});const ch=[];const m=mr;
+  segDone=new Promise(res=>{m.onstop=()=>{if(ch.length)segs.push(new Blob(ch,{type:m.mimeType||ch[0].type||(recKind==='video'?'video/mp4':'audio/mp4')}));res()}});
+  m.ondataavailable=e=>e.data.size&&ch.push(e.data);m.start(1000);
+}
+async function stopSeg(){if(mr&&mr.state!=='inactive'){mr.stop();await segDone}}
+function grabPoster(){
+  try{const v=$('#pv');if(!v||!v.videoWidth)return'';const c=document.createElement('canvas');const k=240/Math.max(v.videoWidth,v.videoHeight);c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.7)}catch(e){return''}
 }
 async function beginRec(){
-  let recStream;
-  if(recKind==='video'){
-    const v=$('#pv');
-    if(!v.videoWidth)await new Promise(r=>{v.onloadedmetadata=r;setTimeout(r,1500)});
-    const cv=document.createElement('canvas');
-    canvasMode=typeof cv.captureStream==='function';
-    if(canvasMode){
-      let w=v.videoWidth||720,h=v.videoHeight||1280;const k=Math.min(1,1280/Math.max(w,h));cv.width=Math.round(w*k/2)*2;cv.height=Math.round(h*k/2)*2;
-      const g=cv.getContext('2d');
-      const draw=()=>{const vv=$('#pv');if(vv&&vv.videoWidth){const sc=Math.max(cv.width/vv.videoWidth,cv.height/vv.videoHeight),dw=vv.videoWidth*sc,dh=vv.videoHeight*sc;g.drawImage(vv,(cv.width-dw)/2,(cv.height-dh)/2,dw,dh)}vraf=requestAnimationFrame(draw)};draw();
-      recStream=new MediaStream([...cv.captureStream(30).getVideoTracks(),...aStream.getAudioTracks()]);
-    }else recStream=new MediaStream([...vStream.getVideoTracks(),...aStream.getAudioTracks()]);
-  }else recStream=aStream;
-  const mime=(recKind==='video'?['video/mp4','video/webm;codecs=vp9,opus','video/webm']:['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg']).find(t=>MediaRecorder.isTypeSupported(t))||'';
-  try{mr=new MediaRecorder(recStream,mime?{mimeType:mime}:{})}catch(e){stopRec(true);modal({title:'無法開始',text:e.message});return}
-  mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
-  mr.onstop=saveRec;mr.start(1000);startT=Date.now();recording=true;
+  segs=[];poster='';
+  if(recKind==='video'){const v=$('#pv');if(!v.videoWidth)await new Promise(r=>{v.onloadedmetadata=r;setTimeout(r,1500)});poster=grabPoster()}
+  try{startSeg()}catch(e){stopRec(true);modal({title:'無法開始',text:e.message});return}
+  startT=Date.now();recording=true;
   $('#stopB').textContent='STOP';$('#dot').style.visibility='';$('#clk').style.visibility='';
   tick=setInterval(()=>{const c=$('#clk');if(c)c.textContent=fmtDur((Date.now()-startT)/1000)},250);
 }
@@ -342,18 +343,17 @@ function cleanup(){
   clearInterval(tick);cancelAnimationFrame(raf);cancelAnimationFrame(vraf);try{actx&&actx.close()}catch(e){}actx=null;
   [aStream,vStream].forEach(st=>st&&st.getTracks().forEach(t=>t.stop()));aStream=vStream=null;
 }
-function stopRec(cancel){
+async function stopRec(cancel){
   cancelled=cancel;const wasRec=recording;recording=false;
-  if(wasRec&&mr&&mr.state!=='inactive'){mr.requestData&&mr.requestData();mr.stop()}
-  setTimeout(cleanup,wasRec?300:0);
   $('#mask').hidden=true;$('#mask').classList.remove('recm');$('#sheet').className='sheet';
-  if(!wasRec&&cancel)toast('已取消');
+  if(wasRec){const end=Date.now();while(flipping)await new Promise(r=>setTimeout(r,100));await stopSeg();cleanup();saveRec(end)}
+  else{cleanup();if(cancel)toast('已取消')}
 }
-async function saveRec(){
-  if(cancelled||!chunks.length){toast('已取消');return}
-  const blob=new Blob(chunks,{type:mr.mimeType||chunks[0].type||(recKind==='video'?'video/mp4':'audio/mp4')});
-  const now=Date.now(),d=new Date(now);
-  const r={id:now.toString(36)+Math.random().toString(36).slice(2,6),kind:recKind,title:`${recKind==='video'?'VIDEO':'RE'} ${d.getMonth()+1}/${d.getDate()} ${clock(d)}`,created:now,duration:(now-startT)/1000,mime:blob.type,blob,transcript:'',translations:[],opened:false};
+async function saveRec(end){
+  if(cancelled||!segs.length){toast(cancelled?'已取消':'沒有錄到內容');return}
+  const blob=segs[0];
+  const now=end,d=new Date(startT);
+  const r={id:now.toString(36)+Math.random().toString(36).slice(2,6),kind:recKind,title:`${recKind==='video'?'VIDEO':'RE'} ${d.getMonth()+1}/${d.getDate()} ${clock(d)}`,created:startT,duration:(now-startT)/1000,mime:blob.type,blob,segs:segs.length>1?segs.slice():null,poster,transcript:'',translations:[],opened:false};
   try{await putRec(r)}catch(e){modal({title:'儲存失敗',text:'手機空間可能不足：'+e.message});return}
   recs.push(r);renderList();toast('已儲存');
 }
@@ -361,27 +361,29 @@ $('#recBtn').onclick=()=>startRec('audio');$('#vidBtn').onclick=()=>startRec('vi
 $('#plusBtn').onclick=async()=>{const v=await modal({title:'新增',btns:[['RE','ok','audio'],['VIDEO','danger','video']]});if(v)startRec(v)};
 
 /* ---------- 聊天室 ---------- */
-let cur=null,url=null,busy=null,prog=0,progMsg='';
+let cur=null,url=null,urls=[],busy=null,prog=0,progMsg='';
+const segsOf=r=>r.segs&&r.segs.length?r.segs:[r.blob];
 const player=$('#player');
 async function openChat(id){
   cur=recs.find(r=>r.id===id);if(!cur)return;
   if(!cur.opened){cur.opened=true;putRec(cur);renderList()}
-  if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(cur.blob);player.src=cur.kind==='video'?'':url;
+  urls.forEach(u=>URL.revokeObjectURL(u));urls=segsOf(cur).map(b=>URL.createObjectURL(b));url=urls[0];player.src=cur.kind==='video'?'':url;
   $('#cTitle').textContent=cur.title;$('#home').hidden=true;$('#chat').hidden=false;renderChat();
 }
 $('#back').onclick=()=>{player.pause();const v=$('#vid');if(v)v.pause();$('#chat').hidden=true;$('#home').hidden=false;cur=null};
 $('#renBtn').onclick=()=>cur&&rename(cur);
 $('#shareBtn').onclick=async()=>{
   const isV=cur.kind==='video';const ext=(cur.mime||'').includes('webm')?'webm':(cur.mime||'').includes('ogg')?'ogg':isV?'mp4':'m4a';
-  const file=new File([cur.blob],`${cur.title.replace(/[\\/:*?"<>|]/g,'-')}.${ext}`,{type:cur.mime});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:cur.title})}catch(e){}return}
-  const a=document.createElement('a');a.href=url;a.download=file.name;a.click();
+  const base=cur.title.replace(/[\\/:*?"<>|]/g,'-'),list=segsOf(cur);
+  const files=list.map((b,i)=>new File([b],`${base}${list.length>1?'-'+(i+1):''}.${ext}`,{type:b.type||cur.mime}));
+  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:cur.title})}catch(e){}return}
+  files.forEach((f,i)=>{const a=document.createElement('a');a.href=urls[i];a.download=f.name;a.click()});
 };
 const WAVE=Array.from({length:28},(_,i)=>30+Math.round(60*Math.abs(Math.sin(i*1.7)*Math.cos(i*.6))));
 function renderChat(){
   const r=cur,d=new Date(r.created),t=clock(d);
   let h=`<div class="chip">${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}</div>
-  ${r.kind==='video'?`<div class="row me"><div class="meta">${t}<br>${fmtDur(r.duration)}</div><div class="bub vbub"><video id="vid" controls playsinline preload="metadata" src="${url}#t=0.1"></video></div></div>`:`<div class="row me"><div class="meta">${t}</div><div class="bub"><div class="voice"><button class="play" id="playB">${player.paused?PLAY:PAUSE}</button><div class="prog" id="prog"><div class="wave">${WAVE.map(v=>`<i style="height:${v}%"></i>`).join('')}</div></div><span class="dur" id="dur">${fmtDur(r.duration)}</span></div></div></div>`}`;
+  ${r.kind==='video'?`<div class="row me"><div class="meta">${t}<br>${fmtDur(r.duration)}</div><div class="bub vbub"><video id="vid" controls playsinline preload="metadata"${r.poster&&r.poster.startsWith('data:image/')?` poster="${r.poster}"`:''} src="${url}"></video></div></div>${urls.length>1?`<div class="chip">共 ${urls.length} 段（切換鏡頭），會自動接著播</div>`:''}`:`<div class="row me"><div class="meta">${t}</div><div class="bub"><div class="voice"><button class="play" id="playB">${player.paused?PLAY:PAUSE}</button><div class="prog" id="prog"><div class="wave">${WAVE.map(v=>`<i style="height:${v}%"></i>`).join('')}</div></div><span class="dur" id="dur">${fmtDur(r.duration)}</span></div></div></div>`}`;
   const av=(txt,c)=>`<div class="mini" style="background:${c}">${txt}</div>`;
   if(r.transcript)h+=`<div class="row you">${av('文','#3b82f6')}<div class="bub"><div class="lbl">文字內容${r.sttLang?'（'+esc((SPOKEN.find(l=>l[0]===r.sttLang)||['',''])[1])+'）':''}</div>${esc(r.transcript)}<div class="tools"><button data-copy="t">複製</button><button id="editT">編輯</button></div></div></div>`;
   if(busy==='stt')h+=`<div class="row you">${av('文','#3b82f6')}<div class="bub"><div class="lbl">${esc(progMsg||'準備中…')}</div><div class="typing"><i></i><i></i><i></i></div>${prog?`<div class="pbar"><i style="width:${prog}%"></i></div>`:''}</div></div>`;
@@ -390,6 +392,7 @@ function renderChat(){
   const m=$('#msgs');m.innerHTML=h;m.scrollTop=m.scrollHeight;
   $('#sttBtn').textContent=r.transcript?'重新提取':'提取文字';$('#sttBtn').disabled=!!busy;
   document.querySelectorAll('.tb [data-tl],#moreLang').forEach(b=>b.disabled=!!busy);
+  const vid=$('#vid');if(vid){let i=0;vid.onended=()=>{if(++i<urls.length){vid.src=urls[i];vid.play().catch(()=>{})}else{i=0;vid.src=urls[0]}};vid.onerror=()=>toast('這段影片無法播放（錯誤 '+(vid.error&&vid.error.code)+'），可用右上角分享鍵存到相簿看看')}
   if(r.kind!=='video'){$('#playB').onclick=()=>player.paused?player.play().catch(()=>toast('無法播放')):player.pause();
   const pg=$('#prog');pg.onpointerdown=e=>{const seek=ev=>{const b=pg.getBoundingClientRect();const dur=isFinite(player.duration)?player.duration:r.duration;player.currentTime=Math.max(0,Math.min(1,(ev.clientX-b.left)/b.width))*dur;paint()};seek(e);pg.onpointermove=seek;pg.onpointerup=()=>pg.onpointermove=null}}
   const et=$('#editT');if(et)et.onclick=async()=>{const v=await modal({title:'編輯文字',textarea:r.transcript,btns:[['取消',''],['儲存','ok',1]]});if(v!=null){r.transcript=v.trim();await putRec(r);renderChat();renderList()}};
@@ -469,7 +472,9 @@ async function runStt(lc){
   const r=cur;if(!r||busy)return;const language=(SPOKEN.find(l=>l[0]===lc)||SPOKEN[0])[2];
   busy='stt';prog=0;progMsg='解碼音檔…';renderChat();
   try{
-    const audio=await decode16k(await r.blob.arrayBuffer());
+    const parts=[];for(const b of segsOf(r)){try{parts.push(await decode16k(await b.arrayBuffer()))}catch(e){}}
+    if(!parts.length)throw new Error('無法讀取這段的聲音');
+    const audio=new Float32Array(parts.reduce((n,p)=>n+p.length,0));let off=0;for(const p of parts){audio.set(p,off);off+=p.length}
     const text=await new Promise((res,rej)=>{pending={res,rej};getWorker().postMessage({audio,model:S.model,language},[audio.buffer])});
     r.transcript=(lc==='zh'?await toTrad(text):text)||'（沒有辨識到語音）';r.sttLang=lc;r.translations=[];await putRec(r);toast('文字提取完成');
   }catch(e){modal({title:'提取失敗',text:'請確認網路連線（第一次需要下載模型），或到設定改用「快速」模型再試。\n'+e.message})}
