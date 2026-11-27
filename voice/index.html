@@ -6,86 +6,88 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="錄音聊天">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#3c4660">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.json">
 <title>錄音聊天</title>
 <style>
 :root{
-  --bg:#fff;--ink:#111;--sub:#8e8e93;--line:#f0f0f2;--pill:#f2f3f5;--pillOn:#646d85;
-  --green:#06c755;--red:#ff3b30;--chat:#8cabd8;--me:#8de055;--you:#fff;--youInk:#111;
-  --sheet:#fff;--shadow:0 6px 24px rgba(0,0,0,.08);
+  --navy:#3c4660;--navy2:#2f374c;--sky:#87a0c4;--ink:#111;--sub:#8a8f99;--card:#fff;
+  --green:#06c755;--red:#ff3b30;--me:#8de055;--you:#fff;--youInk:#111;--sheet:#fff;--pill:#f2f3f5;--line:#e6e8ec;
   font-family:-apple-system,"PingFang TC","Noto Sans TC","Helvetica Neue",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:#111;--ink:#f2f2f2;--sub:#8b8b90;--line:#222;--pill:#1f1f22;--pillOn:#4a5168;
-  --chat:#1e2a3d;--me:#5fb33a;--you:#2c2c2e;--youInk:#f2f2f2;--sheet:#1c1c1e;--shadow:0 6px 24px rgba(0,0,0,.5);
+  --navy:#252b3b;--navy2:#1c2130;--sky:#4d6283;--ink:#f2f2f2;--sub:#9a9fa8;--card:#282c38;
+  --me:#5fb33a;--you:#2c2f38;--youInk:#f2f2f2;--sheet:#1f2330;--pill:#2c3140;--line:#333a4a;
 }}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+html,body{margin:0;height:100%;background:var(--navy);color:var(--ink);overflow:hidden}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
-.view{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+.view{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--sky) url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20800%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22b%22%20x%3D%22-50%25%22%20y%3D%22-50%25%22%20width%3D%22200%25%22%20height%3D%22200%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%2210%22/%3E%3C/filter%3E%3Cfilter%20id%3D%22c%22%20x%3D%22-50%25%22%20y%3D%22-50%25%22%20width%3D%22200%25%22%20height%3D%22200%25%22%3E%3CfeGaussianBlur%20stdDeviation%3D%226%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20fill%3D%22%23fff%22%20filter%3D%22url%28%23b%29%22%20opacity%3D%22.42%22%3E%3Cellipse%20cx%3D%22320%22%20cy%3D%2270%22%20rx%3D%2270%22%20ry%3D%2218%22/%3E%3Cellipse%20cx%3D%2290%22%20cy%3D%22250%22%20rx%3D%2290%22%20ry%3D%2240%22/%3E%3Cellipse%20cx%3D%22150%22%20cy%3D%22300%22%20rx%3D%2270%22%20ry%3D%2245%22/%3E%3Cellipse%20cx%3D%2240%22%20cy%3D%22330%22%20rx%3D%2260%22%20ry%3D%2230%22/%3E%3Cellipse%20cx%3D%22330%22%20cy%3D%22640%22%20rx%3D%22110%22%20ry%3D%2260%22/%3E%3Cellipse%20cx%3D%22380%22%20cy%3D%22590%22%20rx%3D%2260%22%20ry%3D%2250%22/%3E%3Cellipse%20cx%3D%22200%22%20cy%3D%22720%22%20rx%3D%22130%22%20ry%3D%2250%22/%3E%3Cellipse%20cx%3D%2240%22%20cy%3D%22760%22%20rx%3D%2290%22%20ry%3D%2240%22/%3E%3C/g%3E%3Cg%20fill%3D%22%23fff%22%20filter%3D%22url%28%23c%29%22%20opacity%3D%22.35%22%3E%3Cellipse%20cx%3D%22300%22%20cy%3D%2260%22%20rx%3D%2230%22%20ry%3D%229%22/%3E%3Cellipse%20cx%3D%22120%22%20cy%3D%22270%22%20rx%3D%2240%22%20ry%3D%2222%22/%3E%3Cellipse%20cx%3D%22340%22%20cy%3D%22620%22%20rx%3D%2250%22%20ry%3D%2226%22/%3E%3Cellipse%20cx%3D%22230%22%20cy%3D%22700%22%20rx%3D%2260%22%20ry%3D%2220%22/%3E%3C/g%3E%3C/svg%3E") center/cover no-repeat}
 .view[hidden]{display:none}
 
-/* ===== list view (LINE 聊天列表) ===== */
-.top{display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top) + 10px) 16px 10px}
-.pills{display:flex;background:var(--bg);border-radius:30px;padding:5px;box-shadow:var(--shadow)}
-.pills button{padding:9px 18px;border-radius:24px;font-size:19px;font-weight:800}
-.pills button.on{background:var(--pillOn);color:#fff}
-.icons{display:flex;gap:4px;background:var(--bg);border-radius:30px;padding:5px 8px;box-shadow:var(--shadow)}
-.icons button{width:42px;height:42px;display:grid;place-items:center}
-.icons svg{width:26px;height:26px}
-.search{margin:6px 16px 8px;display:flex;align-items:center;gap:8px;background:var(--pill);border-radius:22px;padding:0 16px;height:46px}
-.search input{flex:1;border:0;background:none;font-size:17px;color:var(--ink);outline:none}
-.search svg{width:20px;height:20px;flex:none}
-#list{list-style:none;margin:0;padding:0 0 120px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
-.item{position:relative;overflow:hidden}
+/* 上方深色列 */
+.head{background:var(--navy);color:#fff;padding-top:env(safe-area-inset-top)}
+.top{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 6px}
+.pills{display:flex;gap:2px}
+.pills button{padding:7px 14px;border-radius:20px;font-size:17px;font-weight:800;color:rgba(255,255,255,.6)}
+.pills button.on{background:rgba(255,255,255,.16);color:#fff}
+.icons{display:flex}
+.icons button{width:42px;height:42px;display:grid;place-items:center;color:#fff}
+.icons svg{width:23px;height:23px}
+.search{margin:2px 12px 10px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.13);border-radius:12px;padding:0 12px;height:38px;color:rgba(255,255,255,.7)}
+.search input{flex:1;border:0;background:none;font-size:16px;color:#fff;outline:none}
+.search input::placeholder{color:rgba(255,255,255,.55)}
+.search svg{width:18px;height:18px;flex:none}
+
+/* 對話框列表 */
+#list{list-style:none;margin:0;padding:10px 0 110px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.item{position:relative;overflow:hidden;margin:0 12px 8px;border-radius:18px;box-shadow:0 2px 8px rgba(30,45,80,.12)}
 .acts{position:absolute;inset:0 0 0 auto;display:flex}
 .acts button{width:76px;color:#fff;font-size:15px;font-weight:600}
-.acts .ren{background:#b4b4ba}.acts .del{background:var(--red)}
-.fg{position:relative;display:flex;gap:14px;align-items:center;padding:11px 16px;background:var(--bg);touch-action:pan-y;transition:transform .22s ease;user-select:none;-webkit-user-select:none}
+.acts .ren{background:#9aa1ad}.acts .del{background:var(--red)}
+.fg{position:relative;display:flex;gap:12px;align-items:center;padding:10px 14px;background:var(--card);touch-action:pan-y;transition:transform .22s ease;user-select:none;-webkit-user-select:none;border-radius:18px}
 .fg.drag{transition:none}
-.av{position:relative;width:58px;height:58px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff}
-.av svg{width:28px;height:28px}
-.av .tag{position:absolute;right:-3px;bottom:-3px;width:22px;height:22px;border-radius:50%;background:#3b82f6;border:2.5px solid var(--bg);font-size:11px;font-weight:800;display:grid;place-items:center}
+.av{position:relative;width:50px;height:50px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff}
+.av svg{width:24px;height:24px}
+.av .tag{position:absolute;right:-3px;bottom:-3px;width:20px;height:20px;border-radius:50%;background:#3b82f6;border:2px solid #fff;font-size:10px;font-weight:800;display:grid;place-items:center}
 .mid{flex:1;min-width:0}
-.ttl{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pv{font-size:15px;color:var(--sub);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
-.rt{align-self:flex-start;display:flex;flex-direction:column;align-items:flex-end;gap:8px;padding-top:4px}
-.tm{font-size:13px;color:var(--sub);white-space:nowrap}
-.badge{background:var(--green);color:#fff;font-size:13px;font-weight:700;border-radius:12px;padding:2px 9px;min-width:24px;text-align:center}
-.empty{text-align:center;color:var(--sub);padding:80px 30px;line-height:1.7}
-.empty b{display:block;color:var(--ink);font-size:18px;margin-bottom:6px}
-.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 14px);background:var(--bg);border-radius:40px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:8px;display:flex;align-items:center;gap:6px}
-.rec{display:flex;align-items:center;gap:10px;background:var(--green);color:#fff;border-radius:32px;padding:14px 26px;font-size:18px;font-weight:800;white-space:nowrap}
-.rec.vid{background:#ef4444}
-.rec i{width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.35)}
+.ttl{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv{font-size:14px;color:var(--sub);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
+.rt{align-self:flex-start;display:flex;flex-direction:column;align-items:flex-end;gap:8px;padding-top:3px}
+.tm{font-size:12px;color:var(--sub);white-space:nowrap}
+.badge{background:var(--green);color:#fff;font-size:12px;font-weight:700;border-radius:11px;padding:1px 8px}
+.empty{text-align:center;color:#fff;padding:90px 30px;line-height:1.7;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+.empty b{display:block;font-size:18px;margin-bottom:4px}
 
-/* ===== chat view (LINE 聊天室) ===== */
-#chat{background:var(--chat)}
-.bar{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 6px) 8px 8px;background:var(--chat);color:#fff}
-@media (prefers-color-scheme:light){.bar{color:#1b2333}}
-.bar button{width:44px;height:44px;display:grid;place-items:center}
-.bar svg{width:26px;height:26px}
-.bar h1{flex:1;font-size:18px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 小小的錄音、錄影鍵 */
+.dock{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 18px);display:flex;gap:10px}
+.rbtn{width:46px;height:46px;border-radius:50%;background:rgba(40,48,68,.78);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:grid;place-items:center;color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.rbtn svg{width:21px;height:21px}
+.rbtn::after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;background:var(--red);transform:translate(13px,-13px)}
+
+/* 聊天室 */
+.bar{display:flex;align-items:center;gap:4px;padding:6px 6px 6px}
+.bar button{width:42px;height:42px;display:grid;place-items:center;color:#fff}
+.bar svg{width:23px;height:23px}
+.bar h1{flex:1;font-size:17px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
 #msgs{flex:1;overflow-y:auto;padding:10px 12px 20px;-webkit-overflow-scrolling:touch}
 .chip{display:table;margin:6px auto 14px;background:rgba(0,0,0,.18);color:#fff;font-size:12px;border-radius:12px;padding:3px 12px}
 .row{display:flex;align-items:flex-end;gap:6px;margin:10px 0}
 .row.me{justify-content:flex-end}
-.meta{font-size:11px;color:rgba(0,0,0,.55);white-space:nowrap;line-height:1.3}
-@media (prefers-color-scheme:dark){.meta{color:rgba(255,255,255,.55)}}
+.meta{font-size:11px;color:rgba(255,255,255,.85);white-space:nowrap;line-height:1.3;text-shadow:0 1px 2px rgba(0,0,0,.2)}
 .row.me .meta{text-align:right}
 .bub{max-width:78%;border-radius:20px;padding:10px 14px;font-size:16px;line-height:1.5;word-break:break-word;white-space:pre-wrap;position:relative}
 .me .bub{background:var(--me);color:#10200a;border-top-right-radius:6px}
 .you .bub{background:var(--you);color:var(--youInk);border-top-left-radius:6px}
-.mini{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;align-self:flex-start;color:#fff;font-size:13px;font-weight:800}
+.mini{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;align-self:flex-start;color:#fff;font-size:12px;font-weight:800}
 .lbl{font-size:12px;font-weight:700;opacity:.55;margin-bottom:2px;white-space:normal}
 .tools{display:flex;gap:14px;margin-top:6px;white-space:normal}
 .tools button{font-size:13px;color:#3b82f6;padding:4px 0}
-.voice{display:flex;align-items:center;gap:10px;min-width:210px}
-.play{width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.12);display:grid;place-items:center;flex:none}
-.play svg{width:18px;height:18px}
+.voice{display:flex;align-items:center;gap:10px;min-width:200px}
+.play{width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.12);display:grid;place-items:center;flex:none}
+.play svg{width:17px;height:17px}
 .prog{flex:1;height:26px;position:relative;touch-action:none}
 .prog .wave{position:absolute;inset:0;display:flex;align-items:center;gap:2px}
 .prog .wave i{flex:1;background:rgba(0,0,0,.25);border-radius:2px}
@@ -93,40 +95,50 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .dur{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .vbub{padding:4px!important;overflow:hidden}
 .vbub video{display:block;width:100%;max-width:260px;max-height:46vh;border-radius:16px;background:#000}
-#pv{width:100%;max-height:42vh;border-radius:16px;background:#000;display:block;object-fit:cover;margin-bottom:10px}
-#flipB{display:block;margin:0 auto 4px;padding:8px 16px;border-radius:18px;background:var(--pill);font-size:14px;font-weight:700}
 .typing{display:flex;gap:5px;padding:4px 0}
 .typing i{width:7px;height:7px;border-radius:50%;background:var(--sub);animation:b 1s infinite}
 .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
 @keyframes b{0%,100%{opacity:.3}50%{opacity:1}}
 .pbar{height:6px;background:rgba(0,0,0,.1);border-radius:3px;margin-top:8px;overflow:hidden}
 .pbar i{display:block;height:100%;background:var(--green);width:0;transition:width .3s}
-.tb{display:flex;gap:8px;overflow-x:auto;padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);background:var(--bg);border-top:1px solid var(--line)}
-.tb button{flex:none;padding:10px 16px;border-radius:22px;background:var(--pill);font-size:15px;font-weight:700;white-space:nowrap}
-.tb button.pri{background:var(--green);color:#fff}
+.tb{display:flex;gap:8px;overflow-x:auto;padding:9px 12px calc(env(safe-area-inset-bottom) + 9px);background:var(--navy)}
+.tb button{flex:none;padding:8px 14px;border-radius:18px;background:rgba(255,255,255,.13);color:#fff;font-size:14px;font-weight:700;white-space:nowrap}
+.tb button.pri{background:var(--green)}
 .tb button:disabled{opacity:.4}
 
-/* ===== sheets & modal ===== */
-.mask{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+/* 底部面板、對話框 */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;z-index:20}
 .mask[hidden]{display:none}
-.sheet{width:100%;max-width:520px;background:var(--sheet);border-radius:22px 22px 0 0;padding:22px 20px calc(env(safe-area-inset-bottom) + 20px);animation:up .22s ease}
+.sheet{width:100%;max-width:520px;background:var(--sheet);border-radius:20px 20px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom) + 18px);animation:up .22s ease}
 @keyframes up{from{transform:translateY(40px);opacity:0}}
-.sheet h2{margin:0 0 6px;font-size:19px;text-align:center}
-.sheet p{color:var(--sub);font-size:14px;line-height:1.6;margin:6px 0 14px;text-align:center}
+.sheet h2{margin:0 0 6px;font-size:18px;text-align:center}
+.sheet p{color:var(--sub);font-size:14px;line-height:1.6;margin:6px 0 14px;text-align:center;white-space:pre-line}
 .sheet input,.sheet textarea,.sheet select{width:100%;font-size:16px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--pill);color:var(--ink);font-family:inherit}
 .sheet textarea{min-height:200px;resize:vertical}
 .btns{display:flex;gap:10px;margin-top:16px}
-.btns button{flex:1;padding:14px;border-radius:14px;background:var(--pill);font-weight:700;font-size:16px}
+.btns button{flex:1;padding:13px;border-radius:14px;background:var(--pill);font-weight:700;font-size:16px}
 .btns .ok{background:var(--green);color:#fff}.btns .danger{background:var(--red);color:#fff}
-.clock{font-size:52px;font-weight:300;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
-#meter{width:100%;height:70px;display:block}
-.stop{display:block;margin:16px auto 6px;width:78px;height:78px;border-radius:50%;background:var(--red);position:relative}
-.stop::after{content:"";position:absolute;inset:26px;border-radius:5px;background:#fff}
+/* 錄音中：精簡深色小條 */
+.mask.recm{background:transparent;pointer-events:none}
+.recbar{pointer-events:auto;width:calc(100% - 24px);max-width:480px;margin-bottom:calc(env(safe-area-inset-bottom) + 14px);background:rgba(28,33,48,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;border-radius:22px;padding:10px;animation:up .2s ease}
+.recrow{display:flex;align-items:center;gap:10px}
+.recrow .x{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:rgba(255,255,255,.7)}
+.recrow .x svg{width:18px;height:18px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--red);animation:b 1s infinite;flex:none}
+.clock{font-size:16px;font-variant-numeric:tabular-nums;width:44px}
+#meter{flex:1;height:30px;display:block}
+.stop{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.85);display:grid;place-items:center;flex:none}
+.stop i{width:14px;height:14px;border-radius:3px;background:var(--red)}
+#pv{width:100%;max-height:40vh;border-radius:14px;background:#000;display:block;object-fit:cover;margin-bottom:8px}
+.flip{position:absolute;right:10px;top:10px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center}
+.flip svg{width:18px;height:18px}
+.pvw{position:relative}
 .langs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:50vh;overflow-y:auto}
 .langs button{padding:12px 6px;border-radius:12px;background:var(--pill);font-size:15px;font-weight:600}
+.langs button.on{background:var(--green);color:#fff}
 .opt{display:flex;flex-direction:column;gap:8px;margin:12px 0}
 .opt label{font-size:14px;font-weight:700}
-#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 16px);transform:translateX(-50%);background:rgba(30,30,30,.92);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:40;opacity:0;transition:opacity .2s;pointer-events:none;max-width:88vw;text-align:center}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 60px);transform:translateX(-50%);background:rgba(30,30,30,.92);color:#fff;padding:9px 16px;border-radius:18px;font-size:14px;z-index:40;opacity:0;transition:opacity .2s;pointer-events:none;max-width:88vw;text-align:center}
 #toast.on{opacity:1}
 </style>
 </head>
@@ -134,21 +146,21 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 
 <!-- 列表 -->
 <section class="view" id="home">
-  <div class="top">
+  <div class="head"><div class="top">
     <div class="pills"><button class="on" data-f="all">錄音</button><button data-f="txt">有文字</button></div>
     <div class="icons">
       <button id="setBtn" aria-label="設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       <button id="plusBtn" aria-label="新錄音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4v16M4 12h16"/></svg></button>
     </div>
   </div>
-  <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="搜尋標題或文字內容"></label>
+  <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="q" type="search" placeholder="搜尋標題或文字內容"></label></div>
   <ul id="list"></ul>
-  <div class="dock"><button class="rec" id="recBtn"><i></i>錄音</button><button class="rec vid" id="vidBtn"><i></i>錄影</button></div>
+  <div class="dock"><button class="rbtn" id="recBtn" aria-label="錄音"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="rbtn" id="vidBtn" aria-label="錄影"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M17 10l5-3v10l-5-3z"/></svg></button></div>
 </section>
 
 <!-- 聊天室 -->
 <section class="view" id="chat" hidden>
-  <div class="bar">
+  <div class="head bar">
     <button id="back" aria-label="返回"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
     <h1 id="cTitle"></h1>
     <button id="shareBtn" aria-label="分享音檔"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>
@@ -182,7 +194,8 @@ let toastT;
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400)};
 
 /* ---------- 設定 ---------- */
-const S={model:'Xenova/whisper-base'};
+const S={model:'Xenova/whisper-base',sttLang:'zh'};
+const SPOKEN=[['zh','中文','chinese'],['en','English','english'],['ja','日本語','japanese'],['ko','한국어','korean'],['th','ไทย','thai'],['vi','Tiếng Việt','vietnamese'],['id','Indonesia','indonesian'],['ms','Melayu','malay'],['tl','Filipino','tagalog'],['es','Español','spanish'],['fr','Français','french'],['de','Deutsch','german'],['it','Italiano','italian'],['pt','Português','portuguese'],['ru','Русский','russian'],['ar','العربية','arabic'],['hi','हिन्दी','hindi'],['tr','Türkçe','turkish']];
 try{Object.assign(S,JSON.parse(localStorage.getItem('rc-set')||'{}'))}catch(e){}
 const saveS=()=>{try{localStorage.setItem('rc-set',JSON.stringify(S))}catch(e){}};
 
@@ -210,7 +223,7 @@ function renderList(){
   const q=$('#q').value.trim().toLowerCase();
   const items=recs.filter(r=>(filter==='all'||r.transcript)&&(!q||(r.title+' '+(r.transcript||'')).toLowerCase().includes(q))).sort((a,b)=>b.created-a.created);
   const L=$('#list');
-  if(!items.length){L.innerHTML=`<li class="empty"><b>${recs.length?'找不到符合的錄音':'還沒有錄音'}</b>${recs.length?'換個關鍵字試試':'按下方綠色「錄音」開始，<br>每段錄音都會變成一個對話框'}</li>`;return}
+  if(!items.length){L.innerHTML=`<li class="empty"><b>${recs.length?'找不到符合的錄音':'還沒有錄音'}</b>${recs.length?'換個關鍵字試試':'按右下角的麥克風或攝影機開始，<br>每段錄音都會變成一個對話框'}</li>`;return}
   L.innerHTML=items.map(r=>`<li class="item" data-id="${esc(r.id)}">
     <div class="acts"><button class="ren">重新命名</button><button class="del">刪除</button></div>
     <div class="fg">
@@ -252,7 +265,7 @@ $('#q').oninput=renderList;
 /* ---------- 共用對話框 ---------- */
 function modal({title,text='',html='',input,textarea,btns=[['確定','ok',1]]}){
   return new Promise(res=>{
-    const sh=$('#sheet');
+    const sh=$('#sheet');sh.className='sheet';$('#mask').classList.remove('recm');
     sh.innerHTML=`<h2>${esc(title)}</h2>${text?`<p>${esc(text)}</p>`:''}${html}${input!=null?`<input id="mIn" value="${esc(input)}">`:''}${textarea!=null?`<textarea id="mIn">${esc(textarea)}</textarea>`:''}<div class="btns">${btns.map((b,i)=>`<button class="${b[1]}" data-i="${i}">${esc(b[0])}</button>`).join('')}</div>`;
     $('#mask').hidden=false;const inp=$('#mIn');if(inp)setTimeout(()=>inp.focus(),50);
     const done=v=>{$('#mask').hidden=true;$('#mask').onclick=null;res(v)};
@@ -276,7 +289,8 @@ async function startRec(kind='audio'){
   mr=new MediaRecorder(stream,mime?{mimeType:mime}:{});chunks=[];cancelled=false;
   mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
   mr.onstop=saveRec;mr.start(1000);startT=Date.now();
-  $('#sheet').innerHTML=`<h2>${kind==='video'?'錄影中':'錄音中'}</h2>${kind==='video'?'<video id="pv" muted playsinline autoplay></video><button id="flipB">切換鏡頭（錄影前）</button>':''}<div class="clock" id="clk">0:00</div><canvas id="meter"${kind==='video'?' style="height:36px"':''}></canvas><button class="stop" id="stopB" aria-label="停止並儲存"></button><div class="btns"><button id="cancelB">取消（不儲存）</button></div>`;
+  $('#sheet').className='recbar';$('#mask').classList.add('recm');
+  $('#sheet').innerHTML=`${kind==='video'?'<div class="pvw"><video id="pv" muted playsinline autoplay></video><button class="flip" id="flipB" aria-label="切換鏡頭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2M20 4v4h-4M4 20v-4h4"/></svg></button></div>':''}<div class="recrow"><button class="x" id="cancelB" aria-label="取消不儲存"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="dot"></span><span class="clock" id="clk">0:00</span><canvas id="meter"></canvas><button class="stop" id="stopB" aria-label="停止並儲存"><i></i></button></div>`;
   $('#mask').hidden=false;$('#mask').onclick=null;
   if(kind==='video'){const v=$('#pv');v.srcObject=stream;v.style.transform=facing==='user'?'scaleX(-1)':'';$('#flipB').onclick=()=>{if(Date.now()-startT>1500){toast('錄影開始後無法切換，請下次錄影前切換');return}facing=facing==='user'?'environment':'user';stopRec(true,true);startRec('video')}}
   $('#stopB').onclick=()=>stopRec(false);$('#cancelB').onclick=()=>stopRec(true);
@@ -284,11 +298,11 @@ async function startRec(kind='audio'){
   try{
     actx=new (window.AudioContext||window.webkitAudioContext)();const an=actx.createAnalyser();an.fftSize=256;actx.createMediaStreamSource(stream).connect(an);
     const cv=$('#meter'),g=cv.getContext('2d'),buf=new Uint8Array(an.frequencyBinCount),hist=[];
-    const draw=()=>{const W=cv.width=cv.clientWidth*devicePixelRatio,H=cv.height=cv.clientHeight*devicePixelRatio;an.getByteTimeDomainData(buf);let pk=0;for(const v of buf)pk=Math.max(pk,Math.abs(v-128));hist.push(pk/128);const n=Math.floor(W/(6*devicePixelRatio));while(hist.length>n)hist.shift();g.clearRect(0,0,W,H);g.fillStyle='#06c755';hist.forEach((v,i)=>{const h=Math.max(3*devicePixelRatio,v*H*1.6);g.fillRect(W-(hist.length-i)*6*devicePixelRatio,(H-h)/2,3.5*devicePixelRatio,Math.min(H,h))});raf=requestAnimationFrame(draw)};draw();
+    const draw=()=>{const W=cv.width=cv.clientWidth*devicePixelRatio,H=cv.height=cv.clientHeight*devicePixelRatio;an.getByteTimeDomainData(buf);let pk=0;for(const v of buf)pk=Math.max(pk,Math.abs(v-128));hist.push(pk/128);const n=Math.floor(W/(5*devicePixelRatio));while(hist.length>n)hist.shift();g.clearRect(0,0,W,H);g.fillStyle='#06c755';hist.forEach((v,i)=>{const h=Math.max(2*devicePixelRatio,v*H*1.8);g.fillRect(W-(hist.length-i)*5*devicePixelRatio,(H-h)/2,3*devicePixelRatio,Math.min(H,h))});raf=requestAnimationFrame(draw)};draw();
   }catch(e){}
 }
 function getStream(){const a={echoCancellation:true,noiseSuppression:true};return navigator.mediaDevices.getUserMedia(recKind==='video'?{audio:a,video:{facingMode:facing,width:{ideal:1280},height:{ideal:720}}}:{audio:a})}
-function stopRec(cancel,quiet){cancelled=cancel;if(quiet&&mr)mr.onstop=null;clearInterval(tick);cancelAnimationFrame(raf);try{actx&&actx.close()}catch(e){}if(mr&&mr.state!=='inactive')mr.stop();stream&&stream.getTracks().forEach(t=>t.stop());$('#mask').hidden=true}
+function stopRec(cancel,quiet){cancelled=cancel;if(quiet&&mr)mr.onstop=null;clearInterval(tick);cancelAnimationFrame(raf);try{actx&&actx.close()}catch(e){}if(mr&&mr.state!=='inactive')mr.stop();stream&&stream.getTracks().forEach(t=>t.stop());$('#mask').hidden=true;$('#mask').classList.remove('recm');$('#sheet').className='sheet'}
 async function saveRec(){
   if(cancelled||!chunks.length){toast('已取消');return}
   const blob=new Blob(chunks,{type:mr.mimeType||chunks[0].type||(recKind==='video'?'video/mp4':'audio/mp4')});
@@ -323,7 +337,7 @@ function renderChat(){
   let h=`<div class="chip">${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}</div>
   ${r.kind==='video'?`<div class="row me"><div class="meta">${t}<br>${fmtDur(r.duration)}</div><div class="bub vbub"><video id="vid" controls playsinline preload="metadata" src="${url}#t=0.1"></video></div></div>`:`<div class="row me"><div class="meta">${t}</div><div class="bub"><div class="voice"><button class="play" id="playB">${player.paused?PLAY:PAUSE}</button><div class="prog" id="prog"><div class="wave">${WAVE.map(v=>`<i style="height:${v}%"></i>`).join('')}</div></div><span class="dur" id="dur">${fmtDur(r.duration)}</span></div></div></div>`}`;
   const av=(txt,c)=>`<div class="mini" style="background:${c}">${txt}</div>`;
-  if(r.transcript)h+=`<div class="row you">${av('文','#3b82f6')}<div class="bub"><div class="lbl">文字內容</div>${esc(r.transcript)}<div class="tools"><button data-copy="t">複製</button><button id="editT">編輯</button></div></div></div>`;
+  if(r.transcript)h+=`<div class="row you">${av('文','#3b82f6')}<div class="bub"><div class="lbl">文字內容${r.sttLang?'（'+esc((SPOKEN.find(l=>l[0]===r.sttLang)||['',''])[1])+'）':''}</div>${esc(r.transcript)}<div class="tools"><button data-copy="t">複製</button><button id="editT">編輯</button></div></div></div>`;
   if(busy==='stt')h+=`<div class="row you">${av('文','#3b82f6')}<div class="bub"><div class="lbl">${esc(progMsg||'準備中…')}</div><div class="typing"><i></i><i></i><i></i></div>${prog?`<div class="pbar"><i style="width:${prog}%"></i></div>`:''}</div></div>`;
   r.translations.forEach((x,i)=>h+=`<div class="row you">${av(esc(x.tl.slice(0,2).toUpperCase()),'#f59e0b')}<div class="bub"><div class="lbl">${esc(langName(x.tl))}</div>${esc(x.text)}<div class="tools"><button data-copy="${i}">複製</button><button data-rm="${i}">移除</button></div></div></div>`);
   if(busy==='tr')h+=`<div class="row you">${av('譯','#f59e0b')}<div class="bub"><div class="typing"><i></i><i></i><i></i></div></div></div>`;
@@ -356,7 +370,7 @@ import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transfo
 env.allowLocalModels=false;
 let asr=null,cur=null;const files={};
 self.onmessage=async e=>{
-  const {audio,model}=e.data;
+  const {audio,model,language}=e.data;
   try{
     if(!asr||cur!==model){
       self.postMessage({type:'status',msg:'第一次使用：下載辨識模型（之後會快取）'});
@@ -365,7 +379,7 @@ self.onmessage=async e=>{
       }});cur=model;
     }
     self.postMessage({type:'status',msg:'辨識中，請稍候…'});self.postMessage({type:'progress',pct:0});
-    const out=await asr(audio,{chunk_length_s:30,stride_length_s:5,task:'transcribe'});
+    const out=await asr(audio,{chunk_length_s:30,stride_length_s:5,task:'transcribe',language});
     self.postMessage({type:'done',text:(out.text||'').trim()});
   }catch(err){self.postMessage({type:'error',msg:String(err&&err.message||err)})}
 };`;
@@ -397,16 +411,24 @@ async function toTrad(t){
     return cc(t);
   }catch(e){return t}
 }
-$('#sttBtn').onclick=async()=>{
-  const r=cur;if(!r||busy)return;
+$('#sttBtn').onclick=()=>{
+  if(!cur||busy)return;
+  const sh=$('#sheet');sh.className='sheet';$('#mask').classList.remove('recm');
+  sh.innerHTML=`<h2>錄音裡說的是哪種語言？</h2><p>選對語言，文字才會用那個語言寫出來</p><div class="langs">${SPOKEN.map(l=>`<button data-s="${l[0]}" class="${l[0]===S.sttLang?'on':''}">${l[1]}</button>`).join('')}</div><div class="btns"><button id="sx">取消</button></div>`;
+  $('#mask').hidden=false;$('#mask').onclick=e=>{if(e.target.id==='mask')$('#mask').hidden=true};
+  $('#sx').onclick=()=>$('#mask').hidden=true;
+  sh.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{$('#mask').hidden=true;S.sttLang=b.dataset.s;saveS();runStt(b.dataset.s)});
+};
+async function runStt(lc){
+  const r=cur;if(!r||busy)return;const language=(SPOKEN.find(l=>l[0]===lc)||SPOKEN[0])[2];
   busy='stt';prog=0;progMsg='解碼音檔…';renderChat();
   try{
     const audio=await decode16k(await r.blob.arrayBuffer());
-    const text=await new Promise((res,rej)=>{pending={res,rej};getWorker().postMessage({audio,model:S.model},[audio.buffer])});
-    r.transcript=await toTrad(text)||'（沒有辨識到語音）';await putRec(r);toast('文字提取完成');
+    const text=await new Promise((res,rej)=>{pending={res,rej};getWorker().postMessage({audio,model:S.model,language},[audio.buffer])});
+    r.transcript=(lc==='zh'?await toTrad(text):text)||'（沒有辨識到語音）';r.sttLang=lc;r.translations=[];await putRec(r);toast('文字提取完成');
   }catch(e){modal({title:'提取失敗',text:'請確認網路連線（第一次需要下載模型），或到設定改用「快速」模型再試。\n'+e.message})}
   busy=null;if(cur===r)renderChat();renderList();
-};
+}
 
 /* ---------- 翻譯：免費翻譯服務，不用 AI token ---------- */
 function chunkText(t,max){const parts=t.split(/(?<=[。！？!?\.\n])/);const out=[];let s='';for(const p of parts){if((s+p).length>max&&s){out.push(s);s=''}s+=p;while(s.length>max){out.push(s.slice(0,max));s=s.slice(max)}}if(s)out.push(s);return out}
@@ -435,6 +457,7 @@ async function translate(tl){
 document.querySelectorAll('.tb [data-tl]').forEach(b=>b.onclick=()=>translate(b.dataset.tl));
 $('#moreLang').onclick=()=>{
   if(!cur.transcript){toast('請先按「提取文字」');return}
+  $('#sheet').className='sheet';$('#mask').classList.remove('recm');
   $('#sheet').innerHTML=`<h2>翻譯成…</h2><p>選擇要翻譯的語言</p><div class="langs">${LANGS.map(l=>`<button data-l="${l[0]}">${l[1]}</button>`).join('')}</div><div class="btns"><button id="lx">取消</button></div>`;
   $('#mask').hidden=false;$('#mask').onclick=e=>{if(e.target.id==='mask')$('#mask').hidden=true};
   $('#lx').onclick=()=>$('#mask').hidden=true;
